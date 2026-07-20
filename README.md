@@ -1,0 +1,50 @@
+# Big Apple Docs
+
+本仓库是“大苹果 docs + contracts”的 Docusaurus 文档站根目录，用于承载公开说明文档、治理文本入口、正式 contracts 索引和文档站构建配置。
+
+当前阶段不迁移旧 contracts 内容，只建立基础结构和少量示例说明。
+
+## 本地预览
+
+```bash
+npm install
+npm run start
+```
+
+默认本地预览地址由 Docusaurus 输出，一般为 `http://localhost:3000/`。
+
+## 构建
+
+```bash
+npm run build
+```
+
+构建产物位于 `build/`，不应提交到 Git。
+
+## 文档新增方式
+
+- 普通说明文档放入 `docs/project/`、`docs/philosophy/`、`docs/manual/`、`docs/governance/`、`docs/development/` 或 `docs/changelog/`。
+- 只有经过治理流程确认的正式文本，才放入 `docs/contracts/` 下的正式分类目录。
+- 新增一级分区前，应先确认现有分区无法承载该内容。
+- 第一阶段只使用 Markdown 文档和默认 Docusaurus classic 主题，不主动创建 MDX 页面、自定义 React 组件或额外 UI 框架。
+
+## Contracts 编号规则
+
+Contracts 编号采用稳定前缀加四位数字：
+
+- `BA-CHARTER-0001`：章程。
+- `BA-ACT-0001`：法案。
+- `BA-POLICY-0001`：政策。
+- `BA-RULE-0001`：规则。
+- `BA-AMEND-0001`：修正案。
+
+正式编号一经使用，不应复用给其他文本。被废止、替代或修订的文本应保留历史记录。
+
+## 许可证
+
+本仓库采用双许可证：
+
+- `LICENSE`：CC BY-SA 4.0，用于文档、contracts、治理文本、手册、图片、图表等非代码内容。
+- `LICENSE-CODE`：AGPL-3.0-or-later，用于 Docusaurus 配置、脚本、示例代码和构建相关代码。
+
+详细边界见 `NOTICE.md`。
