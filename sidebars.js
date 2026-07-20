@@ -14,7 +14,7 @@ const sidebars = {
       type: 'category',
       label: '架构',
       link: {type: 'doc', id: 'architecture/overview'},
-      items: [],
+      items: ['architecture/governance-boundary', 'architecture/database-schema'],
     },
     {
       type: 'category',
@@ -32,6 +32,11 @@ const sidebars = {
       label: '运行',
       link: {type: 'doc', id: 'operations/runtime-boundary'},
       items: [],
+    },
+    {
+      type: 'category',
+      label: '参考',
+      items: ['reference/api'],
     },
   ],
 };
