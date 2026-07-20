@@ -4,16 +4,12 @@ sidebar_position: 1
 title: 大苹果社区
 ---
 
-这里是“大苹果 docs + contracts”的文档站根目录，用于承载项目说明、理念、使用手册、治理机制、正式 contracts、开发文档和更新日志。
+这里是“大苹果 docs + contracts”的文档站根目录，用于承载项目说明、治理文本入口、技术契约说明、开发文档和更新日志。
 
-第一阶段仅使用 Docusaurus 默认 classic 主题和 Markdown 文档，不引入自定义 React 组件、MDX 页面或额外 UI 框架。
+当前阶段先整理 Big Apple Live OS 的公开文档。contracts 和更细的开发参考会按批次迁移。
 
-## 文档分区
+## 已整理分区
 
-- 项目介绍：说明大苹果项目的范围、边界和当前阶段。
-- 理念：记录项目长期原则和设计取向。
-- 使用手册：面向使用者和维护者的操作说明。
-- 治理机制：说明提案、评审、确认和发布流程。
-- Contracts：承载正式章程、法案、政策、规则和修正案。
-- 开发文档：记录文档站和相关代码的维护方式。
-- 更新日志：记录文档站与正式文本索引的变更。
+- [项目概览](./project/overview.md)：项目定位、产品规划和路线图。
+- [架构说明](./architecture/overview.md)：Live OS 的权威边界、仓库边界和长期架构。
+- [运行入口与操作边界](./operations/runtime-boundary.md)：control plane 与 world runtime 的入口边界。
