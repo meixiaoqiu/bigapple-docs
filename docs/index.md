@@ -12,4 +12,5 @@ title: 大苹果社区
 
 - [项目概览](./project/overview.md)：项目定位、产品规划和路线图。
 - [架构说明](./architecture/overview.md)：Live OS 的权威边界、仓库边界和长期架构。
+- 产品功能：成员工作台、公开首页、Admin 内部维护后台、仿真与实验后台和项目执行计划。
 - [运行入口与操作边界](./operations/runtime-boundary.md)：control plane 与 world runtime 的入口边界。
