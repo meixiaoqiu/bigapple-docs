@@ -31,7 +31,17 @@ const sidebars = {
       type: 'category',
       label: '运行',
       link: {type: 'doc', id: 'operations/runtime-boundary'},
-      items: [],
+      items: ['operations/mysql-migration'],
+    },
+    {
+      type: 'category',
+      label: '开发',
+      items: [
+        'development/setup',
+        'development/ai-guide',
+        'development/theme-system',
+        'development/remote-dev',
+      ],
     },
     {
       type: 'category',
