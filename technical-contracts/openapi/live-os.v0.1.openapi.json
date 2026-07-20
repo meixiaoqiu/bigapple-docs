@@ -1,0 +1,643 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Big Apple Live OS API",
+    "version": "0.1.0",
+    "description": "Contract draft for the Live OS API used by humans and the Simulation Engine."
+  },
+  "servers": [
+    {
+      "url": "https://live-os.example.local/world/{world_id}/api/v0.1",
+      "variables": {
+        "world_id": {
+          "default": "realworld",
+          "description": "Target world ID, for example realworld or simulation0001."
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/members/{member_no}": {
+      "get": {
+        "operationId": "getMember",
+        "summary": "Get a member record",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/memberNo"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/member.schema.json"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/notFound"
+          }
+        }
+      }
+    },
+    "/members/{member_no}/workspace": {
+      "get": {
+        "operationId": "getMemberWorkspace",
+        "summary": "Get the member workspace summary",
+        "description": "Returns the member-centered aggregate needed by the P2 member workspace, including current tasks, task history, ledger entries, events, dispute history, and resource warnings. This endpoint does not replace task, ledger, dispute, or event APIs; it is a read model for a member-facing product screen.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/memberNo"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member workspace summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/member-workspace.schema.json"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/notFound"
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "operationId": "listTasks",
+        "summary": "List public task projections",
+        "description": "Public endpoint for browsing simulation tasks. The response does not include assignee_member_no, submitted_at, reviewed_at, or metadata.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../schemas/public-task.schema.json"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{task_id}/claim": {
+      "post": {
+        "operationId": "claimTask",
+        "summary": "Claim an open task",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/taskId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/memberActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/task.schema.json"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/conflict"
+          }
+        }
+      }
+    },
+    "/tasks/{task_id}/submit-labor": {
+      "post": {
+        "operationId": "submitLabor",
+        "summary": "Submit labor for review",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/taskId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "member_no",
+                  "labor_note"
+                ],
+                "properties": {
+                  "member_no": {
+                    "$ref": "../schemas/common.schema.json#/$defs/id"
+                  },
+                  "labor_note": {
+                    "$ref": "../schemas/common.schema.json#/$defs/nonEmptyString"
+                  },
+                  "evidence_refs": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "../schemas/common.schema.json#/$defs/nonEmptyString"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/task.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{task_id}/review": {
+      "post": {
+        "operationId": "reviewTask",
+        "summary": "Review submitted labor",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/taskId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "accepted",
+                  "reason"
+                ],
+                "properties": {
+                  "accepted": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "$ref": "../schemas/common.schema.json#/$defs/nonEmptyString"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task and ledger result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "task",
+                    "ledger_entries"
+                  ],
+                  "properties": {
+                    "task": {
+                      "$ref": "../schemas/task.schema.json"
+                    },
+                    "ledger_entries": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "../schemas/ledger-entry.schema.json"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ledger-entries": {
+      "get": {
+        "operationId": "listLedgerEntries",
+        "summary": "List contribution ledger entries",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "member_no",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "../schemas/common.schema.json#/$defs/id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ledger entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../schemas/ledger-entry.schema.json"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resources": {
+      "get": {
+        "operationId": "listResources",
+        "summary": "List resource state",
+        "description": "Public endpoint for browsing resource state. The response does not include raw Resource.metadata.",
+        "responses": {
+          "200": {
+            "description": "Resources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "../schemas/public-resource.schema.json"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/disputes": {
+      "post": {
+        "operationId": "createDispute",
+        "summary": "Submit a real-name dispute",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/createDisputeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Dispute created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/dispute.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "operationId": "listEvents",
+        "summary": "List event stream entries",
+        "description": "visibility=public returns public-event projections without involved_member_ids, related_dispute_id, or raw payload. internal/private require an authorized governance principal and return full event records.",
+        "parameters": [
+          {
+            "name": "simulation_day",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "../schemas/common.schema.json#/$defs/simulationDay"
+            }
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "description": "Defaults to public. internal/private require an authorized governance principal.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "public",
+                "internal",
+                "private"
+              ],
+              "default": "public"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Events. Public visibility returns public-event projections; internal/private visibility returns full event records for authorized governance callers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "$ref": "../schemas/public-event.schema.json"
+                      },
+                      {
+                        "$ref": "../schemas/event.schema.json"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/capacity-assessments/latest": {
+      "get": {
+        "operationId": "getLatestCapacityAssessment",
+        "summary": "Get the latest capacity assessment",
+        "responses": {
+          "200": {
+            "description": "Latest capacity assessment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/capacity-assessment.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/observer/summary": {
+      "get": {
+        "operationId": "getObserverSummary",
+        "summary": "Get public observer dashboard summary",
+        "responses": {
+          "200": {
+            "description": "Observer dashboard summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "simulation_day",
+                    "formal_members",
+                    "candidate_members",
+                    "resources",
+                    "task_completion_rate",
+                    "average_satisfaction",
+                    "average_fatigue",
+                    "open_disputes",
+                    "events"
+                  ],
+                  "properties": {
+                    "simulation_day": {
+                      "$ref": "../schemas/common.schema.json#/$defs/simulationDay"
+                    },
+                    "formal_members": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "candidate_members": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "resources": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "../schemas/public-resource.schema.json"
+                      }
+                    },
+                    "task_completion_rate": {
+                      "$ref": "../schemas/common.schema.json#/$defs/score"
+                    },
+                    "average_satisfaction": {
+                      "$ref": "../schemas/common.schema.json#/$defs/score"
+                    },
+                    "average_fatigue": {
+                      "$ref": "../schemas/common.schema.json#/$defs/score"
+                    },
+                    "open_disputes": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "../schemas/public-event.schema.json"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sessionid",
+        "description": "Django session cookie for browser-authenticated member and governance actions."
+      }
+    },
+    "parameters": {
+      "memberNo": {
+        "name": "member_no",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "../schemas/common.schema.json#/$defs/id"
+        }
+      },
+      "taskId": {
+        "name": "task_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "../schemas/common.schema.json#/$defs/id"
+        }
+      }
+    },
+    "schemas": {
+      "memberActionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "member_no"
+        ],
+        "properties": {
+          "member_no": {
+            "$ref": "../schemas/common.schema.json#/$defs/id"
+          }
+        }
+      },
+      "createDisputeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claimant_member_no",
+          "dispute_type",
+          "facts"
+        ],
+        "properties": {
+          "claimant_member_no": {
+            "$ref": "../schemas/common.schema.json#/$defs/id"
+          },
+          "dispute_type": {
+            "type": "string",
+            "enum": [
+              "task_review",
+              "points_deduction",
+              "resource_usage",
+              "public_hygiene",
+              "noise",
+              "warehouse_loss",
+              "canteen_quality",
+              "member_conflict",
+              "governance_action",
+              "exit"
+            ]
+          },
+          "related_task_id": {
+            "$ref": "../schemas/common.schema.json#/$defs/id"
+          },
+          "related_ledger_entry_id": {
+            "$ref": "../schemas/common.schema.json#/$defs/id"
+          },
+          "facts": {
+            "$ref": "../schemas/common.schema.json#/$defs/nonEmptyString"
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "../schemas/common.schema.json#/$defs/nonEmptyString"
+            }
+          },
+          "metadata": {
+            "$ref": "../schemas/common.schema.json#/$defs/metadata"
+          }
+        }
+      },
+      "error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "responses": {
+      "notFound": {
+        "description": "Record not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
+      },
+      "conflict": {
+        "description": "State conflict",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
+      }
+    }
+  }
+}

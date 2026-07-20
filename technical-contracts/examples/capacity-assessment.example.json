@@ -1,0 +1,29 @@
+{
+  "assessment_id": "capacity-0001",
+  "simulation_day": 7,
+  "current_formal_members": 100,
+  "current_candidate_members": 900,
+  "maximum_admissible_members": 130,
+  "recommended_new_members": 20,
+  "bottlenecks": [
+    "canteen",
+    "hygiene",
+    "high_load_roles"
+  ],
+  "risk_indicators": {
+    "beds_available": 42,
+    "canteen_load": 82,
+    "task_gap": 18,
+    "average_satisfaction": 61,
+    "average_fatigue": 67,
+    "open_disputes": 4,
+    "exit_risk_members": 9
+  },
+  "reasons": [
+    "Canteen load is close to the risk threshold.",
+    "Cleaning tasks have been understaffed for three days."
+  ],
+  "rule_version": "ruleset-v0.1.0",
+  "created_at": "2026-05-24T09:00:00Z"
+}
+

@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "member-workspace.schema.json",
+  "title": "MemberWorkspaceSummary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "simulation_day",
+    "member",
+    "credit_balance",
+    "available_tasks",
+    "active_tasks",
+    "task_history",
+    "recent_ledger_entries",
+    "recent_events",
+    "open_disputes",
+    "dispute_history",
+    "resource_warnings",
+    "task_counts",
+    "next_actions"
+  ],
+  "properties": {
+    "simulation_day": {
+      "$ref": "common.schema.json#/$defs/simulationDay"
+    },
+    "member": {
+      "$ref": "member.schema.json"
+    },
+    "credit_balance": {
+      "type": "integer"
+    },
+    "available_tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "task.schema.json"
+      }
+    },
+    "active_tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "task.schema.json"
+      }
+    },
+    "task_history": {
+      "type": "array",
+      "description": "Recent completed, rejected, reversed, or otherwise closed tasks assigned to the member.",
+      "items": {
+        "$ref": "task.schema.json"
+      }
+    },
+    "recent_ledger_entries": {
+      "type": "array",
+      "items": {
+        "$ref": "ledger-entry.schema.json"
+      }
+    },
+    "recent_events": {
+      "type": "array",
+      "items": {
+        "$ref": "event.schema.json"
+      }
+    },
+    "open_disputes": {
+      "type": "array",
+      "items": {
+        "$ref": "dispute.schema.json"
+      }
+    },
+    "dispute_history": {
+      "type": "array",
+      "description": "Recent disputes where the member is claimant or respondent, including closed disputes.",
+      "items": {
+        "$ref": "dispute.schema.json"
+      }
+    },
+    "resource_warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "resource.schema.json"
+      }
+    },
+    "task_counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "claim_task",
+          "submit_labor",
+          "wait_for_review",
+          "review_dispute",
+          "check_resource_warning",
+          "no_action"
+        ]
+      }
+    }
+  }
+}

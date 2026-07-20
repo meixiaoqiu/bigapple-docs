@@ -1,0 +1,19 @@
+{
+  "resource_id": "res-grain",
+  "resource_type": "grain",
+  "unit": "kg",
+  "current_stock": 1250,
+  "daily_consumption_estimate": 180,
+  "replenishment_method": "purchase",
+  "loss_rate": 0.02,
+  "warning_threshold": 600,
+  "shortage_impact": {
+    "satisfaction_delta": -12,
+    "fatigue_recovery_delta": -8,
+    "conflict_risk_delta": 16,
+    "task_completion_delta": -10
+  },
+  "updated_at": "2026-05-24T07:00:00Z",
+  "rule_version": "ruleset-v0.1.0"
+}
+

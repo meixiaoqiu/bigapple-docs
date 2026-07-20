@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruleset.schema.json",
+  "title": "Ruleset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ruleset_id",
+    "version",
+    "status",
+    "effective_from",
+    "negative_point_floor",
+    "created_at",
+    "created_by",
+    "change_summary"
+  ],
+  "properties": {
+    "ruleset_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "version": {
+      "$ref": "common.schema.json#/$defs/ruleVersion"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "retired"
+      ]
+    },
+    "effective_from": {
+      "$ref": "common.schema.json#/$defs/date"
+    },
+    "effective_to": {
+      "$ref": "common.schema.json#/$defs/date"
+    },
+    "negative_point_floor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordinary_member",
+        "new_member",
+        "high_trust_member",
+        "restricted_member"
+      ],
+      "properties": {
+        "ordinary_member": {
+          "type": "integer",
+          "maximum": 0
+        },
+        "new_member": {
+          "type": "integer",
+          "maximum": 0
+        },
+        "high_trust_member": {
+          "type": "integer",
+          "maximum": 0
+        },
+        "restricted_member": {
+          "type": "integer",
+          "maximum": 0
+        }
+      }
+    },
+    "task_point_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_type",
+          "base_points"
+        ],
+        "properties": {
+          "task_type": {
+            "type": "string",
+            "enum": [
+              "cooking",
+              "dishwashing",
+              "public_cleaning",
+              "waste",
+              "warehouse",
+              "repair",
+              "purchase",
+              "farming",
+              "duty",
+              "care",
+              "training",
+              "administration"
+            ]
+          },
+          "base_points": {
+            "type": "integer"
+          },
+          "role_coefficient": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "created_by": {
+      "$ref": "common.schema.json#/$defs/actorRef"
+    },
+    "change_summary": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString"
+    },
+    "metadata": {
+      "$ref": "common.schema.json#/$defs/metadata"
+    }
+  }
+}
+

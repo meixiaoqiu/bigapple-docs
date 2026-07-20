@@ -1,0 +1,24 @@
+{
+  "ledger_entry_id": "ledger-0001",
+  "member_no": "mem-0001",
+  "amount": 36,
+  "entry_type": "contribution",
+  "reason": "Cooking task accepted by reviewer",
+  "related_task_id": "task-0001",
+  "related_event_id": "event-0001",
+  "rule_version": "ruleset-v0.1.0",
+  "created_at": "2026-05-24T06:00:00Z",
+  "created_by": {
+    "actor_id": "member-admin-0001",
+    "actor_type": "human_member",
+    "display_name": "reviewer"
+  },
+  "reviewer": {
+    "actor_id": "member-admin-0001",
+    "actor_type": "human_member",
+    "display_name": "reviewer"
+  },
+  "status": "posted",
+  "system_event_id": 1,
+  "system_event_seq": 1
+}

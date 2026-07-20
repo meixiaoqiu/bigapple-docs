@@ -1,0 +1,217 @@
+{
+  "simulation_day": 10,
+  "member": {
+    "member_no": "mem-0001",
+    "display_name": "Member 0001",
+    "status": "admitted",
+    "batch_id": "batch-opening",
+    "role_names": [
+      "大苹果成员"
+    ],
+    "roles": [
+      {
+        "role_assignment_id": 1,
+        "role_id": 1,
+        "role": "大苹果 · 大苹果成员",
+        "role_name": "大苹果成员",
+        "organization_name": "大苹果"
+      }
+    ],
+    "role_name": "大苹果成员",
+    "joined_simulation_day": 1,
+    "credit_floor": -300,
+    "profile": {
+      "health": 82,
+      "stamina": 76,
+      "fatigue": 18,
+      "satisfaction": 64,
+      "fairness_sensitivity": 71,
+      "public_spirit": 68,
+      "rule_compliance": 74,
+      "exit_risk": 8,
+      "skills": {
+        "cooking": 62,
+        "cleaning": 55
+      }
+    },
+    "created_at": "2026-05-24T01:00:00Z",
+    "metadata": {
+      "seed": true
+    }
+  },
+  "credit_balance": 36,
+  "available_tasks": [
+    {
+      "task_id": "task-0001",
+      "title": "Prepare lunch for the outpost",
+      "task_type": "cooking",
+      "status": "open",
+      "standard_hours": 3.5,
+      "base_points": 30,
+      "role_coefficient": 1.2,
+      "physical_load": 45,
+      "dirty_level": 30,
+      "psychological_load": 35,
+      "urgency": 70,
+      "can_be_delayed": false,
+      "requires_review": true,
+      "failure_consequence": "high",
+      "rule_version": "ruleset-v0.1.0",
+      "created_at": "2026-05-24T01:00:00Z",
+      "due_at": "2026-05-24T05:00:00Z"
+    }
+  ],
+  "active_tasks": [
+    {
+      "task_id": "task-0003",
+      "title": "Organize temporary warehouse shelves",
+      "task_type": "warehouse",
+      "status": "pending_review",
+      "standard_hours": 2.5,
+      "base_points": 24,
+      "role_coefficient": 1.1,
+      "physical_load": 62,
+      "dirty_level": 48,
+      "psychological_load": 30,
+      "urgency": 58,
+      "can_be_delayed": true,
+      "requires_review": true,
+      "failure_consequence": "medium",
+      "assignee_member_no": "mem-0001",
+      "rule_version": "ruleset-v0.1.0",
+      "created_at": "2026-05-24T02:00:00Z",
+      "due_at": "2026-05-24T10:00:00Z"
+    }
+  ],
+  "task_history": [
+    {
+      "task_id": "task-0002",
+      "title": "Clean the public kitchen",
+      "task_type": "public_cleaning",
+      "status": "accepted",
+      "standard_hours": 2,
+      "base_points": 20,
+      "role_coefficient": 1,
+      "physical_load": 55,
+      "dirty_level": 76,
+      "psychological_load": 42,
+      "urgency": 64,
+      "can_be_delayed": false,
+      "requires_review": true,
+      "failure_consequence": "medium",
+      "assignee_member_no": "mem-0001",
+      "rule_version": "ruleset-v0.1.0",
+      "created_at": "2026-05-24T01:30:00Z",
+      "due_at": "2026-05-24T03:30:00Z",
+      "submitted_at": "2026-05-24T02:30:00Z",
+      "reviewed_at": "2026-05-24T03:30:00Z",
+      "metadata": {
+        "labor_note": "Kitchen counters and floors were cleaned."
+      }
+    }
+  ],
+  "recent_ledger_entries": [
+    {
+      "ledger_entry_id": "ledger-0001",
+      "member_no": "mem-0001",
+      "amount": 36,
+      "entry_type": "contribution",
+      "reason": "Cooking task accepted by reviewer",
+      "related_task_id": "task-0001",
+      "related_event_id": "event-0001",
+      "rule_version": "ruleset-v0.1.0",
+      "created_at": "2026-05-24T06:00:00Z",
+      "created_by": {
+        "actor_id": "member-admin-0001",
+        "actor_type": "human_member",
+        "display_name": "reviewer"
+      },
+      "reviewer": {
+        "actor_id": "member-admin-0001",
+        "actor_type": "human_member",
+        "display_name": "reviewer"
+      },
+      "status": "posted",
+      "system_event_id": 1,
+      "system_event_seq": 1
+    }
+  ],
+  "recent_events": [
+    {
+      "event_id": "event-0001",
+      "event_type": "task",
+      "simulation_day": 1,
+      "severity": "info",
+      "title": "Lunch preparation accepted",
+      "summary": "The cooking task was reviewed and accepted.",
+      "involved_member_ids": [
+        "mem-0001"
+      ],
+      "related_task_id": "task-0001",
+      "occurred_at": "2026-05-24T06:05:00Z",
+      "generated_by": "live_os",
+      "visibility": "public",
+      "payload": {
+        "points_awarded": 36
+      }
+    }
+  ],
+  "open_disputes": [],
+  "dispute_history": [
+    {
+      "dispute_id": "dispute-0001",
+      "dispute_type": "task_review",
+      "status": "resolved",
+      "claimant_member_no": "mem-0001",
+      "related_task_id": "task-0002",
+      "facts": "The member requested a review of the kitchen cleaning acceptance rule.",
+      "evidence_refs": [
+        "event-0001",
+        "task-0002"
+      ],
+      "handler": {
+        "actor_id": "member-admin-0001",
+        "actor_type": "human_member",
+        "display_name": "reviewer"
+      },
+      "reviewer": {
+        "actor_id": "member-admin-0002",
+        "actor_type": "human_member",
+        "display_name": "appeal reviewer"
+      },
+      "resolution": "The original acceptance result was kept.",
+      "appeal_path": "standard-review-appeal",
+      "submitted_at": "2026-05-24T04:00:00Z",
+      "resolved_at": "2026-05-24T05:00:00Z",
+      "metadata": {
+        "seed": true
+      }
+    }
+  ],
+  "resource_warnings": [
+    {
+      "resource_id": "res-medicine",
+      "resource_type": "medicine",
+      "unit": "count",
+      "current_stock": 18,
+      "daily_consumption_estimate": 6,
+      "replenishment_method": "purchase",
+      "loss_rate": 0.01,
+      "warning_threshold": 30,
+      "shortage_impact": {
+        "health_risk_delta": 24
+      },
+      "updated_at": "2026-05-24T08:00:00Z",
+      "rule_version": "ruleset-v0.1.0"
+    }
+  ],
+  "task_counts": {
+    "open": 1,
+    "pending_review": 1,
+    "accepted": 1
+  },
+  "next_actions": [
+    "wait_for_review",
+    "check_resource_warning"
+  ]
+}

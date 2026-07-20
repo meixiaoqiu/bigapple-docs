@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "event.schema.json",
+  "title": "Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "simulation_day",
+    "severity",
+    "title",
+    "summary",
+    "occurred_at",
+    "generated_by",
+    "visibility"
+  ],
+  "properties": {
+    "event_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "system",
+        "simulation_day",
+        "task",
+        "ledger",
+        "resource",
+        "dispute",
+        "capacity",
+        "governance",
+        "random_incident"
+      ]
+    },
+    "simulation_day": {
+      "$ref": "common.schema.json#/$defs/simulationDay"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "critical"
+      ]
+    },
+    "title": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString"
+    },
+    "summary": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString"
+    },
+    "involved_member_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/id"
+      }
+    },
+    "related_task_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "related_dispute_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "occurred_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "generated_by": {
+      "type": "string",
+      "enum": [
+        "live_os",
+        "simulation_engine",
+        "human_operator"
+      ]
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "internal",
+        "private"
+      ]
+    },
+    "payload": {
+      "$ref": "common.schema.json#/$defs/metadata"
+    }
+  }
+}
+

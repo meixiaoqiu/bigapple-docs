@@ -29,7 +29,7 @@ title: AI 开发指南
 ## 修改代码前
 
 1. 阅读 `README.md`。
-2. 阅读 `../big-apple-contracts` 中相关 contract。
+2. 阅读 `technical-contracts` 中相关 contract。
 3. 阅读 `docs/` 下相关文档。
 4. 先理解现有代码，再增加抽象。
 

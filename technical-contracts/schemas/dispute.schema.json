@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dispute.schema.json",
+  "title": "Dispute",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "dispute_id",
+    "dispute_type",
+    "status",
+    "claimant_member_no",
+    "facts",
+    "appeal_path",
+    "submitted_at"
+  ],
+  "properties": {
+    "dispute_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "dispute_type": {
+      "type": "string",
+      "enum": [
+        "task_review",
+        "points_deduction",
+        "resource_usage",
+        "public_hygiene",
+        "noise",
+        "warehouse_loss",
+        "canteen_quality",
+        "member_conflict",
+        "governance_action",
+        "exit"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "submitted",
+        "in_review",
+        "resolved",
+        "rejected",
+        "appealed",
+        "reversed"
+      ]
+    },
+    "claimant_member_no": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "respondent_member_no": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "related_task_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "related_ledger_entry_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "facts": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/nonEmptyString"
+      }
+    },
+    "handler": {
+      "$ref": "common.schema.json#/$defs/actorRef"
+    },
+    "reviewer": {
+      "$ref": "common.schema.json#/$defs/actorRef"
+    },
+    "resolution": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString"
+    },
+    "appeal_path": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString"
+    },
+    "submitted_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "resolved_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "metadata": {
+      "$ref": "common.schema.json#/$defs/metadata"
+    }
+  }
+}

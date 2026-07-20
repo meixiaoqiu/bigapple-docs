@@ -1,0 +1,32 @@
+{
+  "ruleset_id": "ruleset-v0_1_0",
+  "version": "ruleset-v0.1.0",
+  "status": "active",
+  "effective_from": "2026-05-24",
+  "negative_point_floor": {
+    "ordinary_member": -300,
+    "new_member": -100,
+    "high_trust_member": -500,
+    "restricted_member": -50
+  },
+  "task_point_rules": [
+    {
+      "task_type": "cooking",
+      "base_points": 30,
+      "role_coefficient": 1.2
+    },
+    {
+      "task_type": "public_cleaning",
+      "base_points": 20,
+      "role_coefficient": 1.0
+    }
+  ],
+  "created_at": "2026-05-24T00:00:00Z",
+  "created_by": {
+    "actor_id": "member-admin-0001",
+    "actor_type": "human_member",
+    "display_name": "rules maintainer"
+  },
+  "change_summary": "Initial v0.1 simulation ruleset."
+}
+

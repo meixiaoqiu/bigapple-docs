@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "capacity-assessment.schema.json",
+  "title": "CapacityAssessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "assessment_id",
+    "simulation_day",
+    "current_formal_members",
+    "current_candidate_members",
+    "maximum_admissible_members",
+    "recommended_new_members",
+    "bottlenecks",
+    "risk_indicators",
+    "reasons",
+    "rule_version",
+    "created_at"
+  ],
+  "properties": {
+    "assessment_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "simulation_day": {
+      "$ref": "common.schema.json#/$defs/simulationDay"
+    },
+    "current_formal_members": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "current_candidate_members": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "maximum_admissible_members": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "recommended_new_members": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "bottlenecks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "beds",
+          "canteen",
+          "water",
+          "electricity",
+          "grain",
+          "warehouse",
+          "hygiene",
+          "tasks",
+          "training",
+          "governance",
+          "high_load_roles",
+          "disputes",
+          "satisfaction",
+          "fatigue",
+          "exit_risk"
+        ]
+      }
+    },
+    "risk_indicators": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "beds_available",
+        "canteen_load",
+        "task_gap",
+        "average_satisfaction",
+        "average_fatigue",
+        "open_disputes",
+        "exit_risk_members"
+      ],
+      "properties": {
+        "beds_available": {
+          "type": "integer"
+        },
+        "canteen_load": {
+          "$ref": "common.schema.json#/$defs/score"
+        },
+        "task_gap": {
+          "type": "integer"
+        },
+        "average_satisfaction": {
+          "$ref": "common.schema.json#/$defs/score"
+        },
+        "average_fatigue": {
+          "$ref": "common.schema.json#/$defs/score"
+        },
+        "open_disputes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "exit_risk_members": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/nonEmptyString"
+      }
+    },
+    "rule_version": {
+      "$ref": "common.schema.json#/$defs/ruleVersion"
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "metadata": {
+      "$ref": "common.schema.json#/$defs/metadata"
+    }
+  }
+}
+

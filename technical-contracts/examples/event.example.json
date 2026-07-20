@@ -1,0 +1,18 @@
+{
+  "event_id": "event-0001",
+  "event_type": "task",
+  "simulation_day": 1,
+  "severity": "info",
+  "title": "Lunch preparation accepted",
+  "summary": "The cooking task was reviewed and accepted with internal settlement details.",
+  "involved_member_ids": [
+    "mem-0001"
+  ],
+  "related_task_id": "task-0001",
+  "occurred_at": "2026-05-24T06:05:00Z",
+  "generated_by": "live_os",
+  "visibility": "internal",
+  "payload": {
+    "points_awarded": 36
+  }
+}

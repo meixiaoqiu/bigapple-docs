@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "common.schema.json",
+  "title": "Big Apple Common Contract Definitions",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{2,63}$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "simulationDay": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "ruleVersion": {
+      "type": "string",
+      "pattern": "^ruleset-v[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "actorRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actor_id",
+        "actor_type"
+      ],
+      "properties": {
+        "actor_id": {
+          "$ref": "#/$defs/id"
+        },
+        "actor_type": {
+          "type": "string",
+          "enum": [
+            "human_member",
+            "virtual_member",
+            "system_service"
+          ]
+        },
+        "display_name": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}
+

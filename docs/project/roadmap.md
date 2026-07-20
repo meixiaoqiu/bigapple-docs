@@ -18,7 +18,7 @@ title: 产品路线图
 ## 路线图原则
 
 - 完全体优先：先定义最终角色、入口、流程和权威边界，再决定当前阶段实现切片。
-- 契约先行：面向客户端、Simulation Engine 或未来前端的接口变化，必须先进入 `big-apple-contracts`。
+- 契约先行：面向客户端、Simulation Engine 或未来前端的接口变化，必须先进入 `technical-contracts`。
 - 权威单一：Live OS 是业务状态、积分账本、规则版本和事件流的唯一权威来源。
 - 人机同路：真实成员和 Simulation Engine 必须使用同一组 Live OS API，不允许 Simulation Engine 直接写业务表。
 - 审计默认存在：涉及身份、积分、任务验收、资源、申诉、规则和治理的状态变化都应留下事件或审计线索。
@@ -46,7 +46,7 @@ title: 产品路线图
 
 - 成员、任务、资源、积分账本、事件、申诉、规则版本、容量评估模型。
 - 本地 MySQL 开发配置。
-- 契约仓库 `big-apple-contracts` 和 Live OS 独立仓库边界。
+- `technical-contracts` 技术契约目录和 Live OS runtime 仓库边界。
 - Django Admin 中文化。
 - 幂等 seed 数据。
 - `smoke_workflow` API 闭环。
@@ -88,7 +88,7 @@ title: 产品路线图
 ### 数据和契约
 
 - 不优先新增外部 API。
-- 如发现 contracts 缺少必要状态或字段，先修改 `big-apple-contracts`，再同步 Live OS。
+- 如发现 contracts 缺少必要状态或字段，先修改 `technical-contracts`，再同步 Live OS。
 - 账本和事件继续保持追加式语义。
 
 ### 完成标准

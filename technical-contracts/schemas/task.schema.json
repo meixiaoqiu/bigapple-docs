@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "task.schema.json",
+  "title": "Task",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "title",
+    "task_type",
+    "status",
+    "standard_hours",
+    "base_points",
+    "role_coefficient",
+    "requires_review",
+    "rule_version",
+    "created_at"
+  ],
+  "properties": {
+    "task_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "title": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString"
+    },
+    "task_type": {
+      "type": "string",
+      "enum": [
+        "cooking",
+        "dishwashing",
+        "public_cleaning",
+        "waste",
+        "warehouse",
+        "repair",
+        "purchase",
+        "farming",
+        "duty",
+        "care",
+        "training",
+        "administration"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "open",
+        "claimed",
+        "in_progress",
+        "pending_review",
+        "accepted",
+        "rejected",
+        "disputed",
+        "closed",
+        "reversed"
+      ]
+    },
+    "standard_hours": {
+      "type": "number",
+      "minimum": 0
+    },
+    "base_points": {
+      "type": "integer"
+    },
+    "role_coefficient": {
+      "type": "number",
+      "minimum": 0
+    },
+    "physical_load": {
+      "$ref": "common.schema.json#/$defs/score"
+    },
+    "dirty_level": {
+      "$ref": "common.schema.json#/$defs/score"
+    },
+    "psychological_load": {
+      "$ref": "common.schema.json#/$defs/score"
+    },
+    "urgency": {
+      "$ref": "common.schema.json#/$defs/score"
+    },
+    "can_be_delayed": {
+      "type": "boolean"
+    },
+    "requires_review": {
+      "type": "boolean"
+    },
+    "failure_consequence": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "assignee_member_no": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "rule_version": {
+      "$ref": "common.schema.json#/$defs/ruleVersion"
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "due_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "submitted_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "reviewed_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "metadata": {
+      "$ref": "common.schema.json#/$defs/metadata"
+    }
+  }
+}

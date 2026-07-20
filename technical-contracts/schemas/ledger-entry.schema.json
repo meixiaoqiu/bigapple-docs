@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ledger-entry.schema.json",
+  "title": "LedgerEntry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ledger_entry_id",
+    "member_no",
+    "amount",
+    "entry_type",
+    "reason",
+    "rule_version",
+    "created_at",
+    "created_by",
+    "status"
+  ],
+  "properties": {
+    "ledger_entry_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "member_no": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "amount": {
+      "type": "integer"
+    },
+    "entry_type": {
+      "type": "string",
+      "enum": [
+        "contribution",
+        "consumption",
+        "penalty",
+        "compensation",
+        "correction",
+        "reversal"
+      ]
+    },
+    "reason": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString"
+    },
+    "related_task_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "related_event_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "rule_version": {
+      "$ref": "common.schema.json#/$defs/ruleVersion"
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "created_by": {
+      "$ref": "common.schema.json#/$defs/actorRef"
+    },
+    "reviewer": {
+      "$ref": "common.schema.json#/$defs/actorRef"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "posted",
+        "pending_review",
+        "reversed"
+      ]
+    },
+    "reverses_entry_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "system_event_id": {
+      "type": "integer"
+    },
+    "system_event_seq": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "metadata": {
+      "$ref": "common.schema.json#/$defs/metadata"
+    }
+  }
+}

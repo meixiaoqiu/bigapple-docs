@@ -16,7 +16,7 @@ Fixed-world sites use root `/api/v0.1/`; real and simulation worlds are isolated
 契约源头：
 
 ```text
-../big-apple-contracts/openapi/live-os.v0.1.openapi.json
+technical-contracts/openapi/live-os.v0.1.openapi.json
 ```
 
 ## 公开接口数据边界
@@ -28,7 +28,7 @@ Fixed-world sites use root `/api/v0.1/`; real and simulation worlds are isolated
 - `GET /events?visibility=public`：返回公开时间线信息，不返回 `involved_member_ids`、`related_dispute_id`、原始 `payload`；人工生成的公开事件只返回标题级 `summary`；保留 `related_task_id` 以便关联公开任务。
 - `GET /observer/summary`：复用公开事件和公开资源投影，不返回原始事件 `payload` 或资源 `metadata`。
 
-查询 `visibility=internal` 或 `visibility=private` 的事件仍需治理权限，并继续返回内部完整事件结构。`big-apple-contracts` 已用 `public-task`、`public-resource`、`public-event` schema 表达这些公开投影边界。
+查询 `visibility=internal` 或 `visibility=private` 的事件仍需治理权限，并继续返回内部完整事件结构。`technical-contracts` 已用 `public-task`、`public-resource`、`public-event` schema 表达这些公开投影边界。
 
 ## 已实现路径
 
@@ -59,7 +59,7 @@ GET  /api/v0.1/events?simulation_day=1
 GET  /api/v0.1/observer/summary
 ```
 
-任务状态值来自 `../big-apple-contracts/schemas/task.schema.json`。当前支持：
+任务状态值来自 `technical-contracts/schemas/task.schema.json`。当前支持：
 
 ```text
 draft, open, claimed, in_progress, pending_review, accepted, rejected, disputed, closed, reversed
@@ -100,7 +100,7 @@ GET /members/{member_no}/workspace
 对应契约：
 
 ```text
-../big-apple-contracts/schemas/member-workspace.schema.json
+technical-contracts/schemas/member-workspace.schema.json
 ```
 
 对应自动化覆盖：
@@ -127,7 +127,7 @@ GET /resources
 GET /events
 ```
 
-资源调整事件遵循 `../big-apple-contracts/schemas/event.schema.json`，资源状态遵循 `../big-apple-contracts/schemas/resource.schema.json`。
+资源调整事件遵循 `technical-contracts/schemas/event.schema.json`，资源状态遵循 `technical-contracts/schemas/resource.schema.json`。
 
 ## 页面式仿真推进
 
@@ -150,9 +150,9 @@ GET /events
 GET /api/v0.1/observer/summary
 ```
 
-仿真写入的公开观察事件继续遵循 `../big-apple-contracts/schemas/event.schema.json`。仿真输出必须带有 simulation run 上下文；未绑定 run 的单回合推进不会生成真实任务、库存、积分或事件变更。
+仿真写入的公开观察事件继续遵循 `technical-contracts/schemas/event.schema.json`。仿真输出必须带有 simulation run 上下文；未绑定 run 的单回合推进不会生成真实任务、库存、积分或事件变更。
 
-项目执行计划当前只通过服务端页面和 Admin 展示、编辑，不新增 contract-facing API。后续如果要让外部客户端读取或编辑计划，必须先在 `big-apple-contracts` 中定义计划相关 schema 和 OpenAPI 路径。
+项目执行计划当前只通过服务端页面和 Admin 展示、编辑，不新增 contract-facing API。后续如果要让外部客户端读取或编辑计划，必须先在 `technical-contracts` 中定义计划相关 schema 和 OpenAPI 路径。
 
 ## 申诉处理事件
 
@@ -181,7 +181,7 @@ core.dispute_services.resolve_dispute(...)
 GET /events
 ```
 
-申诉状态遵循 `../big-apple-contracts/schemas/dispute.schema.json`，申诉事件遵循 `../big-apple-contracts/schemas/event.schema.json`。
+申诉状态遵循 `technical-contracts/schemas/dispute.schema.json`，申诉事件遵循 `technical-contracts/schemas/event.schema.json`。
 
 ## 当前安全状态
 

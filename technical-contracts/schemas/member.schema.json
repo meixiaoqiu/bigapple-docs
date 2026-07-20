@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "member.schema.json",
+  "title": "Member",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "member_no",
+    "status",
+    "role_names",
+    "roles",
+    "credit_floor",
+    "created_at"
+  ],
+  "properties": {
+    "member_no": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "display_name": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString"
+    },
+    "role_names": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/nonEmptyString"
+      }
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role_assignment_id",
+          "role_id",
+          "role",
+          "role_name",
+          "organization_name"
+        ],
+        "properties": {
+          "role_assignment_id": {
+            "type": "integer"
+          },
+          "role_id": {
+            "type": "integer"
+          },
+          "role": {
+            "$ref": "common.schema.json#/$defs/nonEmptyString"
+          },
+          "role_name": {
+            "$ref": "common.schema.json#/$defs/nonEmptyString"
+          },
+          "organization_name": {
+            "$ref": "common.schema.json#/$defs/nonEmptyString"
+          }
+        }
+      }
+    },
+    "role_name": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending_training",
+        "pending_review",
+        "admitted",
+        "suspended",
+        "exited"
+      ]
+    },
+    "batch_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "joined_simulation_day": {
+      "$ref": "common.schema.json#/$defs/simulationDay"
+    },
+    "credit_floor": {
+      "type": "integer",
+      "maximum": 0
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "health": {
+          "$ref": "common.schema.json#/$defs/score"
+        },
+        "stamina": {
+          "$ref": "common.schema.json#/$defs/score"
+        },
+        "fatigue": {
+          "$ref": "common.schema.json#/$defs/score"
+        },
+        "satisfaction": {
+          "$ref": "common.schema.json#/$defs/score"
+        },
+        "fairness_sensitivity": {
+          "$ref": "common.schema.json#/$defs/score"
+        },
+        "public_spirit": {
+          "$ref": "common.schema.json#/$defs/score"
+        },
+        "rule_compliance": {
+          "$ref": "common.schema.json#/$defs/score"
+        },
+        "exit_risk": {
+          "$ref": "common.schema.json#/$defs/score"
+        },
+        "skills": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "common.schema.json#/$defs/score"
+          }
+        }
+      }
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "metadata": {
+      "$ref": "common.schema.json#/$defs/metadata"
+    }
+  }
+}

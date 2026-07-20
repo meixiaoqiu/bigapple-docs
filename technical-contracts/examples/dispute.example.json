@@ -1,0 +1,15 @@
+{
+  "dispute_id": "dispute-0001",
+  "dispute_type": "task_review",
+  "status": "submitted",
+  "claimant_member_no": "mem-0002",
+  "respondent_member_no": "member-admin-0001",
+  "related_task_id": "task-0002",
+  "facts": "The member claims the rejected cleaning task met the published acceptance rule.",
+  "evidence_refs": [
+    "event-0009",
+    "photo-evidence-0001"
+  ],
+  "appeal_path": "standard-review-appeal",
+  "submitted_at": "2026-05-24T08:00:00Z"
+}

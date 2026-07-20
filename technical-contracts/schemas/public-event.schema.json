@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "public-event.schema.json",
+  "title": "PublicEvent",
+  "description": "Public-safe event projection for anonymous simulation browsing.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "simulation_day",
+    "severity",
+    "title",
+    "summary",
+    "occurred_at",
+    "generated_by",
+    "visibility"
+  ],
+  "properties": {
+    "event_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "system",
+        "simulation_day",
+        "task",
+        "ledger",
+        "resource",
+        "dispute",
+        "capacity",
+        "governance",
+        "random_incident"
+      ]
+    },
+    "simulation_day": {
+      "$ref": "common.schema.json#/$defs/simulationDay"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "critical"
+      ]
+    },
+    "title": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString"
+    },
+    "summary": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString",
+      "description": "For human-operator public events, this is a title-level redacted summary."
+    },
+    "related_task_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "occurred_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "generated_by": {
+      "type": "string",
+      "enum": [
+        "live_os",
+        "simulation_engine",
+        "human_operator"
+      ]
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public"
+      ]
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "resource_id": "res-medicine",
+  "resource_type": "medicine",
+  "unit": "count",
+  "current_stock": 18,
+  "daily_consumption_estimate": 6,
+  "replenishment_method": "purchase",
+  "loss_rate": 0.01,
+  "warning_threshold": 30,
+  "shortage_impact": {
+    "health_risk_delta": 24
+  },
+  "updated_at": "2026-05-24T06:00:00Z",
+  "rule_version": "ruleset-v0.1.0"
+}

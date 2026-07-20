@@ -45,6 +45,16 @@ const sidebars = {
     },
     {
       type: 'category',
+      label: '技术契约',
+      link: {type: 'doc', id: 'technical-contracts/overview'},
+      items: [
+        'technical-contracts/openapi',
+        'technical-contracts/schemas',
+        'technical-contracts/examples-validation',
+      ],
+    },
+    {
+      type: 'category',
       label: '参考',
       items: ['reference/api'],
     },

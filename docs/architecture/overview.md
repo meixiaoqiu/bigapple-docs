@@ -25,7 +25,7 @@ v0.1 必须保证真实用户和 Simulation Engine 使用同一套 API。Simulat
 - 早期开发用 Django Admin 检查工具
 - 数据库化项目执行计划模型
 - Observer / Lab / Simulation 的边界：观察、实验控制和自动推演分离
-- 证明 API 响应符合 `big-apple-contracts` 的测试
+- 证明 API 响应符合 `technical-contracts` 的测试
 - Live OS 运行和开发文档
 
 本仓库不负责：
@@ -39,7 +39,7 @@ v0.1 必须保证真实用户和 Simulation Engine 使用同一套 API。Simulat
 契约源头位于相邻仓库：
 
 ```text
-../big-apple-contracts
+technical-contracts
 ```
 
 ## 第一版形态

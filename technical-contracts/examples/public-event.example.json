@@ -1,0 +1,12 @@
+{
+  "event_id": "event-task-0001",
+  "event_type": "task",
+  "simulation_day": 1,
+  "severity": "info",
+  "title": "Task accepted",
+  "summary": "Task task-0001 was accepted by a reviewer.",
+  "related_task_id": "task-0001",
+  "occurred_at": "2026-05-24T06:05:00Z",
+  "generated_by": "live_os",
+  "visibility": "public"
+}

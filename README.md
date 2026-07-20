@@ -1,8 +1,8 @@
 # Big Apple Docs
 
-本仓库是“大苹果 docs + contracts”的 Docusaurus 文档站根目录，用于承载公开说明文档、治理文本入口、正式 contracts 索引和文档站构建配置。
+本仓库是“大苹果 docs + contracts”的 Docusaurus 文档站根目录，用于承载公开说明文档、治理文本入口、正式 contracts 索引、技术契约和文档站构建配置。
 
-当前阶段不迁移旧 contracts 内容，只建立基础结构和少量示例说明。
+当前已迁入 Live OS 相关文档和 machine-readable `technical-contracts`，包括 OpenAPI、JSON Schema、示例 payload 和本地校验脚本。
 
 ## 本地预览
 
@@ -13,17 +13,19 @@ npm run start
 
 默认本地预览地址由 Docusaurus 输出，一般为 `http://localhost:3000/`。
 
-## 构建
+## 构建与校验
 
 ```bash
 npm run build
+npm run validate:contracts
 ```
 
 构建产物位于 `build/`，不应提交到 Git。
 
 ## 文档新增方式
 
-- 普通说明文档放入 `docs/project/`、`docs/philosophy/`、`docs/manual/`、`docs/governance/`、`docs/development/` 或 `docs/changelog/`。
+- 普通说明文档放入现有分区，例如 `docs/project/`、`docs/architecture/`、`docs/product/`、`docs/operations/`、`docs/development/` 或 `docs/reference/`。
+- 面向 Live OS、Simulation Engine 或外部客户端的数据结构和 API 契约放入 `technical-contracts/`，并在 `docs/technical-contracts/` 中维护说明。
 - 只有经过治理流程确认的正式文本，才放入 `docs/contracts/` 下的正式分类目录。
 - 新增一级分区前，应先确认现有分区无法承载该内容。
 - 第一阶段只使用 Markdown 文档和默认 Docusaurus classic 主题，不主动创建 MDX 页面、自定义 React 组件或额外 UI 框架。

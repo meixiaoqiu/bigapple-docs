@@ -1,0 +1,20 @@
+{
+  "task_id": "task-0001",
+  "title": "Prepare lunch for the outpost",
+  "task_type": "cooking",
+  "status": "open",
+  "standard_hours": 3.5,
+  "base_points": 30,
+  "role_coefficient": 1.2,
+  "physical_load": 45,
+  "dirty_level": 30,
+  "psychological_load": 35,
+  "urgency": 70,
+  "can_be_delayed": false,
+  "requires_review": true,
+  "failure_consequence": "high",
+  "rule_version": "ruleset-v0.1.0",
+  "created_at": "2026-05-24T01:00:00Z",
+  "due_at": "2026-05-24T05:00:00Z"
+}
+

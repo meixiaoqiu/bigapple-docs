@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "resource.schema.json",
+  "title": "Resource",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "resource_id",
+    "resource_type",
+    "unit",
+    "current_stock",
+    "daily_consumption_estimate",
+    "replenishment_method",
+    "loss_rate",
+    "warning_threshold",
+    "updated_at",
+    "rule_version"
+  ],
+  "properties": {
+    "resource_id": {
+      "$ref": "common.schema.json#/$defs/id"
+    },
+    "resource_type": {
+      "type": "string",
+      "enum": [
+        "grain",
+        "vegetables",
+        "water",
+        "electricity",
+        "cash",
+        "medicine",
+        "tools",
+        "cleaning_supplies",
+        "beds",
+        "warehouse_capacity"
+      ]
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "kg",
+        "liter",
+        "kwh",
+        "yuan",
+        "count",
+        "slot",
+        "cubic_meter"
+      ]
+    },
+    "current_stock": {
+      "type": "number"
+    },
+    "daily_consumption_estimate": {
+      "type": "number",
+      "minimum": 0
+    },
+    "replenishment_method": {
+      "type": "string",
+      "enum": [
+        "purchase",
+        "donation",
+        "production",
+        "reuse",
+        "manual_adjustment"
+      ]
+    },
+    "loss_rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "warning_threshold": {
+      "type": "number"
+    },
+    "shortage_impact": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "satisfaction_delta": {
+          "type": "number"
+        },
+        "fatigue_recovery_delta": {
+          "type": "number"
+        },
+        "conflict_risk_delta": {
+          "type": "number"
+        },
+        "task_completion_delta": {
+          "type": "number"
+        },
+        "health_risk_delta": {
+          "type": "number"
+        },
+        "repair_task_delay_delta": {
+          "type": "number"
+        }
+      }
+    },
+    "updated_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "rule_version": {
+      "$ref": "common.schema.json#/$defs/ruleVersion"
+    },
+    "metadata": {
+      "$ref": "common.schema.json#/$defs/metadata"
+    }
+  }
+}
