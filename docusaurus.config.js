@@ -4,8 +4,8 @@ import {themes as prismThemes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: '大苹果社区文档',
-  tagline: '大苹果项目文档、治理文书与技术契约入口',
+  title: '大苹果社区',
+  tagline: '探索低成本共同生活的开放项目',
   url: 'https://bigapple-docs.vercel.app',
   baseUrl: '/',
   onBrokenLinks: 'throw',
@@ -54,13 +54,25 @@ const config = {
         respectPrefersColorScheme: true,
       },
       navbar: {
-        title: '大苹果社区文档',
+        title: '大苹果社区',
         items: [
+          {
+            type: 'doc',
+            docId: 'project/overview',
+            position: 'left',
+            label: '认识大苹果',
+          },
+          {
+            type: 'doc',
+            docId: 'project/roadmap',
+            position: 'left',
+            label: '当前进展',
+          },
           {
             type: 'docSidebar',
             sidebarId: 'docsSidebar',
             position: 'left',
-            label: '文档',
+            label: '全部文档',
           },
           {
             type: 'localeDropdown',

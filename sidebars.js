@@ -6,54 +6,25 @@ const sidebars = {
     'index',
     {
       type: 'category',
-      label: '项目',
+      label: '认识大苹果',
       link: {type: 'doc', id: 'project/overview'},
-      items: ['project/product-planning', 'project/roadmap'],
+      items: ['project/product-planning'],
     },
     {
       type: 'category',
-      label: '架构',
-      link: {type: 'doc', id: 'architecture/overview'},
-      items: ['architecture/governance-boundary', 'architecture/database-schema'],
+      label: '建设计划',
+      link: {type: 'doc', id: 'project/roadmap'},
+      items: [],
     },
     {
       type: 'category',
-      label: '产品功能',
-      items: [
-        'product/member-workspace',
-        'product/observer',
-        'product/admin',
-        'product/simulation',
-        'product/project-plan',
-      ],
-    },
-    {
-      type: 'category',
-      label: '运行',
-      link: {type: 'doc', id: 'operations/runtime-boundary'},
-      items: ['operations/mysql-migration'],
-    },
-    {
-      type: 'category',
-      label: '开发',
-      items: [
-        'development/setup',
-        'development/world-databases',
-        'development/simulation-commands',
-        'development/ai-guide',
-        'development/theme-system',
-        'development/remote-dev',
-      ],
-    },
-    {
-      type: 'category',
-      label: '治理文书',
+      label: '运行制度',
       link: {type: 'doc', id: 'governance-instruments/index'},
       items: [],
     },
     {
       type: 'category',
-      label: '技术契约',
+      label: '公开与透明',
       link: {type: 'doc', id: 'technical-contracts/overview'},
       items: [
         'technical-contracts/openapi',
@@ -63,8 +34,49 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: '参考',
-      items: ['reference/api'],
+      label: '参与建设',
+      items: [
+        {
+          type: 'category',
+          label: '架构',
+          link: {type: 'doc', id: 'architecture/overview'},
+          items: ['architecture/governance-boundary', 'architecture/database-schema'],
+        },
+        {
+          type: 'category',
+          label: '产品功能',
+          items: [
+            'product/member-workspace',
+            'product/observer',
+            'product/admin',
+            'product/simulation',
+            'product/project-plan',
+          ],
+        },
+        {
+          type: 'category',
+          label: '运行',
+          link: {type: 'doc', id: 'operations/runtime-boundary'},
+          items: ['operations/mysql-migration'],
+        },
+        {
+          type: 'category',
+          label: '开发',
+          items: [
+            'development/setup',
+            'development/world-databases',
+            'development/simulation-commands',
+            'development/ai-guide',
+            'development/theme-system',
+            'development/remote-dev',
+          ],
+        },
+        {
+          type: 'category',
+          label: '参考',
+          items: ['reference/api'],
+        },
+      ],
     },
   ],
 };
