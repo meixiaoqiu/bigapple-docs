@@ -45,6 +45,12 @@ const sidebars = {
     },
     {
       type: 'category',
+      label: '治理文书',
+      link: {type: 'doc', id: 'governance-instruments/index'},
+      items: [],
+    },
+    {
+      type: 'category',
       label: '技术契约',
       link: {type: 'doc', id: 'technical-contracts/overview'},
       items: [

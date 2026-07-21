@@ -7,7 +7,7 @@ title: 技术契约概览
 
 技术契约分区用于说明 `technical-contracts` 中的 machine-readable contracts，包括 OpenAPI、JSON Schema、示例 payload 和本地校验规则。
 
-这里的“技术契约”不是正式章程、法案、政策、规则或修正案。它服务于 Live OS、Simulation Engine 和未来外部客户端之间的数据结构和 API 兼容性。
+这里的“技术契约”不是正式章程、决议、政策、规则或修订案。它服务于 Live OS、Simulation Engine 和未来外部客户端之间的数据结构和 API 兼容性。
 
 ## 当前源头
 

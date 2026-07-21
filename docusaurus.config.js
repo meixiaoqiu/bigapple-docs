@@ -5,8 +5,8 @@ import {themes as prismThemes} from 'prism-react-renderer';
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: '大苹果社区文档',
-  tagline: '大苹果项目文档、治理文本与 contracts 入口',
-  url: 'https://bigapple-docs.example.com',
+  tagline: '大苹果项目文档、治理文书与技术契约入口',
+  url: 'https://bigapple-docs.vercel.app',
   baseUrl: '/',
   onBrokenLinks: 'throw',
   markdown: {

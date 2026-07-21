@@ -11,7 +11,7 @@ title: AI 开发指南
 
 - Live OS 是权威系统。
 - Simulation Engine 是 API 客户端。
-- 先改 Contracts，再改实现。
+- 先改 technical contracts，再改实现。
 - 产品规划按中远期完全体描述，当前实现只是阶段性切片。
 - 积分账本只能追加，不能覆盖历史。
 - 算法可以建议，但不能成为最终责任人。

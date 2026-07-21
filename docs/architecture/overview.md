@@ -115,7 +115,7 @@ Task / Resource / Event / CapacityAssessment
 - 解析请求 JSON
 - 读取记录
 - 调用 service
-- 返回符合 contracts 的 JSON
+- 返回符合 technical contracts 的 JSON
 
 `services` 负责状态变化：
 
