@@ -72,7 +72,7 @@ MySQL
 - `bigreal.local` / `live_os.settings_real`：真实世界 runtime。固定绑定 `realworld`，使用根路径 `/api/v0.1/`、`/`、`/workspace/`、`/register/`。正式成员报名是 workspace 子功能（`/workspace/apply/`），`/apply/` 和 `/apply/partner/` 已删除。
 - `bigsim.local` / `live_os.settings_sim`：仿真世界 runtime。固定绑定 `simulation0001`，使用与真实世界相同的根路径和同一套页面/服务代码。
 
-The old world-prefixed route family has been removed from runtime URLConfs. Real and simulation worlds are bound by fixed host settings, not by a world id in the URL.
+带 world 前缀的历史路由族已经从 runtime URLConf 移除。真实世界和仿真世界由固定 host settings 绑定，不再通过 URL 中的 world id 选择。
 
 固定 world runtime 的业务路由：
 
@@ -298,23 +298,23 @@ Credential    → 公开事实证明（非权限来源）
 
 
 
-## World Database Boundary
+## World 数据库边界
 
-Long-term world isolation uses database boundaries instead of adding `world_id` to every business row.
+长期 world 隔离使用数据库边界，而不是给每一行业务数据都增加 `world_id`。
 
-- The canonical member entries are `bigreal.local/workspace/` and `bigsim.local/workspace/`.
-- World-prefixed routes have been removed from runtime URLConfs; fixed-world hosts are the only supported product and test entrypoints.
-- `worlds.WorldRegistry` is the control-layer world directory. It records `world_id`, type, database alias, database name and lifecycle status.
-- The control database owns world routing metadata, `/admin/` technical accounts and technical session state.
-- Each world database owns its own `auth_user` and business tables, so real and simulation worlds can run through the same application code path.
-- Default local database aliases are `default -> dev_big_control`, `realworld -> dev_big_real` and `simulation0001 -> dev_big_sim0001`; additional world aliases declared in `BIG_APPLE_WORLD_DATABASE_ALIASES` are converted into Django `DATABASES` entries at startup.
-- World binding is fail-closed: an active world must point to a configured, non-`default` alias listed in `WORLD_DATABASE_ALIASES`. A missing or control-database alias is treated as a configuration error instead of falling back to `default`.
-- World lifecycle commands manage the control registry: `create_world` registers a configured world alias, `migrate_world` runs migrations for one active world, `seed_world` initializes an active simulation world from a safe idempotent template, `archive_world` disables a non-real world, and `delete_world` marks an archived non-real world as deleted.
-- These commands do not create or drop physical MySQL databases. Physical database creation, backup, archival and dropping remain infrastructure operations.
-- `seed_world` does not copy `realworld` data. The first supported template is `demo`, which reuses the existing idempotent `seed_demo` data under the selected simulation world context.
-- `realworld` and every `world_type=real` row are protected from archive and delete commands.
-- Fixed-world sites use root `/workspace/` paths. The URLConf no longer exposes compatibility world-prefix routes, `/live-admin/`, or the old `/member/` workspace route.
+- 标准成员入口是 `bigreal.local/workspace/` 和 `bigsim.local/workspace/`。
+- 带 world 前缀的历史路由已从 runtime URLConf 移除；固定 world host 是唯一支持的产品和测试入口。
+- `worlds.WorldRegistry` 是 control 层 world 目录，记录 `world_id`、类型、数据库 alias、数据库名和生命周期状态。
+- control 数据库拥有 world routing metadata、`/admin/` 技术账号和技术 session 状态。
+- 每个 world 数据库拥有自己的 `auth_user` 和业务表，因此真实世界和仿真世界可以运行同一套应用代码路径。
+- 默认本地数据库 alias 是 `default -> dev_big_control`、`realworld -> dev_big_real` 和 `simulation0001 -> dev_big_sim0001`；`BIG_APPLE_WORLD_DATABASE_ALIASES` 中声明的额外 world alias 会在启动时转换为 Django `DATABASES` 条目。
+- World 绑定必须失败关闭（fail closed）：active world 必须指向已配置、非 `default`、且列入 `WORLD_DATABASE_ALIASES` 的 alias。缺失 alias 或指向 control 数据库的 alias 都是配置错误，不能回退到 `default`。
+- World 生命周期命令管理 control registry：`create_world` 登记已配置的 world alias，`migrate_world` 对一个 active world 运行迁移，`seed_world` 用安全幂等模板初始化 active simulation world，`archive_world` 禁用非真实 world，`delete_world` 把已归档的非真实 world 标记为 deleted。
+- 这些命令不创建或删除 MySQL 物理数据库。物理数据库创建、备份、归档和删除仍是基础设施操作。
+- `seed_world` 不复制 `realworld` 数据。首个支持模板是 `demo`，它在选中的 simulation world 上下文中复用现有幂等 `seed_demo` 数据。
+- `realworld` 和所有 `world_type=real` 行都受保护，不能归档或删除。
+- 固定 world 站点使用根 `/workspace/` 路径。URLConf 不再暴露兼容性 world-prefix 路由、`/live-admin/` 或旧 `/member/` workspace route。
 
-## World Auth Boundary
+## World 认证边界
 
 `auth_user` is migrated into each world database so real and simulation worlds use the same login and authorization logic. `django_session` is also migrated into each world database because split runtime settings (`live_os.settings_real`, `live_os.settings_sim`) run with the world database as `default` and no routers; the `bigreal` and `bigsim` login flows write session rows there. Under routed admin settings (`live_os.settings_admin`), `WorldDatabaseRouter` still routes session reads and writes to the control `default` database, while `allow_migrate` permits `sessions` migrations on world aliases so `migrate_world` creates the table required by split runtime sites. The world login form writes the selected `world_id` into session state, and middleware prevents that session from being reused across a different world.

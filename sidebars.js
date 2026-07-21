@@ -38,6 +38,8 @@ const sidebars = {
       label: '开发',
       items: [
         'development/setup',
+        'development/world-databases',
+        'development/simulation-commands',
         'development/ai-guide',
         'development/theme-system',
         'development/remote-dev',

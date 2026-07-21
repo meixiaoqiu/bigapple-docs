@@ -11,7 +11,7 @@ API 前缀：
 /api/v0.1/
 ```
 
-Fixed-world sites use root `/api/v0.1/`; real and simulation worlds are isolated by host and database.
+固定 world 站点使用根路径 `/api/v0.1/`；真实世界和仿真世界通过 host 和数据库隔离。
 
 契约源头：
 
@@ -138,7 +138,7 @@ GET  /
 POST /admin/simulation-lab/advance/
 ```
 
-这些路径不是 contract-facing API；`GET /` 是公开首页，`POST /admin/simulation-lab/run-until-failure/` 是当前仿真实验后台表单动作。`POST /admin/simulation-lab/advance/` 是待遗弃的仿真写库边界自检入口，不是仿真推进功能；如果后续删除，应连同 URL、view、页面按钮和页面级测试一起删除。
+这些路径不是 contract-facing API；`GET /` 是公开首页，`POST /admin/simulation-lab/run-until-failure/` 是当前仿真实验后台表单动作。`POST /admin/simulation-lab/advance/` 是计划废弃的仿真写库边界自检入口，不是仿真推进功能；删除时必须同时删除 URL、view、页面按钮和页面级测试。
 
 推进一回合后，外部客户端仍通过既有契约读取结果：
 

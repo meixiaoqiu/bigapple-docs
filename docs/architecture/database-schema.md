@@ -5,7 +5,7 @@ title: 数据库表结构
 
 # 数据库表结构
 
-本文档描述 Live OS 第一阶段的数据表。任何 model 或 migration 变化，都必须同步更新本文档。
+本文档描述当前 Live OS 数据表。任何 model 或 migration 变化，都必须同步更新本文档。
 
 当前物理数据库由 `DATABASE_URL` 或本地 env 文件配置：
 
@@ -324,7 +324,7 @@ v2（当前规范，schema = `liveos.system-event.public.v1`）：
 
 `payload_json` 本身为公开可验证结构，包含 `subject`、`action`、`stage`、`summary`、`public_facts`、`private_commitments`。`payload_hash` = SHA-256(canonical_json(payload_json))。`event_hash` = SHA-256(canonical_json(event_hash_input_v2))，其中 event_hash_input_v2 包含 `seq`、`event_type`、`aggregate_type`、`subject_ref`、`payload_hash`、`prev_hash`；`subject_ref` 来源于 `payload_json.subject.ref`，不使用内部 `aggregate_id`/`actor_member_id`/`actor_role_assignment_id`。
 
-legacy v1：旧记录使用旧 hash 输入（含 `aggregate_id`、`actor_member_id`、`actor_role_assignment_id`）。`core.event_ledger.verify_event_chain()` 按 `seq` 遍历，根据 `payload_json.schema` 自动选择 v2 或 v1 算法校验。旧格式事件可能显示校验不通过。
+历史 v1：旧记录使用旧 hash 输入（含 `aggregate_id`、`actor_member_id`、`actor_role_assignment_id`）。`core.event_ledger.verify_event_chain()` 按 `seq` 遍历，根据 `payload_json.schema` 自动选择 v2 或 v1 算法校验。旧格式事件可能显示校验不通过。
 
 当前 MySQL 哈希链是应用层篡改可发现机制，不是绝对不可篡改存证；它没有外部锚定，也没有数据库存储过程强制保护。Django model/admin 会阻止普通新增和修改历史事件，但数据库级写入或 ORM `update()` 仍可绕过保护，绕过后的不一致应通过 `verify_event_chain()` 被发现。错误不能通过改写历史 `SystemEvent` 修复，只能追加新的撤销、冲正或更正事件。
 
@@ -338,7 +338,7 @@ legacy v1：旧记录使用旧 hash 输入（含 `aggregate_id`、`actor_member_
 
 Django Admin 当前只在 control plane 暴露，并提供关系化底层维护入口：`Member` 详情页内联显示和新增 `RoleAssignment`，`Organization` 详情页内联显示 `Role`，`Role` 详情页内联显示 `RolePermission` 和拥有该角色的成员。`Proposal` 用于查看和维护通用治理提案，详情页内联显示 `ProposalVote` 和 `ProposalExecution`。固定 world 站点不暴露 `/admin/`；真实世界和仿真世界的日常用户系统不需要 `is_staff` 账号。`SystemEvent` 和 `LedgerEntry` 集中在“技术审计与配置”分组；其中 `SystemEvent` 在 Admin 中仍然只读，只用于查看事件快照和哈希链信息。
 
-`SimulationSnapshot`, `SimulationSnapshotItem`, `SimulationRunDisposition`, and the simulation lab entrypoint live under the control-plane `/admin/` simulation group. The lab keeps only unique actions such as start, advance, run review, abort, archive, and reject. Business `Event` is not registered in Django Admin; fixed-world API and `/` display it. `Ruleset` changes should go through proposals or a dedicated rule publishing flow, `CapacityAssessment` belongs to observer summaries, and `Permission` / `RolePermission` are primarily maintained through role detail screens.
+`SimulationSnapshot`、`SimulationSnapshotItem`、`SimulationRunDisposition` 和仿真实验后台入口位于 control plane `/admin/` 的“仿真”分组。实验后台只保留启动、推进、run 审阅、中止、归档和废弃这类独有动作。业务 `Event` 不注册到 Django Admin；固定 world API 和 `/` 负责展示它。`Ruleset` 变更应通过提案或专门规则发布流程完成，`CapacityAssessment` 归属观察台摘要，`Permission` / `RolePermission` 主要通过角色详情页维护。
 
 ## core_ruleset
 
@@ -1114,11 +1114,35 @@ SystemEvent(event_type=resource_adjusted) v2 `public_facts` 公开：`name`、`r
 
 各 world 的业务表仍由各 app 模型拥有。世界注册表只负责路由和生命周期控制，不保存成员、任务、提案、事件等业务数据。当前默认映射是 `realworld -> realworld -> dev_big_real` 和 `simulation0001 -> simulation0001 -> dev_big_sim0001`；control 表位于 `default -> dev_big_control`。
 
+## worlds_worldmaintenancelog
+
+`worlds.WorldMaintenanceLog` 是 control DB 中的高风险 world 维护操作审计日志。它记录重置仿真 world 等破坏性维护动作，不能写入目标 world 数据库；这样即使目标 world 数据库被清空，维护审计仍保留在 control DB。
+
+| 字段 | 说明 |
+| --- | --- |
+| `id` | 自增主键。 |
+| `world_id` | fk → WorldRegistry；被维护操作作用的目标 world。 |
+| `action` | 操作类型；当前为 `reset_zero_start`。 |
+| `actor_username` | 执行维护操作的 Django 用户名。 |
+| `status` | `succeeded` 或 `failed`。 |
+| `force` | 是否绕过未处置运行保护机制强制执行。 |
+| `counts_before_json` | 操作前目标 world 各核心表记录数。 |
+| `counts_after_json` | 操作后（重新 seed 后）目标 world 各核心表记录数。 |
+| `message` | 操作结果或失败原因的补充说明。 |
+| `created_at` | 记录时间。 |
+
+索引：
+
+- `(world, action)`
+- `status`
+
+当前主要写入来源是 `/admin/simulation-lab/reset-world/`。该表只读展示于 control Admin，不替代 `SimulationRunDisposition`；前者记录高风险维护动作，后者记录某一轮仿真 run 是否归档或废弃。
+
 ## Database Alias Routing
 
-Runtime database routing is request/world aware:
+Runtime database routing 感知 request/world 上下文：
 
-| App label | No world context | Fixed world request context | Migration target |
+| App label | 无 world context | 固定 world request context | 迁移目标 |
 | --- | --- | --- | --- |
 | `worlds` | `default` | `default` | `default` only |
 | `sessions` | `default` | `default` | `default` and every world alias |
@@ -1127,4 +1151,4 @@ Runtime database routing is request/world aware:
 | `contenttypes` | `default` | current world alias | `default` and every world alias |
 | `core` | `realworld` by default | current world alias | every world alias only |
 
-This means `bigadmin.local/admin/` technical accounts live in control, while `bigreal.local/...` and `bigsim.local/...` authenticate against their own world databases through root paths on their fixed-world hosts.
+这意味着 `bigadmin.local/admin/` 技术账号位于 control 数据库，而 `bigreal.local/...` 和 `bigsim.local/...` 会通过固定 world host 的根路径访问各自 world 数据库并在其中认证。

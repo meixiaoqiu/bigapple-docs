@@ -28,7 +28,7 @@ npm run validate:contracts
 - 面向 Live OS、Simulation Engine 或外部客户端的数据结构和 API 契约放入 `technical-contracts/`，并在 `docs/technical-contracts/` 中维护说明。
 - 只有经过治理流程确认的正式治理文书，才放入 `docs/governance-instruments/` 下的正式分类目录。
 - 新增一级分区前，应先确认现有分区无法承载该内容。
-- 第一阶段只使用 Markdown 文档和默认 Docusaurus classic 主题，不主动创建 MDX 页面、自定义 React 组件或额外 UI 框架。
+- 当前文档站只使用 Markdown 文档和默认 Docusaurus classic 主题，不主动创建 MDX 页面、自定义 React 组件或额外 UI 框架。
 
 ## 治理文书编号规则
 

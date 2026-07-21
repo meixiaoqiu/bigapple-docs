@@ -28,12 +28,12 @@ title: 产品路线图
 
 | 阶段 | 主题 | 主要目标 | 产品入口 |
 | --- | --- | --- | --- |
-| P0 | 权威原型 | 建立数据模型、API 闭环、中文 Admin、观察台和本地开发流程。 | `/admin/`、`/observer/`、`/api/v0.1/` |
+| P0 | 权威原型 | 建立数据模型、API 闭环、中文 Admin、观察台和本地开发流程。 | `/admin/`、公开首页 `/`、`/api/v0.1/` |
 | P1 | 内部维护后台强化 | 让 Django Admin 成为可靠的开发期维护工具，而不是最终运营后台。 | `/admin/` |
 | P2 | 成员工作台 | 让候选成员和正式成员能完成任务领取、提交劳动和查看贡献。 | `/workspace/`、API |
 | P3 | 运营后台 | 让管理员按业务流程管理成员、任务、资源、申诉和事件。 | API、control `/admin/`、后续专用业务页面 |
 | P4 | 治理后台 | 支持规则版本、争议裁决、复核、审计和高影响操作追踪。 | 治理后台、API |
-| P5 | Simulation Engine 深度接入 | 支持项目执行计划、主线节点、多虚拟成员、事件驱动模拟、容量评估和行为反馈闭环。 | API、事件流、`/admin/simulation-lab/`、`/observer/` |
+| P5 | Simulation Engine 深度接入 | 支持项目执行计划、主线节点、多虚拟成员、事件驱动模拟、容量评估和行为反馈闭环。 | API、事件流、`/admin/simulation-lab/`、公开首页 `/` |
 | P6 | 开源和生产化 | 支持多人协作、部署、权限、安全、可观测性和公开贡献流程。 | 全部入口 |
 
 ## P0：权威原型
@@ -50,18 +50,18 @@ title: 产品路线图
 - Django Admin 中文化。
 - 幂等 seed 数据。
 - `smoke_workflow` API 闭环。
-- `/observer/` 只读观察台第一版。
-- `start.bat` 和 `stop.bat` 本地启停脚本。
+- 公开首页 `/` 只读观察台第一版。
+- `start.bat` 本地启动脚本；停止服务使用 Docker Compose 命令。
 - `docs/project/roadmap.md` 中远期路线图。
 
 ### 完成标准
 
 - `python manage.py check` 通过。
 - `python manage.py makemigrations --check --dry-run` 通过。
-- `python manage.py test core live_os observer workspace simulation simulation_lab --settings=live_os.test_settings` 通过。
+- `python manage.py test core live_os observer workspace simulation simulation_lab worlds --settings=live_os.test_settings` 通过。
 - `python manage.py smoke_workflow` 可以在本地数据库跑通。
 - `/admin/` 可用，中文界面正常加载 CSS 和 JS。
-- `/observer/` 可以展示 seed 数据。
+- 公开首页 `/` 可以展示 seed 数据。
 - README 和 `docs/` 说明当前能力和限制。
 
 ## P1：内部维护后台强化
@@ -226,7 +226,7 @@ title: 产品路线图
 - 支持多虚拟成员并发行为。
 - 支持模拟日期、模拟批次和实验标识。
 - 将主线任务线数据库化，支持计划版本、树状节点、依赖、预算、人力、工期、完成标准和容量影响。
-- 在 `/admin/simulation-lab/` 管理仿真实验启动和推进，在固定 world 的 `/observer/` 展示世界日志、运行结果和复盘状态。
+- 在 `/admin/simulation-lab/` 管理仿真实验启动和推进，在固定 world 的公开首页 `/` 展示世界日志、运行结果和复盘状态。
 - 支持自动模拟按主线计划推进到失败，并记录失败、节点状态和计划修订建议。
 - 支持把计划修订建议转化为结构化计划变更集和变更操作。
 
@@ -340,7 +340,7 @@ title: 产品路线图
 11. 检查并提交运营后台任务指派和关闭流程。
 12. 检查并提交运营后台资源变动记录和资源风险处置流程。
 13. 检查并提交运营后台申诉处理流程。
-14. 检查并提交 `/admin/simulation-lab/` 仿真实验后台与固定 world `/observer/` 观察边界最小切片。
+14. 检查并提交 `/admin/simulation-lab/` 仿真实验后台与固定 world 公开首页 `/` 观察边界最小切片。
 15. 检查并提交数据库化项目执行计划第一版。
 16. 检查并提交自动模拟按计划节点跑到失败、记录失败并生成修订建议。
 17. 检查并提交计划修订建议转化为结构化变更集和变更操作。

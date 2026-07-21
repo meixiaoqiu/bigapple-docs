@@ -24,7 +24,7 @@ POST /admin/simulation-lab/advance/
 POST /admin/simulation-lab/run-until-failure/
 ```
 
-Fixed-world `/` observes the target world. Control-plane `/admin/simulation-lab/` starts and advances simulation experiments. `/admin/simulation-lab/run-until-failure/` is the current zero-start simulation entrypoint. `/admin/simulation-lab/advance/` is a legacy boundary self-check entrypoint marked as pending deprecation; it is not a simulation advance feature. If removed later, remove its URL, view, page button, and page-level test together.
+固定 world 的 `/` 负责观察目标 world。Control plane 的 `/admin/simulation-lab/` 负责启动和推进仿真实验。`/admin/simulation-lab/run-until-failure/` 是当前零起点仿真入口。`/admin/simulation-lab/advance/` 是计划废弃的边界自检入口，不是仿真推进功能；删除时必须同时删除 URL、view、页面按钮和页面级测试。
 
 ## 自动跑到失败
 
@@ -101,7 +101,7 @@ python manage.py run_zero_start_simulation --world-id simulation0001 --hours 168
 
 - 只预置一个发起人、一个极简 `ProjectPlan` 和一个已发布 `PlanRevision`；启用仿真 bootstrap admin 时，该发起人就是配置的真实登录成员。
 - 按整数小时推进自媒体曝光、主动报名、初筛、候选、备用、项目拒绝和主动退出过程。默认 168 小时是压缩后的观察窗口，不是终局；报名密度不是平均分布，后续波次会随曝光积累逐步增加，用来模拟真实世界中从早期零星报名到后期集中增长的趋势。
-- Virtual applicants are no longer inserted directly by simulation code. The state machine chooses actions, then submits through the real workspace flow: registration at `/register/`, then member application at `/workspace/apply/`. Partner applications use a service adapter (`core.application_services.submit_partner_application`) because `/apply/partner/` has been removed.
+- 虚拟申请人不再由仿真代码直接插入。状态机只选择动作，然后通过真实 workspace 流程提交：先在 `/register/` 注册，再在 `/workspace/apply/` 提交成员报名。合作方报名使用 service adapter（`core.application_services.submit_partner_application`），因为 `/apply/partner/` 已移除。
 - 当前第一版 driver 是 `http_form`：它会先 GET 报名页并检查关键 HTML 表单字段，再 POST 表单，让 view、form、service、事件账本和数据库写入走真实路径；它不执行浏览器 JS。后续可在同一 driver 边界接入 Playwright 抽样模式，让每类关键行为前 N 次走真实浏览器，其余大量重复样本走 HTTP form。
 - 为每个虚拟小时记录 `SimulationTurn` 和公开观察 `Event`。每小时 payload 至少包含虚拟小时、状态机名称、表单 driver、成员/合作方报名增量、筛选增量、累计候选池、合作方状态、能力矩阵、文件签署方矩阵、当前阻塞项和下一步动作。
 - 成员报名先写入 `MemberApplication` 并自动创建 `member_admission` 治理提案。仿真的候选/备用/拒绝/退出筛选结果写入 `metadata.screening_status`，不写入权威 `MemberApplication.status`。

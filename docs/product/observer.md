@@ -226,7 +226,7 @@ static/themes/default_game/
 
 主题上下文由 `observer.context_processors.theme_context` 注入，展示层数据契约由 `observer.dashboard_theme.build_dashboard_theme_context()` 提供。
 
-完整规则后续会迁移到 `docs/development/theme-system.md`。
+完整规则见 [主题系统](../development/theme-system.md)。
 
 HTMX partial URL：
 

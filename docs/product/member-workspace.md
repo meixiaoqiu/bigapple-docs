@@ -123,6 +123,28 @@ POST /workspace/recruitment/  (action=create / action=update)
 
 普通成员和未登录用户看不到该入口。
 
+### 成员报名审核（治理成员）
+
+`/workspace/` 在正式成员工作台之外，为具备 `governance.view_admin` 权限的治理成员提供成员报名审核入口。普通正式成员、待审核报名人、未绑定 `Member` 的 Django staff/superuser 都看不到入口，直接访问审核 URL 返回 403。
+
+`/workspace/apply/` 提交成员报名后，系统自动创建 `MemberApplication` 和 `member_admission` Proposal，提案直接进入 `VOTING` 状态。准入不存在独立的单人审核动作，完全由提案生命周期驱动。
+
+member_admission 是 yes/no 二元表决，使用严格多数决：赞成票超过 eligible voters 半数时立即通过；反对票超过 eligible voters 半数时立即失败，并自动将关联 `MemberApplication` 设为 `REJECTED`。未形成多数前保持表决中；截止仍未通过则失败。分母始终是 `eligible_voters_snapshot_json` 的人数，不是已投票人数。普通 proposal 规则不变。
+
+```text
+GET  /workspace/applications/                                          # 报名列表（按准入进度筛选）
+GET  /workspace/applications/<application_id>/                         # 报名详情（申请人资料 + 准入提案 + 投票 + 执行）
+POST /workspace/proposals/<proposal_id>/vote/                          # 成员准入投 yes/no；反对必须填写理由
+POST /workspace/proposals/<proposal_id>/execute/                       # 执行已通过准入提案
+```
+
+不存在以下路由：
+
+```text
+POST /workspace/applications/<application_id>/review/
+POST /workspace/applications/<application_id>/create-admission-proposal/
+```
+
 ## 与 Control 后台的关系
 
 `/workspace/` 是成员本人使用的工作台，不承担底层管理职责。

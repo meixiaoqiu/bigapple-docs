@@ -70,7 +70,7 @@ title: AI 开发指南
 - 治理内核不再保留 `core.governance` 大门面；统一事件账本、提案、权限和角色任命应分别从对应领域模块导入。
 - 不要在业务代码中直接根据 Credential/NFT/Badge 判断权限。所有运行时权限判断必须通过 RoleAssignment / RolePermission。详见 `docs/architecture/overview.md` Credential/NFT 章节。
 - 当前本地开发拆为三个站点入口：`bigadmin.local` 使用 `live_os.settings_admin` 和 `live_os.urls_admin`，承载 control plane 的 `/admin/` 与 `/admin/simulation-lab/`；`bigreal.local` 使用 `live_os.settings_real` 和 `live_os.urls_real`，承载真实世界 runtime；`bigsim.local` 使用 `live_os.settings_sim` 和 `live_os.urls_sim`，承载仿真世界 runtime。
-Real and simulation runtimes use the same root paths: `/workspace/`, `/`, `/register/`, `/api/v0.1/`. `/register/` is the account-registration entrypoint; `/workspace/apply/` is the member application entrypoint (login required). `/apply/`, `/apply/partner/`, `/apply/member/`, old world-prefixed route family, old `/member/` workspace route, and `/live-admin/` route have been removed and must not be used in product code or tests.
+- 真实世界和仿真世界 runtime 使用同一组根路径：`/workspace/`、`/`、`/register/`、`/api/v0.1/`。`/register/` 是账号注册入口，`/workspace/apply/` 是登录后的成员报名入口。`/apply/`、`/apply/partner/`、`/apply/member/`、历史 world-prefix 路由族、旧 `/member/` workspace route 和 `/live-admin/` 已移除，产品代码和测试不能再使用。
 - 当前 `/workspace/` 是固定 world 的成员自助工作台，归属 `workspace` app。身份必须从当前登录账号绑定的 `Member` 推导，不要重新引入 `/members/{member_no}/workspace/` 这种按 URL 选择成员的页面入口。
 - 当前 `/` 是固定 world 的时间线指挥台式观察台，使用 Django Templates、Tailwind、daisyUI 和 HTMX partial。仿真实验启动和推进归属 control plane 的 `/admin/simulation-lab/`，观察和复盘归属对应 world runtime 的 observer；不能把命令行 runner 当成产品形态，也不能让 simulation 默认写真实世界数据。
 - 当前项目执行计划已经数据库化，`bigapple001据点执行计划` 是主线任务线源头。不要把主线计划只写在 Markdown 或代码常量里。
@@ -81,7 +81,7 @@ Real and simulation runtimes use the same root paths: `/workspace/`, `/`, `/regi
 - 可以运行 `python manage.py seed_demo --world-id realworld` 写入指定 world 的后台预览用演示数据；运行时启用 world 数据库路由后，直接写入型命令不能依赖隐式默认 world。仿真 world 后台预览用 `python manage.py seed_world simulation0001 --template demo`；真正从一个发起人开始的仿真基线用 `python manage.py seed_world simulation0001 --template zero_start`。启用仿真 bootstrap admin 时，`zero_start` 的唯一初始发起人应是配置的真实登录成员。
 - 可以运行 `python manage.py smoke_workflow --world-id realworld` 或 `--world-id simulation0001` 通过 HTTP API 验证目标 world 的第一条业务闭环。真实世界不会默认写入演示数据；需要本地演示数据时显式传入 `--seed-demo`，仿真 world 会自动使用 `seed_world`。
 - 可以运行 `python manage.py run_simulation_smoke --world-id simulation0001` 验证仿真 world 的自动推演闭环：幂等初始化、创建 `SimulationRun`、自动推进主线计划、生成 turn / observer event / 失败反馈，并在启用 world 数据库路由时检查 `realworld` 关键表记录数不变。
-- `python manage.py run_zero_start_simulation --world-id simulation0001 --hours 168` verifies zero-start social-media recruitment and launch-threshold closure. Member applications go through `/register/` + `/workspace/apply/`; partner applications use a service adapter (`/apply/partner/` has been removed and the partner system will be designed separately). After the launch threshold is satisfied, the same run enters `pre_engineering` and records candidate sites, grid pre-screening, conditional lease review, and responsibility-document milestones in `SimulationTurn.metadata`; do not create a parallel simulation command for this phase unless the model boundary genuinely changes.
+- `python manage.py run_zero_start_simulation --world-id simulation0001 --hours 168` 用于验证零起点自媒体招募和启动门槛闭环。成员报名走 `/register/` + `/workspace/apply/`；合作方报名使用 service adapter（`/apply/partner/` 已移除，合作方系统另行设计）。启动门槛满足后，同一个 run 进入 `pre_engineering`，并把候选场地、并网预筛、附条件租赁审查和责任文件里程碑记录到 `SimulationTurn.metadata`；除非模型边界真的变化，不要为这个阶段另建平行仿真命令。
 - 可以运行 `python manage.py archive_simulation_run --world-id simulation0001 --run-id sim-run-xxx` 把已结束的仿真 run 归档为 control DB 中的 `SimulationSnapshot` / `SimulationSnapshotItem` 和文件系统中的原始归档包。原始归档包默认在 `var/simulation_archives/`，不进入 Git；归档后用 `python manage.py verify_simulation_snapshot snapshot-xxx` 校验 raw 文件哈希、manifest 和标准化索引。
 - 已结束的仿真 run 在同一 world 启动下一轮前必须被人工处置：要么通过 `/admin/simulation-lab/` 或 `archive_simulation_run` 归档为快照，要么通过 `/admin/simulation-lab/` 或 `discard_simulation_run --reason "..."` 明确放弃归档。两种处置都会写入 control DB 的 `SimulationRunDisposition`；Django Admin `LogEntry` 只记录技术后台操作，不能替代仿真处置结论。
 - 仍在 `running` 但已经确认没有继续价值的 run，应先在 `/admin/simulation-lab/` 详情页执行“中止本轮仿真”，状态变为 `aborted` 后再归档或废弃。
@@ -93,15 +93,15 @@ Real and simulation runtimes use the same root paths: `/workspace/`, `/`, `/regi
 
 ## World Routing Rule
 
-Use fixed-world site URLs for business pages. The real world site is `bigreal.local`; the first simulation site is `bigsim.local`. `worlds.WorldRegistry` still maps world IDs to database aliases for control-plane commands and compatibility routing.
+业务页面使用固定 world 站点 URL。真实世界站点是 `bigreal.local`；第一个仿真站点是 `bigsim.local`。`worlds.WorldRegistry` 仍负责把 world id 映射到数据库 alias，用于 control plane 命令和兼容性路由。
 
-- Control plane: `http://bigadmin.local/admin/`
-- Simulation lab: `http://bigadmin.local/admin/simulation-lab/`
-- Real member workspace: `http://bigreal.local/workspace/`
-- Real observer: `http://bigreal.local/`
-- Simulation member workspace: `http://bigsim.local/workspace/`
-- Simulation observer: `http://bigsim.local/`
-- Legacy world-prefixed routes have been removed from runtime URLConfs; use fixed-world root paths in tests and product code.
-- Default local database aliases are `default -> dev_big_control`, `realworld -> dev_big_real` and `simulation0001 -> dev_big_sim0001`; additional simulation aliases can be declared through `BIG_APPLE_WORLD_DATABASE_ALIASES` and matching `BIG_APPLE_{ALIAS}_DB_NAME` / `BIG_APPLE_{ALIAS}_DATABASE_URL`.
+- Control plane：`http://bigadmin.local/admin/`
+- 仿真实验后台：`http://bigadmin.local/admin/simulation-lab/`
+- 真实世界成员工作台：`http://bigreal.local/workspace/`
+- 真实世界公开首页：`http://bigreal.local/`
+- 仿真世界成员工作台：`http://bigsim.local/workspace/`
+- 仿真世界公开首页：`http://bigsim.local/`
+- 历史 world-prefix 路由已经从 runtime URLConf 移除；测试和产品代码应使用固定 world 根路径。
+- 默认本地数据库 alias 是 `default -> dev_big_control`、`realworld -> dev_big_real` 和 `simulation0001 -> dev_big_sim0001`；额外仿真 alias 可通过 `BIG_APPLE_WORLD_DATABASE_ALIASES` 和匹配的 `BIG_APPLE_{ALIAS}_DB_NAME` / `BIG_APPLE_{ALIAS}_DATABASE_URL` 声明。
 
-World database routing is now active outside tests. Do not assume business ORM reads use `default`: `core` defaults to `realworld` without request context, and world-scoped requests route `core`, `auth`, and `contenttypes` to the selected world alias. A world alias must be configured, listed in `WORLD_DATABASE_ALIASES`, and must not be `default`; misconfiguration fails closed instead of falling back to the control database. Tests use `live_os.test_settings`, which disables cross-database routing to keep unit tests single-database unless a test explicitly targets the router or world isolation.
+测试之外，world database routing 已启用。不要假设业务 ORM 读取使用 `default`：无 request context 时 `core` 默认走 `realworld`，world-scoped request 会把 `core`、`auth` 和 `contenttypes` 路由到选中的 world alias。world alias 必须已配置、列入 `WORLD_DATABASE_ALIASES`，且不能是 `default`；配置错误必须失败关闭（fail closed），不能回退到 control 数据库。测试使用 `live_os.test_settings`，默认禁用跨库 routing，让单元测试保持单库，除非测试明确覆盖 router 或 world 隔离。

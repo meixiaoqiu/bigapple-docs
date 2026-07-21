@@ -1,16 +1,16 @@
 ---
 sidebar_position: 2
-title: MySQL 接入、数据导入与切换手册
+title: MySQL 接入与数据初始化手册
 ---
 
-# MySQL 接入、数据导入与切换手册
+# MySQL 接入与数据初始化手册
 
 ## 当前状态
 
-- PostgreSQL 本地数据已经不可用，正常运行入口切换为 MySQL。
+- 正常运行入口使用 MySQL。
 - 项目配置支持从 `DATABASE_URL` 环境变量或根目录 `.env` 读取 `mysql://` 连接。
-- `start.bat` 不再静默回退 PostgreSQL；缺少 MySQL 连接或 Docker 开发前提不满足时会直接停止并提示原因。
-- 当前切换只改数据库连接配置、脚本和文档，不修改数据库模型，不创建 MySQL 专属迁移。
+- `start.bat` 会校验 MySQL 连接和 Docker 开发前提；缺少必要配置时会直接停止并提示原因。
+- 当前文档只描述 MySQL 建库、连接、初始化和验证流程。
 
 ## 运行要求
 
@@ -26,7 +26,7 @@ title: MySQL 接入、数据导入与切换手册
 
 大小写敏感排序规则是必要条件。项目大量使用字符串业务 ID 作为主键，
 如果使用 MySQL 常见的大小写不敏感排序规则，`member-a` 和 `MEMBER-A`
-可能被当作相同 ID，与当前 PostgreSQL 语义不一致。
+可能被当作相同 ID，导致业务 ID 冲突。
 
 ## 连接信息填写位置
 
@@ -92,13 +92,12 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py c
 它会检查版本、存储引擎、字符集、排序规则、严格模式、事务隔离级别、
 JSONField 和行锁能力。
 
-## 数据导入阶段
+## 数据初始化阶段
 
-连接信息和就绪检查通过后，按以下顺序执行。由于 PostgreSQL 数据已经丢失，
-本次只导入表结构并初始化必要数据，不再执行 PostgreSQL 数据迁移。
+连接信息和就绪检查通过后，按以下顺序执行：
 
-1. 确认 MySQL 数据库为空库，或确认可以覆盖当前表结构。
-2. 使用 MySQL 配置执行迁移建表：
+1. 确认 MySQL 数据库为空库，或确认本次操作允许更新当前表结构。
+2. 使用 MySQL 配置执行 Django 迁移建表：
 
    ```powershell
    docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py migrate --settings=live_os.settings_admin
@@ -120,7 +119,7 @@ JSONField 和行锁能力。
 
 5. 在 MySQL 上运行 Django 检查、测试、seed 幂等检查和核心业务冒烟流程。
 
-导出和导入文件不得提交到 Git，并应放入受控的临时目录。
+临时初始化文件、导出文件和排障备份不得提交到 Git，并应放入受控的临时目录。
 
 ## 正式运行
 
@@ -132,19 +131,20 @@ start.bat
 
 启动脚本不会输出包含密码的 `DATABASE_URL`。它会检查已有 `dev-net`、`mysql97` 和 `nginx`，启动已存在的容器并连接网络，但不会创建数据库容器、nginx 容器、Docker network 或数据卷。
 
-## 回滚
+## 验收失败处理
 
-PostgreSQL 数据已经丢失，当前没有可自动回滚的旧数据库。若 MySQL 验收失败：
+若 MySQL 验收失败：
 
 1. 停止服务写入。
-2. 修正 MySQL 建库参数、连接权限或迁移问题。
-3. 重新执行 `migrate`、`seed_demo --world-id realworld`、就绪检查和功能测试。
-4. 如需保留失败现场，先备份当前 MySQL 库，再清库重建。
+2. 备份当前 MySQL 库和关键日志，保留失败现场。
+3. 修正 MySQL 建库参数、连接权限或迁移问题。
+4. 重新执行 `migrate`、`migrate_world`、`seed_demo --world-id realworld`、就绪检查和功能测试。
+5. 如需清库重建，必须先确认当前数据可以丢弃，并由有权限的数据库管理员执行。
 
 ## 已知兼容性关注点
 
-- `JSONField` 在 MySQL 8 可用，但 JSON 查询执行计划和索引能力与 PostgreSQL 不同。
+- `JSONField` 在 MySQL 8 可用；涉及复杂 JSON 查询时应单独评估执行计划和索引策略。
 - `select_for_update()` 依赖 InnoDB 和事务配置。
-- MySQL 与 PostgreSQL 对 NULL 默认排序位置不同，部分任务列表顺序可能变化。
+- MySQL 对 NULL 排序、字符串排序和大小写敏感性的表现受排序规则影响；涉及列表稳定排序时应显式指定排序字段。
 - 积分流水不再维护独立 `immutable_sequence`；全局审计顺序统一来自 `core_system_event.seq`。
   并发关注点集中在 `core.event_ledger.append_event()` 的事务和 `select_for_update()` 链尾读取。
