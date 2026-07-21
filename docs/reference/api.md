@@ -16,7 +16,7 @@ API 前缀：
 契约源头：
 
 ```text
-technical-contracts/openapi/live-os.v0.1.openapi.json
+static/technical-contracts/openapi/live-os.v0.1.openapi.json
 ```
 
 ## 公开接口数据边界
@@ -100,7 +100,7 @@ GET /members/{member_no}/workspace
 对应契约：
 
 ```text
-technical-contracts/schemas/member-workspace.schema.json
+static/technical-contracts/schemas/member-workspace.schema.json
 ```
 
 对应自动化覆盖：

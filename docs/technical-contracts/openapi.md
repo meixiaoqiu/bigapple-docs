@@ -1,4 +1,4 @@
-﻿---
+---
 sidebar_position: 2
 title: OpenAPI
 ---
@@ -8,8 +8,12 @@ title: OpenAPI
 OpenAPI 契约文件：
 
 ```text
-technical-contracts/openapi/live-os.v0.1.openapi.json
+static/technical-contracts/openapi/live-os.v0.1.openapi.json
 ```
+
+静态站点访问链接：
+
+- <a href="/technical-contracts/openapi/live-os.v0.1.openapi.json">live-os.v0.1.openapi.json</a>
 
 当前 API 契约信息：
 

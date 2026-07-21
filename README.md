@@ -2,7 +2,7 @@
 
 本仓库是“大苹果 docs + governance instruments”的 Docusaurus 文档站根目录，用于承载公开说明文档、治理文书入口、技术契约和文档站构建配置。
 
-当前已迁入 Live OS 相关文档和 machine-readable `technical-contracts`，包括 OpenAPI、JSON Schema、示例 payload 和本地校验脚本。
+当前已迁入 Live OS 相关文档和 machine-readable `static/technical-contracts`，包括 OpenAPI、JSON Schema、示例 payload 和本地校验脚本。该目录是机器可读契约源目录，也会被 Docusaurus 原样发布到静态站点的 `/technical-contracts/` 路径，便于外部客户端直接查看和下载。
 
 ## 本地预览
 
@@ -20,12 +20,24 @@ npm run build
 npm run validate:contracts
 ```
 
-构建产物位于 `build/`，不应提交到 Git。
+构建产物位于 `build/`，不应提交到 Git。`static/technical-contracts/` 是仓库中的权威源文件，Docusaurus 会把它发布为站点根路径下的 `/technical-contracts/`。
+
+## 静态站点中的技术契约
+
+文档页位于 `docs/technical-contracts/`，负责解释契约边界和使用方式。
+
+机器可读文件位于 `static/technical-contracts/`，并作为静态文件发布，例如：
+
+- `/technical-contracts/openapi/live-os.v0.1.openapi.json`
+- `/technical-contracts/schemas/task.schema.json`
+- `/technical-contracts/examples/task.example.json`
+
+不要在 `docs/` 中复制 JSON 正文；需要改契约时只修改 `static/technical-contracts/` 源文件，再同步说明文档。
 
 ## 文档新增方式
 
 - 普通说明文档放入现有分区，例如 `docs/project/`、`docs/architecture/`、`docs/product/`、`docs/operations/`、`docs/development/` 或 `docs/reference/`。
-- 面向 Live OS、Simulation Engine 或外部客户端的数据结构和 API 契约放入 `technical-contracts/`，并在 `docs/technical-contracts/` 中维护说明。
+- 面向 Live OS、Simulation Engine 或外部客户端的数据结构和 API 契约放入 `static/technical-contracts/`，并在 `docs/technical-contracts/` 中维护说明。
 - 只有经过治理流程确认的正式治理文书，才放入 `docs/governance-instruments/` 下的正式分类目录。
 - 新增一级分区前，应先确认现有分区无法承载该内容。
 - 当前文档站只使用 Markdown 文档和默认 Docusaurus classic 主题，不主动创建 MDX 页面、自定义 React 组件或额外 UI 框架。

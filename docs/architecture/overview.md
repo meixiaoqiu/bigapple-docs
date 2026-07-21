@@ -39,7 +39,7 @@ v0.1 必须保证真实用户和 Simulation Engine 使用同一套 API。Simulat
 契约源头位于相邻仓库：
 
 ```text
-technical-contracts
+static/technical-contracts
 ```
 
 ## 第一版形态

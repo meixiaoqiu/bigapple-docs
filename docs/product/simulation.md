@@ -84,7 +84,7 @@ C3 默认要求：
 - `run_zero_start_simulation`：从当前基线推进虚拟小时，创建 `SimulationRun` / `SimulationTurn`，驱动虚拟主体通过真实表单报名。
 - `seed_world --template zero_start`：只写入 zero_start 种子数据，不清空已有数据。
 
-重置后目标 world 只有 zero_start 基线：一个初始发起人、一个极简 `ProjectPlan` 和一个已发布 `PlanRevision`，没有 `SimulationRun`、`SimulationTurn`、报名、提案推进痕迹。启用 `BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_ENABLED=true` 时，初始发起人是配置的真实登录成员，不会额外创建 `founder-0001`。
+重置后目标 world 写入 zero_start 基线：一个初始发起人 + `ProjectPlan` + 已发布 `PlanRevision` + 完整生命周期 `PlanNode` 骨架（Z0-Z3 / A0-A2 / B0-B6 / C0-C5 / D0-D4，共 25+ 个节点），没有 `SimulationRun`、`SimulationTurn`、报名、提案推进痕迹。只有 Z0 是 `IN_PROGRESS`，其余节点均为 `PLANNED`。这些 `PlanNode` 是主线骨架，不是 `Task`、不是资源、不是真实成员池。启用 `BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_ENABLED=true` 时，初始发起人是配置的真实登录成员，不会额外创建 `founder-0001`。
 
 ## 零起点自媒体报名与启动门槛仿真
 
@@ -99,7 +99,7 @@ python manage.py run_zero_start_simulation --world-id simulation0001 --hours 168
 
 该流程会在目标仿真 world 中：
 
-- 只预置一个发起人、一个极简 `ProjectPlan` 和一个已发布 `PlanRevision`；启用仿真 bootstrap admin 时，该发起人就是配置的真实登录成员。
+- 预置一个发起人、一个 `ProjectPlan`、一个已发布 `PlanRevision`，以及完整生命周期 `PlanNode` 主线骨架（Z/A/B/C/D 共 25+ 个节点，只有 Z0 是 `IN_PROGRESS`）；不创建 `SimulationRun` / `SimulationTurn`，不预置报名、任务、资源、候选场地。启用仿真 bootstrap admin 时，该发起人就是配置的真实登录成员。
 - 按整数小时推进自媒体曝光、主动报名、初筛、候选、备用、项目拒绝和主动退出过程。默认 168 小时是压缩后的观察窗口，不是终局；报名密度不是平均分布，后续波次会随曝光积累逐步增加，用来模拟真实世界中从早期零星报名到后期集中增长的趋势。
 - 虚拟申请人不再由仿真代码直接插入。状态机只选择动作，然后通过真实 workspace 流程提交：先在 `/register/` 注册，再在 `/workspace/apply/` 提交成员报名。合作方报名使用 service adapter（`core.application_services.submit_partner_application`），因为 `/apply/partner/` 已移除。
 - 当前第一版 driver 是 `http_form`：它会先 GET 报名页并检查关键 HTML 表单字段，再 POST 表单，让 view、form、service、事件账本和数据库写入走真实路径；它不执行浏览器 JS。后续可在同一 driver 边界接入 Playwright 抽样模式，让每类关键行为前 N 次走真实浏览器，其余大量重复样本走 HTTP form。

@@ -134,9 +134,10 @@ seed 数据同时包含 `res-cash` 现金资源，供自动模拟判断节点预
 `zero_start` 基线包含：
 
 - 一个发起人 `founder-0001`。
-- 一个极简计划 `plan-zero-start`。
+- 一个计划 `plan-zero-start`。
 - 一个已发布计划版本 `plan-zero-start-rev-v0_0_1`。
-- 不预置任务、资源、候选场地、成熟成员或工程节点。
+- 完整生命周期 `PlanNode` 主线骨架（25+ 个节点，覆盖 Z/A/B/C/D 阶段），只有 Z0 是 `IN_PROGRESS`，其余均为 `PLANNED`。这些是主线 PlanNode 骨架，不是 `Task`、不是资源、不是真实成员池。
+- 不预置任务、资源、候选场地、成熟成员池或 `SimulationRun` / `SimulationTurn`。
 
 `run_zero_start_simulation` 会从发起人自媒体曝光、主动报名和初筛开始按小时推进。虚拟主体先通过真实 world URL 提交成员报名和合作方报名表单，形成 `MemberApplication`、`PartnerApplication`、候选池、筛选结论和启动门槛缺口；不再由仿真代码直接造报名成员。每小时推进日志会记录报名漏斗、筛选漏斗、候选池、合作方线索、能力覆盖、文件签署方覆盖、当前阻塞项和下一步动作。它的失败反馈会生成结构化计划修订建议和可应用的 `PlanNode` / `PlanRequirement` 操作，提醒下一版计划应在 A0 抵达之前补上自媒体报名筛选、前 N 名成员能力矩阵、合作伙伴和文件签署方矩阵。
 
@@ -148,6 +149,396 @@ Z0 计划需求需要区分两类语义：
 在启动门槛满足前，项目处于筹备阶段；报名人数或候选池形成不等于真实项目已经可以启动。
 
 合作方增长同样按虚拟小时推进。早期可能只有施工辅助、设备渠道和物流线索；更长观察窗口中才会逐步出现结构安全评估、光伏系统设计、电气并网、施工安全质量和验收归档等可承担书面责任文件的主体。一次较长的观察窗口如果直接补齐成员能力矩阵和文件签署方矩阵，可以让 `SimulationRun` 进入 `completed`；如果仍未补齐，则继续停留在 `running`，等待下一段观察窗口。
+
+## 首页"当前主线"模块
+
+观察台首屏 hero 下方展示"当前主线"模块，数据契约由 `observer.mainline_context.build_mainline_context()` 构建，数据源为 `ProjectPlan`、`PlanRevision`、`PlanNode` 及相关模拟运行表。Markdown 不是权威数据源，数据库 `PlanRevision` / `PlanNode` 是权威源。
+
+### 展示契约
+
+| 字段 | 说明 |
+| --- | --- |
+| plan_title / revision_title | 当前激活计划和已发布版本标题 |
+| stage | 当前阶段节点（优先 IN_PROGRESS/BLOCKED 的 stage/milestone 类型，其次从当前节点的父链推导） |
+| current_nodes | IN_PROGRESS / BLOCKED 节点（优先非 stage 节点，最多 4 个） |
+| next_nodes | PLANNED 节点中最靠前的 1-3 个 |
+| blockers | 阻塞项，优先级：最新 `SimulationFailure` > 最新 `SimulationTurn.metadata.blockers` > `PlanRevisionProposal` > 节点 `risk_notes` |
+| progress | `required_completed / required_total` 及百分比 |
+| latest_run | 最近一次 `SimulationRun` 的状态、失败摘要 |
+| proposal_summary | 修订建议数量与第一条标题（如有） |
+
+### zero_start 基线节点详情
+
+> 本段由 AI 按 `live_os/demo_seed/zero_start.py` 中 `ZERO_START_NODES` 同步生成，不是自动生成物。如需核实最新值，请直接读取源码。
+
+`seed_world --template zero_start` 写入 25 个 `PlanNode`，仅 Z0 是 `IN_PROGRESS`，其余均为 `PLANNED`。节点通过 `get_or_create` 幂等写入，重复 seed 不增加重复记录。
+
+---
+
+#### Z 阶段：零起点筹备
+
+**Z0 启动门槛筹备**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `MILESTONE` |
+| status | **`IN_PROGRESS`** |
+| sequence | 10 |
+| planned_duration_days | 14 |
+| required_people | 1–3 |
+| description | 确认自媒体渠道启动、报名入口开放、初筛标准和候选人沟通流程已预备。 |
+| completion_criteria | 报名漏斗已建立、初筛标准已文档化 |
+| risk_notes | 若自媒体曝光不足或报名标准未文档化，启动将延迟。 |
+
+**Z1 自媒体报名与初筛**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `RECRUITMENT` |
+| status | `PLANNED` |
+| parent | Z0 |
+| sequence | 20 |
+| planned_duration_days | 7 |
+| required_people | 2–4 |
+| description | 通过自媒体渠道发布招募信息，对报名者进行首轮初筛并形成候选池。 |
+| completion_criteria | 候选池 ≥ N 人 |
+| risk_notes | 报名质量过低时初筛效率会大幅下降。 |
+
+**Z2 候选成员能力矩阵**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `GOVERNANCE` |
+| status | `PLANNED` |
+| parent | Z0 |
+| sequence | 30 |
+| planned_duration_days | 5 |
+| required_people | 2–3 |
+| description | 对候选池成员建立能力矩阵，覆盖关键技能和可承担角色。 |
+| completion_criteria | 能力矩阵覆盖前 N 名候选人 |
+| risk_notes | 若关键技能门类空缺，需要定向补招或合作方承接。 |
+
+**Z3 合作方与责任文件签署方矩阵**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `GOVERNANCE` |
+| status | `PLANNED` |
+| parent | Z0 |
+| sequence | 40 |
+| planned_duration_days | 10 |
+| required_people | 2–5 |
+| description | 梳理必须由外部合作方或责任主体签署的文件清单，建立签署方矩阵。 |
+| completion_criteria | 责任文件清单已编制、签署方矩阵已建立 |
+| risk_notes | 缺少可签署主体时后续工程节点无法通过责任闭环校验。 |
+
+#### A 阶段：成员抵达与临时集结
+
+**A0 分批抵达与临时集结**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `STAGE` |
+| status | `PLANNED` |
+| sequence | 100 |
+| planned_duration_days | 14 |
+| required_people | 3–10 |
+| description | 先遣队抵达后建立临时指挥点，后续批次按计划抵达并完成登记和临时安置。 |
+| completion_criteria | 临时指挥点就绪、首批抵达登记完成、临时安置完成 |
+| risk_notes | 交通和天气可能导致分批抵达延迟。 |
+
+**A1 先遣队抵达并建立临时指挥点**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `OPERATIONS` |
+| status | `PLANNED` |
+| parent | A0 |
+| sequence | 110 |
+| planned_duration_days | 3 |
+| required_people | 3–6 |
+| description | 先遣队率先抵达目标区域，搭建临时指挥与通信设施。 |
+| completion_criteria | 指挥点搭建完成、通信联络测试通过 |
+| risk_notes | 无 |
+
+**A2 分批抵达登记和临时安置**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `OPERATIONS` |
+| status | `PLANNED` |
+| parent | A0 |
+| sequence | 120 |
+| planned_duration_days | 11 |
+| required_people | 2–6 |
+| description | 按批次完成抵达人员登记、健康筛查和临时住宿分配。 |
+| completion_criteria | 全部批次登记完成 |
+| risk_notes | 若临时住宿容量不足将导致抵达批次积压。 |
+
+#### B 阶段：初步开荒基础设施
+
+**B0 初步开荒基础设施**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `STAGE` |
+| status | `PLANNED` |
+| sequence | 200 |
+| planned_duration_days | 30 |
+| required_people | 8–20 |
+| description | 建立确保成员基本生存和协作所需的基础设施：食宿、供水、供电、卫生、仓储。 |
+| completion_criteria | 食住水电网卫生六大系统可运维 |
+| risk_notes | 物资采购周期长，机电设备进场可能需要外部承包商。 |
+
+**B1 建立临时公共食堂**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `WORK_PACKAGE` |
+| status | `PLANNED` |
+| parent | B0 |
+| sequence | 210 |
+| planned_duration_days | 7 |
+| required_people | 3–6 |
+| description | 搭建临时厨房和就餐区，建立食材采购与餐食供应制度。 |
+| completion_criteria | 厨房和就餐区搭建完成、首批食材到位、出餐流程测试通过 |
+| risk_notes | 食材供应链不完整时需提前储备干粮。 |
+
+**B2 搭建临时住宿和洗浴区**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `WORK_PACKAGE` |
+| status | `PLANNED` |
+| parent | B0 |
+| sequence | 220 |
+| planned_duration_days | 10 |
+| required_people | 4–10 |
+| description | 搭建帐篷/集装箱宿舍和临时洗浴设施。 |
+| completion_criteria | 住宿容量 ≥ 首批人数、洗浴设施可用 |
+| risk_notes | 极端天气可能延缓搭建进度。 |
+
+**B3 临时供水与净水系统**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `WORK_PACKAGE` |
+| status | `PLANNED` |
+| parent | B0 |
+| sequence | 230 |
+| planned_duration_days | 12 |
+| required_people | 3–6 |
+| description | 勘探水源、铺设临时供水管线并部署净水设备。 |
+| completion_criteria | 水源确认、净水设备出水达标 |
+| risk_notes | 地下水水质需提前检测。 |
+
+**B4 临时供电和安全照明**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `WORK_PACKAGE` |
+| status | `PLANNED` |
+| parent | B0 |
+| sequence | 240 |
+| planned_duration_days | 10 |
+| required_people | 3–5 |
+| description | 部署柴油发电机、临时配电箱和道路/营地安全照明。 |
+| completion_criteria | 发电机就位、主要通道照明覆盖 |
+| risk_notes | 燃油消耗高，需预估日耗量并提前储备。 |
+
+**B5 公共卫生和垃圾处理制度**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `OPERATIONS` |
+| status | `PLANNED` |
+| parent | B0 |
+| sequence | 250 |
+| planned_duration_days | 5 |
+| required_people | 2–4 |
+| description | 制定营地卫生和垃圾分类处理制度，防止疫病。 |
+| completion_criteria | 卫生制度已发布、垃圾处理点就绪 |
+| risk_notes | 无 |
+
+**B6 仓储一区和工具库**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `WORK_PACKAGE` |
+| status | `PLANNED` |
+| parent | B0 |
+| sequence | 260 |
+| planned_duration_days | 8 |
+| required_people | 3–6 |
+| description | 搭建首批仓储空间，存放工具、建材和关键耗材。 |
+| completion_criteria | 仓储一区投入使用 |
+| risk_notes | 缺少货架和防潮措施会导致物资损耗。 |
+
+#### C 阶段：第一轮扩容与新成员接纳
+
+**C0 第一轮扩容和新成员接纳**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `STAGE` |
+| status | `PLANNED` |
+| sequence | 300 |
+| planned_duration_days | 45 |
+| required_people | 10–30 |
+| description | 评估现有容量后接纳新一批成员，并启动正式住房、光伏和扩容仓储。 |
+| completion_criteria | 新成员审核完毕、一期住房可入住、光伏发电上线 |
+| risk_notes | 扩容速度受限于基建材料供应和人力投入。 |
+
+**C1 公共食堂一期**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `WORK_PACKAGE` |
+| status | `PLANNED` |
+| parent | C0 |
+| sequence | 310 |
+| planned_duration_days | 14 |
+| required_people | 4–8 |
+| description | 将临时食堂升级为标准化公共食堂，支持日均 100+ 人就餐。 |
+| completion_criteria | 食堂硬件就绪、配餐排班系统运行 |
+| risk_notes | 若无稳定食材供应链需延续干粮过渡。 |
+
+**C2 正式住房一期**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `WORK_PACKAGE` |
+| status | `PLANNED` |
+| parent | C0 |
+| sequence | 320 |
+| planned_duration_days | 30 |
+| required_people | 6–15 |
+| description | 建设首批正式住房（木结构或预制件），解除安置上限。 |
+| completion_criteria | 一期住房完工并验收 |
+| risk_notes | 建材到货延迟是最大风险。 |
+
+**C3 光伏一期 0.5MW**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `WORK_PACKAGE` |
+| status | `PLANNED` |
+| parent | C0 |
+| sequence | 330 |
+| planned_duration_days | 20 |
+| required_people | 4–8 |
+| description | 安装首批光伏面板与储能系统，替代柴油发电机。 |
+| completion_criteria | 光伏并网发电、储能系统可用 |
+| risk_notes | 光伏板运输和安装需要专业电工。 |
+
+**C4 仓储空间一期扩容**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `WORK_PACKAGE` |
+| status | `PLANNED` |
+| parent | C0 |
+| sequence | 340 |
+| planned_duration_days | 10 |
+| required_people | 3–6 |
+| description | 扩大仓储面积以应对扩容带来的物资增长。 |
+| completion_criteria | 扩容仓储存量翻倍 |
+| risk_notes | 无 |
+
+**C5 第一轮成员接纳评审**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `GOVERNANCE` |
+| status | `PLANNED` |
+| parent | C0 |
+| sequence | 350 |
+| planned_duration_days | 7 |
+| required_people | 3–5 |
+| description | 依据能力矩阵和社区规则对新一批申请人进行评审和接纳决策。 |
+| completion_criteria | 评审记录已归档、接纳名单已公示 |
+| risk_notes | 评审效率受信息完备程度影响。 |
+
+#### D 阶段：稳定运营与治理闭环
+
+**D0 稳定运营与治理闭环**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `STAGE` |
+| status | `PLANNED` |
+| sequence | 400 |
+| planned_duration_days | 30 |
+| required_people | 8–20 |
+| description | 当扩容完成后进入日常运营治理：排班常态化、财务台账闭环、安全巡检和下一轮计划修订。 |
+| completion_criteria | 运营排班制度化、财务台账完成首个周期 |
+| risk_notes | 治理闭环依赖所有前置阶段已稳定。 |
+
+**D1 食堂与住宿常态化排班**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `OPERATIONS` |
+| status | `PLANNED` |
+| parent | D0 |
+| sequence | 410 |
+| planned_duration_days | 7 |
+| required_people | 4–8 |
+| description | 建立食堂轮值和住宿维护的常态化排班制度。 |
+| completion_criteria | 排班表发布、运转满 1 周 |
+| risk_notes | 无 |
+
+**D2 财务与物资台账闭环**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `GOVERNANCE` |
+| status | `PLANNED` |
+| parent | D0 |
+| sequence | 420 |
+| planned_duration_days | 10 |
+| required_people | 2–4 |
+| description | 建立收支记录、物资出入库台账和定期审计机制。 |
+| completion_criteria | 首个周期台账完成 |
+| risk_notes | 无专人负责时台账质量难以保证。 |
+
+**D3 安全巡检与事故演练**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `OPERATIONS` |
+| status | `PLANNED` |
+| parent | D0 |
+| sequence | 430 |
+| planned_duration_days | 7 |
+| required_people | 2–4 |
+| description | 制定安全巡检清单并定期开展应急演练。 |
+| completion_criteria | 巡检清单执行、应急演练完成 1 次 |
+| risk_notes | 无 |
+
+**D4 第二轮计划修订与容量评估**
+
+| 字段 | 值 |
+| --- | --- |
+| node_type | `GOVERNANCE` |
+| status | `PLANNED` |
+| parent | D0 |
+| sequence | 440 |
+| planned_duration_days | 10 |
+| required_people | 3–6 |
+| description | 评估当前运营容量并启动第二轮计划修订，为下一步扩张或优化提供决策依据。 |
+| completion_criteria | 容量评估报告、第二轮计划修订草案 |
+| risk_notes | 评估质量取决于前置台账数据的完整性。 |
+
+---
+
+仿真反馈必须通过 `PlanRevisionProposal` / `PlanChangeSet`，人工采纳后生成新 `PlanRevision`，再同步文档摘要。
+
+### 模块结构变更
+
+- 旧"任务与提案线索"cards 及其相关 `dashboard.missions`、`mission_list.html`、`dashboard/partials/missions/` 路由已在 UI 层删除。
+- `dashboard_context` 中不再暴露 `missions` 字段；改为 `mainline`。
+- `map_points` 中的主线点位从 `context["mainline"]["current_nodes"]` 取，不再从 `missions` 取。
 
 ## 当前入口
 
@@ -163,9 +554,7 @@ http://127.0.0.1:20100/admin/
 http://127.0.0.1:20101/
 ```
 
-观察台当前展示执行计划主线、当前推进节点、必要节点完成数、计划节点列表和预估总成本。
-
-观察台也可以启动自动模拟，并展示最近一次运行的失败、节点状态、修订建议和结构化变更集：
+观察台首屏展示"当前主线"模块（阶段、当前节点、下一步、阻塞项、进度、最近仿真状态）。观察台也可以启动自动模拟，并展示最近一次运行的失败、节点状态、修订建议和结构化变更集：
 
 ```text
 POST /admin/simulation-lab/run-until-failure/

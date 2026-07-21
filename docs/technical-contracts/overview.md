@@ -1,11 +1,11 @@
-﻿---
+---
 sidebar_position: 1
 title: 技术契约概览
 ---
 
 # 技术契约概览
 
-技术契约分区用于说明 `technical-contracts` 中的 machine-readable contracts，包括 OpenAPI、JSON Schema、示例 payload 和本地校验规则。
+技术契约分区用于说明 `static/technical-contracts` 中的 machine-readable contracts，包括 OpenAPI、JSON Schema、示例 payload 和本地校验规则。
 
 这里的“技术契约”不是正式章程、决议、政策、规则或修订案。它服务于 Live OS、Simulation Engine 和未来外部客户端之间的数据结构和 API 兼容性。
 
@@ -14,7 +14,7 @@ title: 技术契约概览
 当前契约源头位于本仓库：
 
 ```text
-technical-contracts
+static/technical-contracts
 ```
 
 `openapi/`、`schemas/`、`examples/` 和 `scripts/validate_contracts.py` 是机器可读契约本体。修改这些文件时必须保持本地校验通过，不要把技术契约混入治理正式文本区。

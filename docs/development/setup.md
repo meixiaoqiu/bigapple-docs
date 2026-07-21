@@ -45,7 +45,7 @@ Docker 开发模式下，Django 进程运行在 `big-apple-admin`、`big-apple-r
 127.0.0.1 bigsim.local
 ```
 
-`BIG_APPLE_CONTRACTS_ROOT` 默认使用 `../bigapple-docs/technical-contracts`，通常不需要手动设置；当前运行时代码不直接读取 contracts 文件，普通 CI 和 Live OS 自检也不要求相邻 docs 仓库存在。
+`BIG_APPLE_CONTRACTS_ROOT` 默认使用 `../bigapple-docs/static/technical-contracts`，通常不需要手动设置；当前运行时代码不直接读取 contracts 文件，普通 CI 和 Live OS 自检也不要求相邻 docs 仓库存在。
 
 `start.bat` 会检查 Docker Desktop、`.env`、`dev-net`、`mysql97`、`nginx` 和本地域名映射。它只启动和连接已有容器，不会创建数据库容器、nginx 容器、Docker network 或数据卷。
 
@@ -285,7 +285,7 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py t
 
 不要先在 Live OS 里发明响应字段。变更顺序必须是：
 
-1. 修改 `technical-contracts`
+1. 修改 `static/technical-contracts`
 2. 修改 Live OS 实现
 3. 更新示例和测试
 4. 更新文档
