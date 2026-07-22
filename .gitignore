@@ -12,6 +12,7 @@
 .env
 .env.*
 !.env.example
+!.env.screenshots.example
 
 # Logs
 npm-debug.log*

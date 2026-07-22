@@ -440,3 +440,191 @@ docs/ 中的说明书和截图
 | `docs/development/page-screenshots.md` | 本文档 |
 
 完整源码可在开源仓库中查看。
+
+---
+
+## 登录页面截图
+
+### 认证 Profile
+
+对于需要登录的受保护页面，manifest 中配置了 `authProfiles` 和每个任务的 `auth` 字段：
+
+```json
+{
+  "authProfiles": {
+    "public": { "description": "无需登录的公开页面" },
+    "member": {
+      "description": "普通成员",
+      "loginPath": "/login/",
+      "loginEnv": "DOCS_SCREENSHOT_MEMBER_LOGIN",
+      "passwordEnv": "DOCS_SCREENSHOT_MEMBER_PASSWORD"
+    },
+    "governance": {
+      "description": "治理成员",
+      "loginPath": "/login/",
+      "loginEnv": "DOCS_SCREENSHOT_GOVERNANCE_LOGIN",
+      "passwordEnv": "DOCS_SCREENSHOT_GOVERNANCE_PASSWORD"
+    },
+    "superuser": {
+      "description": "超级管理员（admin 端口）",
+      "baseUrlEnv": "SCREENSHOT_ADMIN_BASE_URL",
+      "loginPath": "/admin/login/",
+      "loginEnv": "DOCS_SCREENSHOT_SUPERUSER_LOGIN",
+      "passwordEnv": "DOCS_SCREENSHOT_SUPERUSER_PASSWORD"
+    }
+  }
+}
+```
+
+每个任务通过 `"auth": "public|member|governance|superuser"` 指定所需身份。superuser profile 通过 `baseUrlEnv` 读取 `SCREENSHOT_ADMIN_BASE_URL`，用于指向 admin 入口。
+
+### 账号准备
+
+受保护页面截图使用**预先存在的本地测试账号**。Docs 不负责创建账号、分配角色或写入数据——这些是 Live OS 自己的职责。
+
+账号应由维护者在 Live OS 中通过正常的产品或管理流程准备：
+
+- **普通成员账号**：能正常登录并访问成员工作区；
+- **治理成员账号**：按 Live OS 正常角色与权限机制获得报名审核权限；
+- **管理后台账号**：在控制面数据库中正常创建并具有 `staff` / `superuser` 权限。
+
+Docs 不规定账号的具体用户名、Member 编号或 Live OS 内部如何创建角色。
+
+### 创建本地配置文件
+
+项目提供了环境变量模板 `.env.screenshots.example`。使用前先复制：
+
+```powershell
+Copy-Item .env.screenshots.example .env.screenshots
+```
+
+- `.env.screenshots.example` 是模板，包含变量名和空值；
+- `.env.screenshots` 保存本地实际值，已被 Git 忽略；
+- 截图脚本启动时会自动读取 `.env.screenshots`（不覆盖终端中显式设置的环境变量）；
+- 终端环境变量优先级高于 `.env.screenshots` 文件。
+
+### 两个基础地址
+
+| 变量 | 用途 |
+| --- | --- |
+| `SCREENSHOT_BASE_URL` | 公开页面、成员页面和治理页面的入口 |
+| `SCREENSHOT_ADMIN_BASE_URL` | Django Admin 和 Simulation Lab 的入口 |
+
+两个地址可以相同（例如反向代理统一承载），也可以不同（例如分别指向不同端口或域名）。
+
+### 所需凭据变量
+
+| 变量 | 用途 |
+| --- | --- |
+| `DOCS_SCREENSHOT_MEMBER_LOGIN` | 已有普通成员账号的登录标识 |
+| `DOCS_SCREENSHOT_MEMBER_PASSWORD` | 已有普通成员账号的密码 |
+| `DOCS_SCREENSHOT_GOVERNANCE_LOGIN` | 已有治理成员账号的登录标识 |
+| `DOCS_SCREENSHOT_GOVERNANCE_PASSWORD` | 已有治理成员账号的密码 |
+| `DOCS_SCREENSHOT_SUPERUSER_LOGIN` | 已有管理账号的登录标识 |
+| `DOCS_SCREENSHOT_SUPERUSER_PASSWORD` | 已有管理账号的密码 |
+
+设置环境变量**不会**创建账号、修改密码或分配权限。它只是向截图脚本提供已有账号的登录凭据。
+
+### 同一身份只登录一次
+
+脚本按 `auth` 字段分组任务。同一认证身份的多个页面共享同一个 BrowserContext，只登录一次。不同身份的 Cookie 互不共享。脚本结束后关闭所有上下文和浏览器。
+
+### CLI 参数
+
+```powershell
+npm run capture:screenshots -- --help          # 显示帮助
+npm run capture:screenshots -- --list          # 列出所有任务（不启动浏览器）
+npm run capture:screenshots -- --auth public   # 只执行公开页面
+npm run capture:screenshots -- --id feedback   # 只执行指定任务
+npm run capture:screenshots                    # 完整执行
+```
+
+### 完整执行示例
+
+```powershell
+Copy-Item .env.screenshots.example .env.screenshots
+# 编辑 .env.screenshots，填入实际地址和已有账号凭据
+
+cd bigapple-docs
+npm run capture:screenshots
+npm run build
+```
+
+### 账号不存在或权限不足
+
+出现以下情况时，截图脚本应正常失败（不绕过权限）：
+
+- 账号不存在；
+- 密码错误；
+- 账号被禁用；
+- 没有目标页面权限；
+- 被重定向回登录页；
+- 页面标题或身份选择器不符合预期。
+
+处理方法是回到 Live OS，按其正常账号与权限流程修正，而不是修改 Docs 绕过权限。
+
+### 登录失败排查
+
+- 确认 `.env.screenshots` 已根据 `.env.screenshots.example` 模板正确配置
+- 确认 Live OS 中目标账号存在且密码正确
+- 确认账号具备目标页面所需权限
+- 确认 `SCREENSHOT_BASE_URL` 和 `SCREENSHOT_ADMIN_BASE_URL` 分别指向正确的入口
+- 确认 Live OS 服务正常运行
+- 确认登录页可手动访问
+- 登录页返回 200 不代表认证成功——脚本会校验登录后 URL 和页面标题
+- 受保护页面截图仍会校验最终 URL、选择器和标题，防止截图到登录页
+- 如果 admin 页面返回 404，检查 `SCREENSHOT_ADMIN_BASE_URL` 是否指向正确的管理后台入口（不是普通站点入口）
+
+### 常见错误
+
+#### .env.screenshots 不存在
+
+```powershell
+Copy-Item .env.screenshots.example .env.screenshots
+```
+
+#### 地址变量缺失
+
+预检阶段会明确列出缺少的变量名。检查 `.env.screenshots` 是否已填写 `SCREENSHOT_BASE_URL` 和 `SCREENSHOT_ADMIN_BASE_URL`。
+
+#### 地址格式错误
+
+地址必须是完整 URL（包含 `http://` 或 `https://` 前缀），例如 `http://127.0.0.1:20101`，不能只是域名或 IP。
+
+#### 账号/密码/权限/重定向/标题/选择器问题
+
+参见"登录失败排查"和上一节"常见错误排查"。
+
+### 数据稳定性
+
+截图内容取决于当前所连接的 Live OS 本地测试环境。Docs 不负责初始化 Live OS 业务数据。
+
+如果维护者希望截图长期稳定，应在 Live OS 自己的开发环境中维护通用测试数据或演示世界。这类数据能力应当对 Live OS 本身有独立价值，不应为了 Docs 截图专门写入。Docs 只消费页面最终呈现结果。
+
+### 架构边界
+
+Docs 与 Live OS 是两个独立项目，允许的唯一交互方式：
+
+```
+Docs → 通过 HTTP 打开 Live OS → 使用普通登录表单 → 读取浏览器最终渲染页面 → 截图
+```
+
+**不允许**的关系：
+
+- Docs 直接连接 Live OS 数据库；
+- Docs 导入 Live OS Python 模型；
+- Docs 要求 Live OS 提供截图专用 seed 命令；
+- Docs 在 Live OS 中创建截图专用永久代码；
+- Live OS 了解 Docs manifest 或截图脚本。
+
+路径、页面标题、CSS 选择器和登录表单属于 HTTP 页面契约，Docs 可以配置；数据库结构和内部模型不属于 Docs 依赖范围。
+
+即使删除 `bigapple-docs`，Live OS 也应能独立开发和运行。即使替换或删除 `bigapple-liveos`，Docs 截图工具也只是失去目标网站，不影响其自身工程结构。
+
+### 安全注意事项
+
+- 密码不进入 manifest、脚本、文档或 Git
+- Cookie 和 storage state 不保存到文件
+- 不使用生产环境账号
+- `.env.screenshots.example` 提供变量名示例，不含真实值
+- `.env` 和 `.env.screenshots` 已被 `.gitignore` 忽略

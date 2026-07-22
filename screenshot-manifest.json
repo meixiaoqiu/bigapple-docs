@@ -1,4 +1,41 @@
 {
+  "baseUrlEnv": "SCREENSHOT_BASE_URL",
+  "authProfiles": {
+    "public": {
+      "description": "无需登录的公开页面"
+    },
+    "member": {
+      "description": "普通成员",
+      "loginPath": "/login/",
+      "loginEnv": "DOCS_SCREENSHOT_MEMBER_LOGIN",
+      "passwordEnv": "DOCS_SCREENSHOT_MEMBER_PASSWORD",
+      "loginSuccessCheck": {
+        "urlNotContain": "/login",
+        "selector": "h1"
+      }
+    },
+    "governance": {
+      "description": "治理成员",
+      "loginPath": "/login/",
+      "loginEnv": "DOCS_SCREENSHOT_GOVERNANCE_LOGIN",
+      "passwordEnv": "DOCS_SCREENSHOT_GOVERNANCE_PASSWORD",
+      "loginSuccessCheck": {
+        "urlNotContain": "/login",
+        "selector": "h1"
+      }
+    },
+    "superuser": {
+      "description": "超级管理员（管理后台）",
+      "baseUrlEnv": "SCREENSHOT_ADMIN_BASE_URL",
+      "loginPath": "/admin/login/",
+      "loginEnv": "DOCS_SCREENSHOT_SUPERUSER_LOGIN",
+      "passwordEnv": "DOCS_SCREENSHOT_SUPERUSER_PASSWORD",
+      "loginSuccessCheck": {
+        "urlNotContain": "/admin/login",
+        "selector": "h1"
+      }
+    }
+  },
   "pages": [
     {
       "id": "observer-dashboard",
@@ -7,7 +44,8 @@
       "waitFor": "#dashboard-events",
       "expectTitle": "大苹果社区动态",
       "output": "docs/product-pages/observer-dashboard/images/dashboard.webp",
-      "fullPage": false
+      "fullPage": false,
+      "auth": "public"
     },
     {
       "id": "observer-finance",
@@ -16,7 +54,8 @@
       "waitFor": "h1",
       "expectTitle": "公开财务",
       "output": "docs/product-pages/observer-finance/images/finance.webp",
-      "fullPage": false
+      "fullPage": false,
+      "auth": "public"
     },
     {
       "id": "observer-events",
@@ -25,7 +64,8 @@
       "waitFor": "h1",
       "expectTitle": "公共事件流",
       "output": "docs/product-pages/observer-events/images/events.webp",
-      "fullPage": false
+      "fullPage": false,
+      "auth": "public"
     },
     {
       "id": "simulation-reports",
@@ -34,7 +74,8 @@
       "waitFor": "h2",
       "expectTitle": "仿真档案馆",
       "output": "docs/product-pages/simulation-reports/images/simulations.webp",
-      "fullPage": false
+      "fullPage": false,
+      "auth": "public"
     },
     {
       "id": "mainline",
@@ -43,7 +84,8 @@
       "waitFor": "h1",
       "expectTitle": "完整主线",
       "output": "docs/product-pages/mainline/images/mainline.webp",
-      "fullPage": false
+      "fullPage": false,
+      "auth": "public"
     },
     {
       "id": "event-ledger",
@@ -52,7 +94,8 @@
       "waitFor": "table",
       "expectTitle": "审计账本",
       "output": "docs/product-pages/event-ledger/images/event-ledger.webp",
-      "fullPage": false
+      "fullPage": false,
+      "auth": "public"
     },
     {
       "id": "feedback",
@@ -61,7 +104,38 @@
       "waitFor": "h1",
       "expectTitle": "社区反馈",
       "output": "docs/product-pages/feedback/images/feedback.webp",
-      "fullPage": false
+      "fullPage": false,
+      "auth": "public"
+    },
+    {
+      "id": "workspace-home",
+      "title": "成员工作台",
+      "path": "/workspace/",
+      "waitFor": "h1",
+      "expectTitle": "成员工作台",
+      "output": "docs/product-pages/workspace-home/images/workspace.webp",
+      "fullPage": false,
+      "auth": "member"
+    },
+    {
+      "id": "application-review",
+      "title": "成员报名审核",
+      "path": "/workspace/applications/",
+      "waitFor": "h1",
+      "expectTitle": "成员报名审核",
+      "output": "docs/product-pages/member-application-review/images/applications.webp",
+      "fullPage": false,
+      "auth": "governance"
+    },
+    {
+      "id": "simulation-lab",
+      "title": "仿真实验后台",
+      "path": "/admin/simulation-lab/",
+      "waitFor": "#content-main",
+      "expectTitle": "仿真实验后台",
+      "output": "docs/product-pages/simulation-lab/images/simulation-lab.webp",
+      "fullPage": false,
+      "auth": "superuser"
     }
   ]
 }
