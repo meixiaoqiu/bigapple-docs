@@ -69,6 +69,7 @@ const sidebars = {
             'development/ai-guide',
             'development/theme-system',
             'development/remote-dev',
+            'development/docs-maintenance',
           ],
         },
         {

@@ -40,6 +40,15 @@ const config = {
         docs: {
           routeBasePath: '/',
           sidebarPath: './sidebars.js',
+          // 版本管理：当前 docs/ 为最新/下一版本
+          // 冻结版本后，最新冻结版本占据 routeBasePath，当前版可通过 /next 访问
+          lastVersion: 'current',
+          versions: {
+            current: {
+              label: '下一版本',
+              banner: 'unreleased',
+            },
+          },
         },
         blog: false,
         theme: {},
@@ -73,6 +82,10 @@ const config = {
             sidebarId: 'docsSidebar',
             position: 'left',
             label: '全部文档',
+          },
+          {
+            type: 'docsVersionDropdown',
+            position: 'right',
           },
           {
             type: 'localeDropdown',
