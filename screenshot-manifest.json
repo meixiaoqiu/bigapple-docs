@@ -1,0 +1,67 @@
+{
+  "pages": [
+    {
+      "id": "observer-dashboard",
+      "title": "Observer 仪表盘",
+      "path": "/",
+      "waitFor": "#dashboard-events",
+      "expectTitle": "大苹果社区动态",
+      "output": "docs/product-pages/observer-dashboard/images/dashboard.webp",
+      "fullPage": false
+    },
+    {
+      "id": "observer-finance",
+      "title": "公开财务",
+      "path": "/finance/",
+      "waitFor": "h1",
+      "expectTitle": "公开财务",
+      "output": "docs/product-pages/observer-finance/images/finance.webp",
+      "fullPage": false
+    },
+    {
+      "id": "observer-events",
+      "title": "公共事件列表",
+      "path": "/events/",
+      "waitFor": "h1",
+      "expectTitle": "公共事件流",
+      "output": "docs/product-pages/observer-events/images/events.webp",
+      "fullPage": false
+    },
+    {
+      "id": "simulation-reports",
+      "title": "仿真报告列表",
+      "path": "/simulations/",
+      "waitFor": "h2",
+      "expectTitle": "仿真档案馆",
+      "output": "docs/product-pages/simulation-reports/images/simulations.webp",
+      "fullPage": false
+    },
+    {
+      "id": "mainline",
+      "title": "完整主线",
+      "path": "/dashboard/mainline/",
+      "waitFor": "h1",
+      "expectTitle": "完整主线",
+      "output": "docs/product-pages/mainline/images/mainline.webp",
+      "fullPage": false
+    },
+    {
+      "id": "event-ledger",
+      "title": "审计账本列表",
+      "path": "/event-ledger/",
+      "waitFor": "table",
+      "expectTitle": "审计账本",
+      "output": "docs/product-pages/event-ledger/images/event-ledger.webp",
+      "fullPage": false
+    },
+    {
+      "id": "feedback",
+      "title": "反馈列表",
+      "path": "/feedback/",
+      "waitFor": "h1",
+      "expectTitle": "社区反馈",
+      "output": "docs/product-pages/feedback/images/feedback.webp",
+      "fullPage": false
+    }
+  ]
+}

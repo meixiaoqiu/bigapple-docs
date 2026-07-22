@@ -139,10 +139,46 @@ Markdown 中使用相对路径：
 
 ---
 
-## 后续自动截图集成
+## 页面说明书与截图维护
 
-计划引入的 Playwright 自动截图功能，应按以下规范输出文件：
+### 页面说明书规则
 
-- 截图脚本读取文档页面的 path（如 `product/observer`），将截图保存到对应的 `images/` 目录。
-- 输出文件命名与文档页面对应，使用 `.webp` 格式。
-- 截图清单（manifest）记录文档路径与截图文件的对应关系，便于批量更新。
+- 一个主要页面原则上对应一篇说明书（`index.md`）。
+- 说明书与截图放在同一目录树下，截图通过相对路径引用。
+- 不为普通弹窗、确认页和细碎页面单独建说明书。
+- 页面说明必须基于 Live OS 的实际实现，不凭空编造。
+
+### 截图管理
+
+截图配置统一维护在项目根目录的 `screenshot-manifest.json`，每项包含 `id`、`title`、`path`、`waitFor`、`output` 和 `fullPage`。
+
+生成截图：
+
+```bash
+npm run capture:screenshots
+```
+
+截图脚本执行流程：
+
+1. 校验 `screenshot-manifest.json`（检查 id / output 唯一性、path 合法性、output 限制在 `docs/` 内）
+2. 按顺序确定浏览器（`PLAYWRIGHT_EXECUTABLE_PATH` → Playwright 自带 Chromium → 系统 Chrome）
+3. 读取 `SCREENSHOT_BASE_URL` 环境变量（默认 `http://127.0.0.1:20101`）
+4. 逐个访问页面，固定视口 1440×900、浅色模式、zh-CN 语言、Asia/Shanghai 时区
+5. 关闭动画和过渡效果后截图，PNG Buffer → Sharp 内存转 WebP Buffer → 直接写入正式文件
+6. 写入后校验文件存在性、大小、格式（webp）、宽度和高度
+7. 任务全部完成后递归检查输出目录，确保无 `.tmp` 残留
+8. 任意任务失败时退出码为非零
+
+### 截图与版本冻结的关系
+
+- 当前截图使用稳定文件名并直接覆盖。
+- 创建历史版本时，说明书和截图随 `docs/` 一起冻结到 `versioned_docs/`。
+- 冻结前务必先运行 `npm run capture:screenshots`，确保截图是最新的。
+
+### 截图工具源码的位置
+
+- `screenshot-manifest.json` 和 `scripts/screenshot-pages.js` 保留在仓库工程目录，由 Git 管理历史；
+- 它们不放进 `docs/`，也不在 `static/` 中维护副本；
+- 页面说明书和截图随 Docusaurus 版本冻结，截图工具源码不随版本重复复制。
+
+具体配置、运行方法和故障排查见：[页面自动截图使用说明](./page-screenshots.md)。

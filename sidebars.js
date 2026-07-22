@@ -48,6 +48,19 @@ const sidebars = {
           items: [
             'product/member-workspace',
             'product/observer',
+            {
+              type: 'category',
+              label: '页面说明书',
+              items: [
+                'product-pages/observer-dashboard/index',
+                'product-pages/observer-finance/index',
+                'product-pages/observer-events/index',
+                'product-pages/simulation-reports/index',
+                'product-pages/mainline/index',
+                'product-pages/event-ledger/index',
+                'product-pages/feedback/index',
+              ],
+            },
             'product/admin',
             'product/simulation',
             'product/project-plan',
@@ -69,6 +82,8 @@ const sidebars = {
             'development/ai-guide',
             'development/theme-system',
             'development/remote-dev',
+            'development/page-guide-inventory',
+            'development/page-screenshots',
             'development/docs-maintenance',
           ],
         },
