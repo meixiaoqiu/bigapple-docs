@@ -50,7 +50,17 @@ const config = {
             },
           },
         },
-        blog: false,
+        blog: {
+          routeBasePath: 'updates',
+          blogTitle: '建设动态',
+          blogDescription: '大苹果社区建设进展',
+          postsPerPage: 10,
+          onUntruncatedBlogPosts: 'ignore',
+          feedOptions: {
+            type: 'all',
+            title: '大苹果社区建设动态',
+          },
+        },
         theme: {},
       }),
     ],
@@ -66,22 +76,27 @@ const config = {
         title: '大苹果社区',
         items: [
           {
-            type: 'doc',
-            docId: 'project/overview',
-            position: 'left',
-            label: '认识大苹果',
-          },
-          {
-            type: 'doc',
-            docId: 'project/roadmap',
-            position: 'left',
-            label: '当前进展',
-          },
-          {
             type: 'docSidebar',
             sidebarId: 'docsSidebar',
             position: 'left',
-            label: '全部文档',
+            label: '社区文档',
+          },
+          {
+            type: 'docSidebar',
+            sidebarId: 'liveOsSidebar',
+            position: 'left',
+            label: 'Live OS',
+          },
+          {
+            type: 'docSidebar',
+            sidebarId: 'developerSidebar',
+            position: 'left',
+            label: '开发者文档',
+          },
+          {
+            to: '/updates',
+            position: 'left',
+            label: '建设动态',
           },
           {
             type: 'docsVersionDropdown',

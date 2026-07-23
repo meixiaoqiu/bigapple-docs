@@ -17,7 +17,7 @@ import Link from '@docusaurus/Link';
 
 <div className="margin-top--md margin-bottom--md">
   <Link to="./project/overview" className="button button--primary button-sm">了解大苹果</Link>
-  <Link to="./project/roadmap" className="button button--link margin-left--sm">查看当前进展 →</Link>
+  <Link to="./community-plan" className="button button--link margin-left--sm">查看社区建设计划 →</Link>
 </div>
 
 ---
@@ -108,39 +108,24 @@ import Link from '@docusaurus/Link';
 
 ## 🗺️ 从计划到现实
 
-大苹果不会一步跳到现实社区。它按以下路径渐进：
+大苹果不会一步跳到现实社区。它按六个阶段渐进推进：从理念与规则整理开始，经过成本与组织模型核算、软件与仿真验证，再到挑选并建设第一个正式据点，最后在验证有效后逐步扩展。
 
-1. **理念与规则整理**——明确社区要解决什么问题、依什么原则运行。
-2. **成本、资源和组织模型**——核算共同生活需要多少资源、如何分摊和维护。
-3. **软件与仿真系统**——开发 Big Apple Live OS，并通过模拟运行提前发现制度漏洞。
-4. **挑选第一个正式据点**——在充分仿真和准备后，选择并建设第一个正式社区据点。
-5. **验证和修正规则**——根据实际运行反馈持续调整制度、流程和工具。
-6. **逐步扩大规模**——在验证有效的前提下谨慎扩展。
+:::tip[📖 了解更多]
+完整的六阶段路径、各阶段当前状态和前置条件见[社区建设计划](./community-plan.md)。
+:::
 
-仿真不能替代现实，但它可以在现实投入大量资源之前，提前暴露结构性问题。
+## 📊 项目状态
 
----
+**当前阶段：方案设计、制度整理、软件开发与数字化仿真阶段。现实社区尚未正式建立。**
 
-## 🚧 当前进展
+当前工作集中在规则整理、成本与组织模型研究、Live OS 开发、仿真准备和开放文档建设。
 
-**当前阶段：方案设计、制度整理、软件开发与数字化仿真阶段。**
+<div className="margin-top--sm">
+  <Link to="./community-plan" className="button button--link button--sm">查看社区建设计划</Link>
+  <Link to="/updates" className="button button--link button--sm margin-left--sm">阅读建设动态</Link>
+</div>
 
-现实社区尚未正式建立。
-
-当前正在推进的工作包括：
-
-- 社区运行规则的草案编写
-- 治理和财务制度的框架设计
-- 数据化建设计划
-- Big Apple Live OS 的开发（当前处于 [P3 运营后台初始切片](./project/roadmap.md)）
-- 模拟仿真系统的规划
-- 开放文档的持续完善
-
-::::info[📊 进度说明]
-详细阶段划分和完成标准请阅读[产品路线图](./project/roadmap.md)。
-::::
-
----
+> 最后更新：2026-07-23
 
 ## 📚 从哪里继续了解
 

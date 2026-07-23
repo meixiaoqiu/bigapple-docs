@@ -2,99 +2,131 @@
 
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
+  // ── 主侧边栏：社区介绍、路线图、治理 ──────────────────
   docsSidebar: [
     'index',
-    {
-      type: 'category',
-      label: '认识大苹果',
-      link: {type: 'doc', id: 'project/overview'},
-      items: ['project/product-planning'],
-    },
-    {
-      type: 'category',
-      label: '建设计划',
-      link: {type: 'doc', id: 'project/roadmap'},
-      items: [],
-    },
+    'community-plan',
     {
       type: 'category',
       label: '运行制度',
       link: {type: 'doc', id: 'governance-instruments/index'},
       items: [],
     },
+  ],
+
+  // ── Live OS 专用侧边栏 ──────────────────────────────
+  liveOsSidebar: [
+    'development/page-guide-inventory',
     {
       type: 'category',
-      label: '公开与透明',
-      link: {type: 'doc', id: 'technical-contracts/overview'},
+      label: 'Observer 公开页面',
       items: [
-        'technical-contracts/openapi',
-        'technical-contracts/schemas',
-        'technical-contracts/examples-validation',
+        'product-pages/observer-dashboard/index',
+        'product-pages/observer-events/index',
+        'product-pages/observer-finance/index',
+        'product-pages/simulation-reports/index',
+        'product-pages/mainline/index',
+        'product-pages/event-ledger/index',
       ],
     },
     {
       type: 'category',
-      label: '参与建设',
+      label: '社区功能',
       items: [
-        {
-          type: 'category',
-          label: '架构',
-          link: {type: 'doc', id: 'architecture/overview'},
-          items: ['architecture/governance-boundary', 'architecture/database-schema'],
-        },
-        {
-          type: 'category',
-          label: '产品功能',
-          items: [
-            'product/member-workspace',
-            'product/observer',
-            {
-              type: 'category',
-              label: '页面说明书',
-              items: [
-                'product-pages/observer-dashboard/index',
-                'product-pages/observer-finance/index',
-                'product-pages/observer-events/index',
-                'product-pages/simulation-reports/index',
-                'product-pages/mainline/index',
-                'product-pages/event-ledger/index',
-                'product-pages/feedback/index',
-                'product-pages/workspace-home/index',
-                'product-pages/member-application-review/index',
-                'product-pages/simulation-lab/index',
-              ],
-            },
-            'product/admin',
-            'product/simulation',
-            'product/project-plan',
-          ],
-        },
-        {
-          type: 'category',
-          label: '运行',
-          link: {type: 'doc', id: 'operations/runtime-boundary'},
-          items: ['operations/mysql-migration'],
-        },
-        {
-          type: 'category',
-          label: '开发',
-          items: [
-            'development/setup',
-            'development/world-databases',
-            'development/simulation-commands',
-            'development/ai-guide',
-            'development/theme-system',
-            'development/remote-dev',
-            'development/page-guide-inventory',
-            'development/page-screenshots',
-            'development/docs-maintenance',
-          ],
-        },
-        {
-          type: 'category',
-          label: '参考',
-          items: ['reference/api'],
-        },
+        'product-pages/feedback/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: '受保护页面',
+      items: [
+        'product-pages/workspace-home/index',
+        'product-pages/member-application-review/index',
+        'product-pages/simulation-lab/index',
+      ],
+    },
+  ],
+
+  // ── 开发者文档专用侧边栏 ──────────────────────────────
+  developerSidebar: [
+    {
+      type: 'category',
+      label: '开始开发',
+      items: [
+        'development/setup',
+        'development/remote-dev',
+      ],
+    },
+    'project/overview',
+    'project/roadmap',
+    {
+      type: 'category',
+      label: '系统架构',
+      items: [
+        'architecture/overview',
+        'architecture/governance-boundary',
+        'architecture/database-schema',
+      ],
+    },
+    {
+      type: 'category',
+      label: '产品规格',
+      items: [
+        'project/product-planning',
+        'product/member-workspace',
+        'product/observer',
+        'product/admin',
+        'product/simulation',
+        'product/project-plan',
+      ],
+    },
+    {
+      type: 'category',
+      label: '数据库与运行',
+      items: [
+        'development/world-databases',
+        'operations/mysql-migration',
+        'operations/runtime-boundary',
+      ],
+    },
+    {
+      type: 'category',
+      label: '技术契约',
+      items: [
+        'technical-contracts/overview',
+        'technical-contracts/openapi',
+        'technical-contracts/schemas',
+        'technical-contracts/examples-validation',
+        'reference/api',
+      ],
+    },
+    {
+      type: 'category',
+      label: '仿真开发',
+      items: [
+        'development/simulation-commands',
+      ],
+    },
+    {
+      type: 'category',
+      label: '前端与主题',
+      items: [
+        'development/theme-system',
+      ],
+    },
+    {
+      type: 'category',
+      label: '文档维护',
+      items: [
+        'development/page-screenshots',
+        'development/docs-maintenance',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'AI Agent 协作',
+      items: [
+        'development/ai-guide',
       ],
     },
   ],
