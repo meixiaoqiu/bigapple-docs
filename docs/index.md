@@ -17,7 +17,7 @@ import Link from '@docusaurus/Link';
 
 <div className="margin-top--md margin-bottom--md">
   <Link to="./project/overview" className="button button--primary button-sm">了解大苹果</Link>
-  <Link to="./community-plan" className="button button--link margin-left--sm">查看社区建设计划 →</Link>
+  <Link to="./project/roadmap" className="button button--link margin-left--sm">查看项目路线图 →</Link>
 </div>
 
 ---
@@ -111,7 +111,7 @@ import Link from '@docusaurus/Link';
 大苹果不会一步跳到现实社区。它按六个阶段渐进推进：从理念与规则整理开始，经过成本与组织模型核算、软件与仿真验证，再到挑选并建设第一个正式据点，最后在验证有效后逐步扩展。
 
 :::tip[📖 了解更多]
-完整的六阶段路径、各阶段当前状态和前置条件见[社区建设计划](./community-plan.md)。
+完整的六阶段路径、各阶段当前状态和前置条件见[项目路线图](./project/roadmap.md)。
 :::
 
 ## 📊 项目状态
@@ -121,7 +121,7 @@ import Link from '@docusaurus/Link';
 当前工作集中在规则整理、成本与组织模型研究、Live OS 开发、仿真准备和开放文档建设。
 
 <div className="margin-top--sm">
-  <Link to="./community-plan" className="button button--link button--sm">查看社区建设计划</Link>
+  <Link to="./project/roadmap" className="button button--link button--sm">查看项目路线图</Link>
   <Link to="/updates" className="button button--link button--sm margin-left--sm">阅读建设动态</Link>
 </div>
 

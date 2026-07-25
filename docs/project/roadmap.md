@@ -327,4 +327,4 @@ title: 产品路线图
 
 近期建设任务和阶段性进展记录在[建设动态](/updates/)中。
 
-2026-07-23 的任务快照见《[文档站完成第一轮内容分区](/updates/2026/07/23/docs-restructure)》。
+2026-07-25 的阶段性回顾见《[Big Apple Live OS 与文档站建设周报](/updates/2026/07/25/liveos-docs-weekly-report)》。

@@ -5,7 +5,6 @@ const sidebars = {
   // ── 主侧边栏：社区介绍、路线图、治理 ──────────────────
   docsSidebar: [
     'index',
-    'community-plan',
     {
       type: 'category',
       label: '运行制度',
