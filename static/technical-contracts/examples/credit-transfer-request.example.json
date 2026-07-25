@@ -1,0 +1,6 @@
+{
+  "to_member_no": "mem-0002",
+  "amount": 30,
+  "reason": "感谢帮忙",
+  "idempotency_key": "client-20260725-001"
+}

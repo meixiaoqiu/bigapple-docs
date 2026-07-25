@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "redemption-order-create-request.schema.json",
+  "title": "RedemptionOrderCreateRequest",
+  "description": "兑换订单创建请求。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["credit_amount"],
+  "properties": {
+    "credit_amount": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "兑换积分数，正整数。"
+    },
+    "item_type": {
+      "type": "string",
+      "enum": ["meal", "goods", "resource_use", "room_upgrade", "storage", "parking", "training", "service", "fee_reduction", "other"],
+      "description": "项目类型。"
+    },
+    "title": {
+      "type": "string",
+      "description": "订单标题。"
+    },
+    "reason": {
+      "type": "string",
+      "description": "可选备注。"
+    },
+    "original_amount_rmb": {
+      "type": ["number", "null"],
+      "description": "原价（元）。"
+    },
+    "cash_amount_rmb": {
+      "type": ["number", "null"],
+      "description": "现金部分（元）。"
+    },
+    "resource_id": {
+      "type": "string",
+      "description": "关联资源 ID。"
+    },
+    "item_snapshot": {
+      "type": "object",
+      "description": "商品/服务快照。"
+    },
+    "finance_treatment_ref": {
+      "type": "string",
+      "description": "财务处理引用。"
+    },
+    "merchant_id": {
+      "type": "string",
+      "description": "关联商户 ID（可选）。仅 cash_settlement_merchant 可用；member_micro_merchant 应使用自由转账。"
+    },
+    "idempotency_key": {
+      "type": ["string", "null"],
+      "description": "客户端幂等键。"
+    }
+  }
+}

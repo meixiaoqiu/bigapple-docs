@@ -1,0 +1,12 @@
+{
+  "credit_amount": 30,
+  "item_type": "meal",
+  "title": "午餐兑换",
+  "reason": "中餐兑换",
+  "original_amount_rmb": 25.00,
+  "cash_amount_rmb": 0,
+  "resource_id": "res-meal",
+  "item_snapshot": {"meal_name": "午餐", "provider": "食堂"},
+  "finance_treatment_ref": "",
+  "idempotency_key": "client-20260725-001"
+}

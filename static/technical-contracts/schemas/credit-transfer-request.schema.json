@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "credit-transfer-request.schema.json",
+  "title": "CreditTransferRequest",
+  "description": "成员自由转账请求体。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["to_member_no", "amount"],
+  "properties": {
+    "to_member_no": {
+      "type": "string",
+      "description": "收款成员 member_no。"
+    },
+    "amount": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "转账积分数量，正整数。"
+    },
+    "reason": {
+      "type": "string",
+      "description": "可选备注。"
+    },
+    "idempotency_key": {
+      "type": ["string", "null"],
+      "description": "客户端去重键。非空时数据库级保证不重复记账。"
+    }
+  }
+}

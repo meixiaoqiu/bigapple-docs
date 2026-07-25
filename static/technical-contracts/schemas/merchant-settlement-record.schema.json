@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Merchant Settlement Record",
+  "type": "object",
+  "required": [
+    "settlement_id", "merchant_id", "merchant_name", "order_id",
+    "covered_credit_amount", "settlement_rate", "payable_rmb",
+    "status", "reason", "created_at"
+  ],
+  "properties": {
+    "settlement_id": { "type": "string", "description": "结算记录 ID。" },
+    "merchant_id": { "type": "string", "description": "关联商户 ID。" },
+    "merchant_name": { "type": "string", "description": "商户名称（冗余）。" },
+    "order_id": { "type": "string", "description": "关联兑换订单 ID。未关联时为空字符串。" },
+    "covered_credit_amount": { "type": "integer", "description": "本次结算覆盖的积分数。" },
+    "settlement_rate": { "type": "string", "description": "结算汇率快照。如 0.5000。" },
+    "payable_rmb": { "type": "string", "description": "应付人民币（元）。" },
+    "status": { "type": "string", "enum": ["pending", "approved", "paid", "disputed", "cancelled"] },
+    "reason": { "type": "string", "description": "备注。" },
+    "metadata": { "type": "object", "description": "扩展数据。" },
+    "created_at": { "type": "string", "description": "创建时间 ISO 8601。" }
+  }
+}

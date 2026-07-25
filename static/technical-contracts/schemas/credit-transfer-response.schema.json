@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "credit-transfer-response.schema.json",
+  "title": "CreditTransferResponse",
+  "description": "成员自由转账响应体。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["transaction_id", "transaction_type", "amount", "from_member_no", "to_member_no", "reason", "created_at"],
+  "properties": {
+    "transaction_id": {
+      "type": "string",
+      "description": "积分交易 ID，如 ct-abc123。"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": ["transfer"],
+      "description": "交易类型，固定为 transfer。"
+    },
+    "amount": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "转账积分数量。"
+    },
+    "from_member_no": {
+      "type": "string",
+      "description": "转出方 member_no。"
+    },
+    "to_member_no": {
+      "type": "string",
+      "description": "接收方 member_no。"
+    },
+    "reason": {
+      "type": "string",
+      "description": "转账备注。"
+    },
+    "created_at": {
+      "type": "string",
+      "description": "交易创建时间 ISO 8601。"
+    }
+  }
+}

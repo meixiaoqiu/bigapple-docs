@@ -16,14 +16,23 @@ static/technical-contracts/examples/
 当前示例文件：
 
 - <a href="/technical-contracts/examples/capacity-assessment.example.json">capacity-assessment.example.json</a>
+- <a href="/technical-contracts/examples/credit-account.example.json">credit-account.example.json</a>
+- <a href="/technical-contracts/examples/credit-transaction.example.json">credit-transaction.example.json</a>
+- <a href="/technical-contracts/examples/credit-transfer-request.example.json">credit-transfer-request.example.json</a>
+- <a href="/technical-contracts/examples/credit-transfer-response.example.json">credit-transfer-response.example.json</a>
 - <a href="/technical-contracts/examples/dispute.example.json">dispute.example.json</a>
 - <a href="/technical-contracts/examples/event.example.json">event.example.json</a>
 - <a href="/technical-contracts/examples/ledger-entry.example.json">ledger-entry.example.json</a>
 - <a href="/technical-contracts/examples/member.example.json">member.example.json</a>
 - <a href="/technical-contracts/examples/member-workspace.example.json">member-workspace.example.json</a>
+- <a href="/technical-contracts/examples/merchant-profile.example.json">merchant-profile.example.json</a>
+- <a href="/technical-contracts/examples/merchant-settlement-record.example.json">merchant-settlement-record.example.json</a>
 - <a href="/technical-contracts/examples/public-event.example.json">public-event.example.json</a>
 - <a href="/technical-contracts/examples/public-resource.example.json">public-resource.example.json</a>
 - <a href="/technical-contracts/examples/public-task.example.json">public-task.example.json</a>
+- <a href="/technical-contracts/examples/redemption-order.example.json">redemption-order.example.json</a>
+- <a href="/technical-contracts/examples/redemption-order-create-request.example.json">redemption-order-create-request.example.json</a>
+- <a href="/technical-contracts/examples/redemption-order-action-request.example.json">redemption-order-action-request.example.json</a>
 - <a href="/technical-contracts/examples/resource.example.json">resource.example.json</a>
 - <a href="/technical-contracts/examples/ruleset.example.json">ruleset.example.json</a>
 - <a href="/technical-contracts/examples/task.example.json">task.example.json</a>

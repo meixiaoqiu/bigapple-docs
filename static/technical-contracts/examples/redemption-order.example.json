@@ -1,0 +1,27 @@
+{
+  "order_id": "ro-abc123def456",
+  "member_no": "M001",
+  "status": "pending",
+  "item_type": "meal",
+  "title": "餐食兑换",
+  "original_amount_rmb": 25.00,
+  "credit_amount": 30,
+  "cash_amount_rmb": null,
+  "related_task_id": "",
+  "related_event_id": "",
+  "reason": "午餐兑换",
+  "resource_id": "res-meal",
+  "item_snapshot": {
+    "meal_name": "午餐",
+    "provider": "食堂"
+  },
+  "finance_treatment_ref": "",
+  "metadata": {},
+  "merchant_id": "",
+  "created_by_member_no": "M001",
+  "reviewed_by_member_no": "",
+  "created_at": "2026-07-25T12:00:00Z",
+  "updated_at": "2026-07-25T12:00:00Z",
+  "fulfilled_at": null,
+  "cancelled_at": null
+}

@@ -8,6 +8,8 @@
     "simulation_day",
     "member",
     "credit_balance",
+    "available_credit_balance",
+    "lifetime_contribution",
     "available_tasks",
     "active_tasks",
     "task_history",
@@ -28,6 +30,14 @@
     },
     "credit_balance": {
       "type": "integer"
+    },
+    "available_credit_balance": {
+      "type": "integer",
+      "description": "当前可主动消费/转账/兑换的积分余额。"
+    },
+    "lifetime_contribution": {
+      "type": "integer",
+      "description": "历史累计贡献积分，不因消费或转账减少。"
     },
     "available_tasks": {
       "type": "array",

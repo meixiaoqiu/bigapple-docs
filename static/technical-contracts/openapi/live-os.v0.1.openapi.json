@@ -507,6 +507,224 @@
           }
         }
       }
+    },
+    "/members/{member_no}/credit-transfers": {
+      "post": {
+        "operationId": "postCreditTransfer",
+        "summary": "Transfer credits from one member to another",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "member_no",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "转出方 member_no（必须与当前登录成员一致）。"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../schemas/credit-transfer-request.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transfer created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/credit-transfer-response.schema.json"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — DomainError details in response body",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the transfer initiator"
+          }
+        }
+      }
+    },
+    "/members/{member_no}/redemption-orders": {
+      "get": {
+        "operationId": "listRedemptionOrders",
+        "summary": "List member redemption orders",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/memberNo" }],
+        "responses": {
+          "200": {
+            "description": "Member redemption orders list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "orders": {
+                      "type": "array",
+                      "items": { "$ref": "../schemas/redemption-order.schema.json" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": { "description": "Not the owner" }
+        }
+      },
+      "post": {
+        "operationId": "createRedemptionOrder",
+        "summary": "Create a redemption order (freezes credits)",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/memberNo" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "../schemas/redemption-order-create-request.schema.json" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "../schemas/redemption-order.schema.json" }
+              }
+            }
+          },
+          "400": { "description": "Domain error" },
+          "403": { "description": "Not the owner" }
+        }
+      }
+    },
+    "/redemption-orders/{order_id}/cancel": {
+      "post": {
+        "operationId": "cancelRedemptionOrder",
+        "summary": "Cancel a pending/disputed redemption order (unfreezes credits)",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/orderId" }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "../schemas/redemption-order-action-request.schema.json" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order cancelled",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "../schemas/redemption-order.schema.json" }
+              }
+            }
+          },
+          "400": { "description": "Order cannot be cancelled" },
+          "403": { "description": "Not the owner" }
+        }
+      }
+    },
+    "/redemption-orders/{order_id}/dispute": {
+      "post": {
+        "operationId": "disputeRedemptionOrder",
+        "summary": "Dispute a pending redemption order",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/orderId" }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "../schemas/redemption-order-action-request.schema.json" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order disputed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "../schemas/redemption-order.schema.json" }
+              }
+            }
+          },
+          "400": { "description": "Order cannot be disputed" },
+          "403": { "description": "Not the owner" }
+        }
+      }
+    },
+    "/redemption-orders/{order_id}/fulfill": {
+      "post": {
+        "operationId": "fulfillRedemptionOrder",
+        "summary": "Fulfill a redemption order (burns frozen credits)",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/orderId" }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "../schemas/redemption-order-action-request.schema.json" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order fulfilled",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "../schemas/redemption-order.schema.json" }
+              }
+            }
+          },
+          "400": { "description": "Order cannot be fulfilled" },
+          "403": { "description": "Not governance" }
+        }
+      }
+    },
+    "/merchant-settlements": {
+      "get": {
+        "operationId": "listMerchantSettlements",
+        "summary": "List merchant settlement records",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "merchant_id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Filter by merchant ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settlement records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "settlements": {
+                      "type": "array",
+                      "items": { "$ref": "../schemas/merchant-settlement-record.schema.json" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": { "description": "Not authenticated" }
+        }
+      }
     }
   },
   "components": {
@@ -519,6 +737,12 @@
       }
     },
     "parameters": {
+      "orderId": {
+        "name": "order_id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      },
       "memberNo": {
         "name": "member_no",
         "in": "path",

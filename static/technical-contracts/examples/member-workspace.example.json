@@ -40,6 +40,8 @@
     }
   },
   "credit_balance": 36,
+  "available_credit_balance": 36,
+  "lifetime_contribution": 36,
   "available_tasks": [
     {
       "task_id": "task-0001",

@@ -1152,3 +1152,133 @@ Runtime database routing 感知 request/world 上下文：
 | `core` | `realworld` by default | current world alias | every world alias only |
 
 这意味着 `bigadmin.local/admin/` 技术账号位于 control 数据库，而 `bigreal.local/...` 和 `bigsim.local/...` 会通过固定 world host 的根路径访问各自 world 数据库并在其中认证。
+
+## core_credit_account
+
+积分账户（发行池、任务锁定、成员、冻结、销毁）。余额始终从 `core_credit_transaction` 聚合计算，从不直接编辑。成员账户与 `core_member` 一一对应；系统账户 `member_id` 为空。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `account_id` | string pk | 是 | 稳定账户 ID，如 `acct-member-M001`、`acct-sys-issuance_pool`。 |
+| `account_type` | enum string | 是 | `issuance_pool`、`task_locked`、`member`、`frozen`、`burn`。 |
+| `member_id` | fk nullable | 否 | 成员账户对应的 `core_member`。系统账户为空。 |
+| `status` | enum string | 是 | `active`、`frozen`、`closed`。 |
+| `metadata` | json | 是 | 扩展数据。不在公开页展示。 |
+| `created_at` | datetime | 是 | 创建时间。 |
+| `updated_at` | datetime | 否 | 更新时间。 |
+
+索引：`(account_type)`、`(member_id)`。
+
+## core_credit_transaction
+
+权威复式记账积分交易。余额从 `posted` 状态交易汇总推导；严禁直接修改 `core_credit_account` 余额字段。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `transaction_id` | string pk | 是 | 稳定交易 ID，如 `ct-abc123`。 |
+| `transaction_type` | enum string | 是 | `issuance`、`lock`、`unlock`、`task_reward`、`transfer`、`consume`、`burn`、`freeze`、`unfreeze`、`correction`、`reversal`。 |
+| `source_account_id` | fk nullable | 否 | 积分转出账户。`issuance` 时可空。 |
+| `target_account_id` | fk nullable | 否 | 积分转入账户。 |
+| `amount` | integer | 是 | 正数，实际转移积分数量。 |
+| `related_task_id` | fk nullable | 否 | 关联任务。 |
+| `related_ledger_entry_id` | fk nullable | 否 | 关联 `core_ledger_entry`（成员视角投影）。 |
+| `related_event_id` | string | 是 | 关联 `core_systemevent.event_id`，构成审计哈希链。 |
+| `initiated_by_id` | fk nullable | 否 | 业务发起人。 |
+| `reviewed_by_id` | fk nullable | 否 | 治理/财务审核人。 |
+| `reason` | text | 是 | 原因。 |
+| `metadata` | json | 是 | 扩展数据。不在公开页展示。 |
+| `idempotency_key` | string unique nullable | 否 | 数据库级唯一去重键（普通约束，非 conditional）。NULL 允许多笔。 |
+| `reverses_transaction_id` | fk nullable | 否 | 冲正目标交易。 |
+| `status` | enum string | 是 | `posted`（已入账）、`void`（已作废，deprecated — 使用 reversal）。 |
+| `prev_hash` | string | 是 | 前一交易哈希（保留）。 |
+| `transaction_hash` | string | 是 | 本交易哈希（保留）。审计链以 `core_systemevent` 为准。 |
+| `created_at` | datetime | 是 | 创建时间。 |
+
+索引：`(source_account_id)`、`(target_account_id)`、`(transaction_type)`、`(status)`、`(related_task_id)`、`(created_at)`。
+
+重要规则：
+- **余额推导**：`member_credit_balance(member) = sum(target=member_acct) − sum(source=member_acct)`，仅统计 `status=posted` 行。
+- **错误修正**：只能追加 `reversal` 或 `correction` 交易，不得修改或删除已有记录。
+- **任务奖励**：source_account = `task_locked`（锁定的任务预算），target_account = `member`。创世例外 (`allow_unbudgeted_genesis=True`) 从 `issuance_pool` 发放并标记 `genesis_unbudgeted=true`。
+- **兑换冻结**：`consume`（member → frozen），取消 `unfreeze`（frozen → member），履约 `burn`（frozen → burn）。
+- **幂等**：`idempotency_key` 非空时在数据库和服务层双重保证不重复记账。
+
+## core_redemption_order
+
+成员发起积分兑换订单。创建时冻结积分，取消时解冻，履约后销毁。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `order_id` | string pk | 是 | 稳定订单 ID，如 `ro-abc123`。 |
+| `member_id` | fk | 是 | 兑换成员。 |
+| `status` | enum string | 是 | `pending`、`fulfilled`、`cancelled`、`disputed`、`reversed`。 |
+| `item_type` | enum string | 是 | `meal`、`goods`、`resource_use`、`room_upgrade`、`storage`、`parking`、`training`、`service`、`fee_reduction`、`other`。 |
+| `title` | string | 是 | 订单标题。 |
+| `original_amount_rmb` | decimal nullable | 否 | 原价（元）。 |
+| `credit_amount` | integer | 是 | 冻结/销毁积分数量。 |
+| `cash_amount_rmb` | decimal nullable | 否 | 现金部分（元）。 |
+| `related_task_id` | fk nullable | 否 | 关联任务。 |
+| `related_event_id` | string | 是 | 关联 `core_systemevent.event_id`。 |
+| `resource_id` | string | 是 | 关联 `core_resource.resource_id`。 |
+| `item_snapshot` | json | 是 | 兑换项目结构化快照。 |
+| `finance_treatment_ref` | string | 是 | 财务处理外部引用。 |
+| `reason` | text | 是 | 原因。 |
+| `metadata` | json | 是 | 扩展数据。不在公开页展示。 |
+| `created_by_id` | fk nullable | 否 | 创建人。 |
+| `reviewed_by_id` | fk nullable | 否 | 审核人。 |
+| `created_at` | datetime | 是 | 创建时间。 |
+| `updated_at` | datetime | 否 | 更新时间。 |
+| `fulfilled_at` | datetime | 否 | 履约时间。 |
+| `cancelled_at` | datetime | 否 | 取消时间。 |
+
+索引：`(member_id, status)`、`(status)`。
+
+重要规则：创建后冻结积分 (`consume`)，取消解冻 (`unfreeze`)，履约销毁 (`burn`)。所有积分变动通过 `core_credit_transaction` 记录，`core_redemption_order` 仅追踪订单生命周期。商业定价和现金结算不在当前一期实现。
+
+## 积分与 LedgerEntry 关系
+
+`core_ledger_entry` 是成员视角的积分流水投影，从任务验收等行为生成；`core_credit_transaction` 是权威复式记账层。两者通过 `related_ledger_entry_id` / `related_task_id` 关联。新代码应优先查询 `core_credit_transaction` 做权威余额推导，`core_ledger_entry` 作为成员可读流水和兼容层保留。
+
+## core_merchant_profile
+
+商户资料表。`member_micro_merchant` 通过自由转账收款，不生成结算；`cash_settlement_merchant` 积分消费后销毁并生成人民币应付款，商户不持有可流通积分账户。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `merchant_id` | string pk | 是 | 商户唯一标识。 |
+| `display_name` | string | 是 | 商户展示名称。 |
+| `operator_member_id` | fk nullable | 否 | 经营该商户的成员。商户本身不拥有独立积分账户。 |
+| `merchant_type` | enum string | 是 | `member_micro_merchant`、`cash_settlement_merchant`。 |
+| `status` | enum string | 是 | `active`、`suspended`、`closed`。非 active 商户不能接受新兑换订单。 |
+| `settlement_rate` | decimal nullable | 否 | 仅 cash_settlement 商户使用。履约时快照写入 `core_merchant_settlement_record.settlement_rate`，不受后续修改影响。 |
+| `metadata` | json | 是 | 扩展数据。 |
+| `created_at` | datetime | 是 | 创建时间。 |
+| `updated_at` | datetime | 否 | 更新时间。 |
+
+索引：`(merchant_type)`、`(operator_member_id)`。
+
+## core_merchant_settlement_record
+
+现金结算商户履约后生成的人民币应付记录。每条记录必须关联一笔 `core_redemption_order`。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `settlement_id` | string pk | 是 | 结算记录 ID，如 `ms-ro-abc123`。 |
+| `merchant_id` | fk | 是 | 关联 `core_merchant_profile`。 |
+| `redemption_order_id` | one-to-one fk | 是 | 关联 `core_redemption_order`。每笔结算必须对应一笔订单。 |
+| `covered_credit_amount` | integer | 是 | 本次结算覆盖的消费积分数（不是商户积分余额）。商户不持有可流通积分。 |
+| `settlement_rate` | decimal | 是 | 履约时快照写入的结算汇率。 |
+| `payable_rmb` | decimal | 是 | 人民币应付结算金额（两位小数），不是积分提现。 |
+| `status` | enum string | 是 | `pending`、`approved`、`paid`、`disputed`、`cancelled`。 |
+| `reason` | text | 是 | 备注。 |
+| `metadata` | json | 是 | 扩展数据。 |
+| `created_at` | datetime | 是 | 创建时间。 |
+| `updated_at` | datetime | 否 | 更新时间。 |
+
+索引：`(merchant_id, status)`。
+
+重要规则：`covered_credit_amount` 是积分覆盖消费额，不是商户积分余额。`payable_rmb` 是社区应支付商户的人民币金额，不是积分提现。商户不持有可流通积分账户。
+
+## core_redemption_order.merchant
+
+`core_redemption_order` 新增 `merchant_id` nullable FK 指向 `core_merchant_profile`。非空时表示该订单属于某个特定现金结算商户，履约后由 `_generate_settlement_record()` 自动创建 `core_merchant_settlement_record`。空表示普通成员兑换，不生成商户结算。
