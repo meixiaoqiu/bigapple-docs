@@ -108,6 +108,26 @@ POST /workspace/finance/claims/<claim_id>/withdraw/
 
 财务审核和付款不是用户自助资料的一部分，必须由财务角色执行。申请人不能审核或付款自己的报销；拒绝报销必须填写理由。已批准并付款的记录会生成只追加 `FinanceTransaction` 流水，并进入 `/finance/` 公开财务页。
 
+### 积分功能（正式成员 + 治理成员）
+
+```text
+GET  /workspace/credits/transfer/              # 积分转账（正式成员）
+POST /workspace/credits/transfer/
+GET  /workspace/credits/redemption/             # 兑换订单列表、创建、取消、申诉（正式成员）
+POST /workspace/credits/redemption/
+GET  /workspace/credits/redemption/review/      # 兑换履约（治理成员）
+POST /workspace/credits/redemption/review/
+GET  /workspace/credits/merchant-settlements/   # 商户结算记录（治理成员看全部，现金结算商户 operator 看自己的）
+```
+
+工作台首页显示当前积分、可用积分、历史贡献，并提供积分转账和兑换订单入口。治理成员可见兑换履约入口；治理成员或现金结算商户经营者可见商户结算入口。
+
+#### 商户规则
+
+- `cash_settlement_merchant`：可通过兑换订单关联，履约后生成人民币应付结算记录。
+- `member_micro_merchant`：不走兑换订单，应使用成员间积分转账。
+- 商户结算记录不是积分提现，不代表商户持有可流通积分。
+
 ### 招募方向维护（治理成员）
 
 ```text

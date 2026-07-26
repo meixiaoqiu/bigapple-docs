@@ -198,3 +198,32 @@ BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_DISPLAY_NAME=Simulation admin
 ```
 
 `realworld` 和 `world_type=real` 的世界不能被 `archive_world` 或 `delete_world` 操作。新增 world 的 `database_alias` 必须已经存在于 `settings.DATABASES`，并列入 `BIG_APPLE_WORLD_DATABASE_ALIASES`。
+
+## 积分系统人工 QA 数据
+
+`core/management/commands/seed_credits_qa.py` 为本地 DEBUG/test 环境提供积分系统人工 QA 测试数据。仅限开发环境使用，命令要求显式传入 `--yes`，并拒绝在非 DEBUG / 非 test settings 环境执行。
+
+推荐在 `simulation0001` / `bigsim.local` 中做浏览器验收：
+
+```bash
+docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py seed_credits_qa --world-id simulation0001 --yes --settings=live_os.settings_admin
+```
+
+如需在 `realworld` / `bigreal.local` 做同样的本地验收，把 `--world-id simulation0001` 改成 `--world-id realworld`。qa 数据只写入命令指定的 world，不会自动同步到其它 world。
+
+测试账号使用固定弱密码，**仅用于本地人工 QA**，不得作为共享环境或生产环境账号：
+
+| 用户名 | 本地 QA 密码 | 说明 |
+| --- | --- | --- |
+| `qa-a` | `test-password` | 测试成员 A |
+| `qa-b` | `test-password` | 测试成员 B |
+| `qa-gov` | `test-password` | 治理成员 |
+
+测试商户：
+
+| 商户 | 类型 |
+| --- | --- |
+| `qa-canteen` | 现金结算商户 |
+| `qa-coffee` | 微创业商户 |
+
+`bigsim.local` 对应 `simulation0001` world；`bigreal.local` 对应 `realworld` world。登录失败时，先确认 seed 命令写入的 `--world-id` 与当前访问的站点一致。
