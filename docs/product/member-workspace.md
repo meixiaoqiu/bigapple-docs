@@ -111,6 +111,8 @@ POST /workspace/finance/claims/<claim_id>/withdraw/
 ### 积分功能（正式成员 + 治理成员）
 
 ```text
+GET  /workspace/credits/budgets/                # 积分预算（治理成员：发行池余额、任务锁定预算、发行积分、锁定/退回预算）
+POST /workspace/credits/budgets/
 GET  /workspace/credits/transfer/              # 积分转账（正式成员）
 POST /workspace/credits/transfer/
 GET  /workspace/credits/redemption/             # 兑换订单列表、创建、取消、申诉（正式成员）
@@ -120,13 +122,31 @@ POST /workspace/credits/redemption/review/
 GET  /workspace/credits/merchant-settlements/   # 商户结算记录（治理成员看全部，现金结算商户 operator 看自己的）
 ```
 
-工作台首页显示当前积分、可用积分、历史贡献，并提供积分转账和兑换订单入口。治理成员可见兑换履约入口；治理成员或现金结算商户经营者可见商户结算入口。
+工作台首页显示当前积分、可用积分、历史贡献，并提供积分转账和兑换订单入口。治理成员额外可见积分预算、兑换履约入口；治理成员或现金结算商户经营者可见商户结算入口。
+
+#### 积分预算（治理成员）
+
+积分发行到公共池，治理成员为任务锁定预算。锁定预算从发行池扣除，任务发布前必须已有足够锁定预算。未用预算可退回发行池。表单使用 per-render `idempotency_key` 防重复提交。
 
 #### 商户规则
 
 - `cash_settlement_merchant`：可通过兑换订单关联，履约后生成人民币应付结算记录。
 - `member_micro_merchant`：不走兑换订单，应使用成员间积分转账。
 - 商户结算记录不是积分提现，不代表商户持有可流通积分。
+
+### 任务管理（治理成员）
+
+```text
+GET  /workspace/tasks/new/       # 创建任务草稿、发布任务（治理成员）
+POST /workspace/tasks/new/
+GET  /workspace/tasks/review/    # 查看 pending_review 任务、验收通过/驳回（治理成员）
+POST /workspace/tasks/review/
+```
+
+- `base_points=0` 表示无积分奖励任务，可创建和发布，不需要锁定预算。
+- `base_points>0` 的任务**发布前必须有足够锁定预算**（预算先行）。
+- 有积分任务验收通过后从锁定预算发放积分；0 积分任务验收通过只改变任务状态，不发放积分，不增加余额/历史贡献。
+- 验收驳回时积分预算保留，不退回发行池。
 
 ### 招募方向维护（治理成员）
 

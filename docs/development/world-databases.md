@@ -227,3 +227,17 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py s
 | `qa-coffee` | 微创业商户 |
 
 `bigsim.local` 对应 `simulation0001` world；`bigreal.local` 对应 `realworld` world。登录失败时，先确认 seed 命令写入的 `--world-id` 与当前访问的站点一致。
+
+### 人工测试闭环
+
+浏览器 QA 完整流程（`qa-gov` / `qa-a` / `qa-b` 分别在对应 world 登录）：
+
+1. **发行积分**：`qa-gov` 进入积分预算页，发行积分到公共池。
+2. **锁定预算**：`qa-gov` 为即将创建的任务锁定预算（从发行池扣除）。
+3. **创建并发布任务**：`qa-gov` 进入创建任务页，填写标题、工时、`base_points` 等字段，发布任务。`base_points>0` 需要已锁定预算；`base_points=0` 可无需预算直接发布。
+4. **普通成员领取和提交**：`qa-a` 或 `qa-b` 在可领取任务列表中认领任务，提交劳动记录。
+5. **治理验收**：`qa-gov` 进入任务验收页，审核 `pending_review` 任务——验收通过后，有积分任务从锁定预算发放积分到成员账户；0 积分任务只改变状态，不产生积分变动。验收驳回时积分预算保留。
+6. **验证积分到账**：成员查看当前积分、可用积分和历史贡献是否更新。
+
+0 积分任务测试路径：
+- 创建 `base_points=0` 任务 → 发布（无需预算）→ 领取 → 提交 → 验收通过 → 确认任务状态变更、成员积分余额和贡献均不变。
