@@ -45,7 +45,7 @@ DATABASE_URL=mysql://用户名:URL编码后的密码@主机:3306/数据库名?ch
 
 Django `User` 仍只负责技术登录和 Admin 入口控制：`is_active` 控制账号是否可用，`is_staff` 控制是否可进入 Django Admin，`is_superuser` 是技术 root / 初始化 / 救急账号。日常治理人员不应被批量设置为 superuser。
 
-大苹果业务治理权限由领域模型判断，主路径是 `User -> Member -> RoleAssignment -> RolePermission -> Permission`。临时授权不再是独立模型，而是有较短 `end_at` 的角色任命。`基础角色 / 治理成员` 只是普通角色名，本身不再授予治理权限；治理权限必须来自 `RolePermission`。
+大苹果业务治理权限由 `AuthorizationService` / OpenFGA 计算，权威事实主路径是 `User -> Member -> RoleAssignment -> RolePermission -> Permission`。临时授权不再是独立模型，而是有较短 `end_at` 的角色任命。`基础角色 / 治理成员` 只是普通角色名，本身不再授予治理权限；治理权限必须来自 `RolePermission` 投影出的 OpenFGA 授权。
 
 普通世界治理管理员推荐账号状态是 `is_active=True`、`is_staff=False`、`is_superuser=False`，并拥有有效 `Member`、`RoleAssignment` 和对应 `Permission`。`grant_governance_admin` 只创建或复用治理管理员角色任命，不会修改 `is_staff` 或 `is_superuser`；真实和仿真 world 不暴露 `/admin/`，业务治理账号不需要 Django staff 权限。
 
@@ -330,11 +330,15 @@ v2（当前规范，schema = `liveos.system-event.public.v1`）：
 
 ## 治理权限判断
 
-`core.permission_services.member_has_permission(member, permission_code, resource=None, at_time=None)` 是当前最小权限判断入口。`at_time` 为空时使用当前时间；权限只从 `Member -> active RoleAssignment -> RolePermission` 推导，`revoked`、`suspended`、`expired` 任命不提供权限，`start_at <= at_time <= end_at` 才在时间窗口内生效。
+`AuthorizationService` 是当前运行时权限判断入口。Django 的 `Member`、`RoleAssignment`、`RolePermission`、`Permission` 仍是权威事实来源；OpenFGA 是授权计算引擎。正常 runtime 使用 OpenFGA check 回答“某成员能否执行某操作”，不能在 view、API、后台任务或业务 service 中重新拼接角色表查询。
 
-`core.access.user_has_governance_permission(user, permission_code, resource=None, at_time=None)` 是现有治理入口函数。它根据用户关联的 `Member` 调用 `member_has_permission()`；没有绑定 `governance.*` 权限的基础角色不能进入治理入口。主权限模型是 `Member -> RoleAssignment -> RolePermission -> Permission`。
+OpenFGA tuple 由 `openfga_rebuild_tuples` 从 Django 权威数据完整重建。投影时只纳入 active 成员、active 角色、active 且仍在任期内的 `RoleAssignment`，并保留 `SUSPENDED` / `EXITED` 成员 veto。`governance.*` 和 `finance.*` 这类高信任权限会投影为 guarded permission，必须同时满足正式成员资格、未冻结和具体角色权限。
 
-传入 `resource` 时会做简单资源匹配：`RolePermission.constraints_json.resource_id/resource_ids` 或 `scope` 为 `global`、`all`、空值可匹配。`resource=None` 表示不限定具体资源，只判断该成员在任一资源范围上是否具备该权限。
+`core.access.user_has_governance_permission(user, permission_code, resource=None, at_time=None)` 是治理入口函数。它根据用户关联的 `Member` 调用 `AuthorizationService`；没有绑定 `governance.*` 权限的基础角色不能进入治理入口。财务入口同理通过 `is_finance_reviewer()` / `is_finance_payer()` 进入 `AuthorizationService`，不使用 Django `is_staff` / `is_superuser`。
+
+传入 `resource` 时必须做对象级授权。`resource=None` 只回答“成员是否在任一资源范围拥有该权限”；传入具体 `Resource` 时才回答“成员是否能对这个资源执行该权限”。`RolePermission.constraints_json.resource_id` / `resource_ids` 会在 OpenFGA rebuild 时投影为具体资源 permission object；`scope=global`、`scope=all` 或空 scope 会投影为全局资源授权。资源级入口不能用 `resource=None` 的结果替代具体对象判断。
+
+`core.permission_services.legacy_member_has_permission()` 和 `members_with_permission()` 只作为 legacy 对照、probe 和兼容层保留。业务入口不应直接调用它们。
 
 Django Admin 当前只在 control plane 暴露，并提供关系化底层维护入口：`Member` 详情页内联显示和新增 `RoleAssignment`，`Organization` 详情页内联显示 `Role`，`Role` 详情页内联显示 `RolePermission` 和拥有该角色的成员。`Proposal` 用于查看和维护通用治理提案，详情页内联显示 `ProposalVote` 和 `ProposalExecution`。固定 world 站点不暴露 `/admin/`；真实世界和仿真世界的日常用户系统不需要 `is_staff` 账号。`SystemEvent` 和 `LedgerEntry` 集中在“技术审计与配置”分组；其中 `SystemEvent` 在 Admin 中仍然只读，只用于查看事件快照和哈希链信息。
 

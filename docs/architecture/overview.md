@@ -188,13 +188,10 @@ Observer 不再负责仿真控制。仿真实验的启动和推进归属 `bigadm
 当前实现暂时不包含：
 
 - 面向外部客户端和 Simulation Engine 的服务账号/API token 认证
-- 细粒度角色权限
 - API schema 校验中间件
-- 完整成员工作台登录和账号管理
 - 完整运营后台角色拆分
 - 治理后台
 - 复杂观察台交互
-- HTMX 模板页面
 - Celery 任务
 - Redis
 - 每日模拟快照表
@@ -212,7 +209,7 @@ Observer 不再负责仿真控制。仿真实验的启动和推进归属 `bigadm
 6. `/admin/simulation-lab/` 承载仿真实验启动、配置、运行管理和实验结果管理，负责"怎么跑"，不负责手动干预真实业务过程。
 7. 所有真实世界关键状态变化必须通过对应领域服务模块完成，并追加统一事件账本。
 8. 任务、申诉、提案、积分流水等业务对象保留结构化表；统一事件账本记录关键事实、顺序、责任人和哈希链。
-9. Django `User` 只作为登录账号；业务责任主体是 `Member`，权限来自 `Member -> RoleAssignment -> RolePermission -> Permission`。
+9. Django `User` 只作为登录账号；业务责任主体是 `Member`，权限事实来自 `Member -> RoleAssignment -> RolePermission -> Permission`，运行时授权由 `AuthorizationService` / OpenFGA 计算。
 10. `is_staff` / `is_superuser` 只属于 Django 技术后台边界，不能等同于业务治理权限。
 11. Admin、服务、URL、文档和测试必须共同约束边界，避免后续把页面逻辑塞回 `core` 或让仿真误写真实世界。
 12. 早期兼容门面和中间态命名应持续删除，不能因为"能跑"就长期保留。
@@ -243,15 +240,16 @@ Credential    → 公开事实证明（非权限来源）
    - 编号作为 `Credential Instance` 持久保留：它记录"谁在什么时间以什么方式成为正式成员"这一历史事实。
    - 编号自身不自动赋予任何权限——成员退出后 RoleAssignment 已撤销，编号只作为历史归属证明存在。
 
-6. **RoleAssignment / RolePermission 是唯一运行时权限来源。** 所有 view、service、API 的权限判断必须走：
+6. **RoleAssignment / RolePermission 是唯一权限事实来源。** 所有 view、service、API 的运行时权限判断必须走 `AuthorizationService`；OpenFGA tuple 从下列事实链投影：
 
    ```text
    Member → active RoleAssignment → RolePermission → Permission
    ```
 
-   不允许为 Credential / NFT / Badge 或 member_no 字符串编写第二套权限路径。`is_staff` / `is_superuser` 仅限 Django Admin 技术后台边界使用，不能等同于业务治理权限。
+   不允许为 Credential / NFT / Badge、`Member.status` 或 member_no 字符串编写第二套权限路径。`is_staff` / `is_superuser` 仅限 Django Admin 技术后台边界使用，不能等同于业务治理权限。
 
-   **当前落地**：`/register/` 创建 User+Member+ROLE_BIG_APPLE_MEMBER，`/workspace/apply/` 处理正式成员报名（登录后）。`workspace/context.member_has_full_workspace_access()` 已基于 active `ROLE_FORMAL_MEMBER` + `SUSPENDED`/`EXITED` veto 实现。`Member.status` 不再作为权限来源。
+   **当前落地**：`/register/` 创建 User+Member+ROLE_BIG_APPLE_MEMBER，`/workspace/apply/` 处理正式成员报名（登录后）。完整成员工作台主授权通过 `AuthorizationService` 查询 OpenFGA 的 `formal_member` 关系；OpenFGA tuple 来自 Django 权威数据投影，并保留 `SUSPENDED`/`EXITED` veto。`Member.status` 不再作为权限来源。
+   **资源级权限**：`member_has_permission(member, code, resource=None)` 只表示成员是否在任一范围拥有该权限；带具体 `Resource` 时才检查全局资源授权或该资源的 scoped 授权。`RolePermission.constraints_json.resource_id` / `resource_ids` 会在 OpenFGA rebuild 时投影为具体资源 permission object，不能用无资源上下文的结果替代对象级判断。
    **高权限角色前置条件**：`ROLE_GOVERNANCE_MEMBER`、任何带 `governance.*` permission 的角色和任何带 `finance.*` permission 的角色要求目标成员已拥有 `ROLE_FORMAL_MEMBER`。`SUSPENDED` / `EXITED` 成员不能授予任何新角色。`create_role_assignment()` 默认执行前置校验；`bootstrap_first_governance_member()` 在事务内按顺序授予完整权限链。RoleAssignment Admin 只读，禁止手工创建或修改。
 
 ### 注册与报名的拆分展望
@@ -290,7 +288,7 @@ Credential    → 公开事实证明（非权限来源）
 - `ExpenseClaim` 记录成员提交的报销申请。任何非 `SUSPENDED` / `EXITED` 的注册成员都可以提交。
 - `FinanceReview` 记录财务审核决定。审核人必须拥有 `finance.review` 权限，并且不能审核自己的报销；拒绝必须填写理由。
 - `FinanceTransaction` 是只追加财务流水。标记付款的人必须拥有 `finance.pay` 权限，并且不能给自己的报销标记付款。
-- 财务角色由 `ensure_finance_roles()` 幂等创建，属于 `大苹果财务组`，运行时权限仍通过 `Member -> active RoleAssignment -> RolePermission -> Permission` 判断。
+- 财务角色由 `ensure_finance_roles()` 幂等创建，属于 `大苹果财务组`，运行时权限仍通过 `AuthorizationService` / OpenFGA 判断；OpenFGA tuple 来自 `Member -> active RoleAssignment -> RolePermission -> Permission` 权威事实投影。
 - 任何带 `finance.*` permission 的角色都属于高信任角色，授予前要求目标成员已经拥有 `ROLE_FORMAL_MEMBER`。
 - 报销提交、审核和付款会写普通公开 `Event`，进入首页、事件流和 `/finance/` 公开财务页；同时写入 `SystemEvent` 哈希链，便于审计证明。
 - 撤回报销只写普通公开 `Event`，不写新的 `SystemEvent` 哈希链记录。

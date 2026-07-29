@@ -80,11 +80,13 @@ C3 默认要求：
 | `run_zero_start_simulation` | 否 | 可选（`ensure_seed=True`） | 是 | 是 |
 | `seed_world --template zero_start` | 否 | 是 | 否 | 否 |
 
-- `reset-world`：清空目标 world 全部业务数据后，重新 seed 到 zero_start 基线。只限 superuser，需二次确认。只清空目标 world 数据库中的业务表，不清空 control DB 的 worlds / 维护日志等控制表。作用等同于 `flush` + `seed_world --template zero_start`，但通过后台页面完成，并写入 `WorldMaintenanceLog` 审计记录。
+- `reset-world`：清空目标 world 全部业务数据后，重新 seed 到 zero_start 基线。只限 superuser，需二次确认。只清空目标 world 数据库中的业务表，不清空 control DB 的 worlds / 维护日志等控制表。作用等同于 `flush` + `seed_world --template zero_start`，但通过后台页面完成，并写入 `WorldMaintenanceLog` 审计记录。若 sim OpenFGA store 已配置，重置成功 reseed 后会同步运行 `openfga_rebuild_tuples --world-kind sim --world-id <world_id>`，删除旧 tuple 并按当前 Django 权威数据重建；OpenFGA 重建失败时本次维护记录为失败，不能把数据库重置和授权投影不一致视为成功。
 - `run_zero_start_simulation`：从当前基线推进虚拟小时，创建 `SimulationRun` / `SimulationTurn`，驱动虚拟主体通过真实表单报名。
 - `seed_world --template zero_start`：只写入 zero_start 种子数据，不清空已有数据。
 
 重置后目标 world 写入 zero_start 基线：一个初始发起人 + `ProjectPlan` + 已发布 `PlanRevision` + 完整生命周期 `PlanNode` 骨架（Z0-Z3 / A0-A2 / B0-B6 / C0-C5 / D0-D4，共 25+ 个节点），没有 `SimulationRun`、`SimulationTurn`、报名、提案推进痕迹。只有 Z0 是 `IN_PROGRESS`，其余节点均为 `PLANNED`。这些 `PlanNode` 是主线骨架，不是 `Task`、不是资源、不是真实成员池。启用 `BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_ENABLED=true` 时，初始发起人是配置的真实登录成员，不会额外创建 `founder-0001`。
+
+仿真权限数据和仿真业务数据一样可以被重置。当前本地开发使用独立的 sim OpenFGA 实例，避免反复重置 `simulation0001` 时污染 realworld 授权数据。真实历史复盘依赖 `SimulationSnapshot`、`SimulationSnapshotItem`、`SimulationRunDisposition` 和原始归档包，不依赖永久保留 sim OpenFGA tuple。
 
 ## 零起点自媒体报名与启动门槛仿真
 
