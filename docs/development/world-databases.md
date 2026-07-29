@@ -185,6 +185,26 @@ BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_DISPLAY_NAME=Simulation admin
 
 `seed_world` 只允许作用于 `world_type=simulation` 的 active world。`demo` 模板复用现有幂等 `seed_demo` 数据，用于后台预览；`zero_start` 模板只创建一个发起人和极简计划，用于从真正零起点推演自媒体报名、成员筛选和启动门槛确认。启用仿真 bootstrap admin 时，发起人使用该真实登录成员；未启用时使用非交互 fallback 发起人。两个模板都不会复制 `realworld` 数据，也不会清空、归档或删除任何物理数据库。
 
+## World 授权投影
+
+真实世界和仿真世界使用独立 OpenFGA store。Django world 数据库保存权威治理事实，OpenFGA 保存授权计算投影。新增、初始化、修复或重置 world 后，如果该 world 已启用 OpenFGA，必须重建对应 world 的 tuple：
+
+```powershell
+docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py openfga_rebuild_tuples --world-kind real --world-id realworld --settings=live_os.settings_admin
+docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py openfga_rebuild_tuples --world-kind sim --world-id simulation0001 --settings=live_os.settings_admin
+```
+
+`openfga_rebuild_tuples` 会删除目标 store 中的旧 tuple，再根据当前 Django 权威数据写入新 tuple。仿真 world 的 `reset-world` 后会自动尝试重建 sim tuple；命令行 `seed_world` 不清空旧业务数据，也不单独表示授权投影已同步。
+
+对照检查：
+
+```powershell
+docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py openfga_authorization_probe --world-kind real --world-id realworld --fail-on-diff --settings=live_os.settings_admin
+docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py openfga_authorization_probe --world-kind sim --world-id simulation0001 --fail-on-diff --settings=live_os.settings_admin
+```
+
+OpenFGA 数据必须能从 Django 权威数据完整重建。不要把 Playground 中手工写入的 tuple 当作长期事实来源。
+
 仿真 world 归档后，不再参与普通登录或固定站点 world 绑定：
 
 ```powershell

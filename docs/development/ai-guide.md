@@ -16,10 +16,12 @@ title: AI 开发指南
 - 积分账本只能追加，不能覆盖历史。
 - 算法可以建议，但不能成为最终责任人。
 - 治理处置必须保留具体实名责任人。
-- **任何 Credential / NFT / Badge 相关功能不得绕过 RoleAssignment / RolePermission。** 权限判断只有一条路径：`Member → active RoleAssignment → RolePermission → Permission`。不得出现 `has_credential`、`has_nft`、`has_badge` 等直接授权路径。
+- **任何 Credential / NFT / Badge 相关功能不得绕过 AuthorizationService。** Django 的权限事实路径是 `Member → active RoleAssignment → RolePermission → Permission`，运行时必须通过 `AuthorizationService` / OpenFGA 计算授权。不得出现 `has_credential`、`has_nft`、`has_badge` 等直接授权路径。
 - **CredentialTemplate.metadata.recruitment 只影响报名页展示，不授予 Role 或 Credential。** 通过 `/workspace/apply/` 提交的申请方向来自 recruitment 配置，但申请通过后不会自动发放对应 Credential 或 Role。治理成员可以通过 `/workspace/recruitment/` 维护招募配置，包括新增受限模板（certificate / public / active）。不要把这个页面当成完整 CredentialTemplate 管理器——它只能创建 recruitment template，不允许删除、不允许改 credential_type / visibility / status。
 - **注册与报名拆分后**：注册创建基础 Member + 基础角色；正式成员报名只申请更高角色和正式编号 Credential。Member 和 Role 的耦合只存在于 RoleAssignment 表，不存在于 Member 的字段标记。
 - **不要用 Member.status 判断正式成员权限**：完整 workspace 和 `/workspace/apply/` 的"已是正式成员"判断必须基于 active `ROLE_FORMAL_MEMBER`（`SUSPENDED` / `EXITED` 可 veto）。`Member.status` 只作为生命周发展示字段。
+- **对象级权限必须传入对象上下文**：需要判断某个成员能否操作具体 `Resource` 时，必须通过 `AuthorizationService.member_has_permission(member, code, resource=resource)`。`resource=None` 只表示“是否在任一资源范围拥有该权限”，不能替代具体资源授权判断；OpenFGA rebuild 会根据 `RolePermission.constraints_json.resource_id` / `resource_ids` 投影具体资源授权。
+- **OpenFGA 不可用时失败关闭**：`BIG_APPLE_AUTHORIZATION_BACKEND=openfga` 时，store/model 缺失、OpenFGA 请求失败或 check 返回拒绝，都不能回退到直接查 Django 角色表放行。修复路径是恢复 OpenFGA 服务、更新 model、运行 `openfga_rebuild_tuples` 和 `openfga_authorization_probe`，不是在业务入口补临时 `if`。
 - **禁止直接创建 RoleAssignment**：所有角色授予必须通过 `core.role_assignment_services.create_role_assignment()` 或 `bootstrap_first_governance_member()`。RoleAssignment Admin 已设为只读，不能通过 Django Admin 手工新增或修改角色任命。
 - **高权限角色前置条件**：授予 `ROLE_GOVERNANCE_MEMBER`、任何带 `governance.*` permission 的角色或任何带 `finance.*` permission 的角色前，目标成员必须已拥有 `ROLE_FORMAL_MEMBER`。`SUSPENDED`/`EXITED` 成员拒绝一切新角色。
 - **注册与报名分离**：`/register/` 只创建 User + Member + ROLE_BIG_APPLE_MEMBER，不写公开 Event、不创建 MemberApplication。`/workspace/apply/` 是登录后的正式成员报名入口，属于 workspace 子功能。
@@ -68,7 +70,7 @@ title: AI 开发指南
 - 当前 Django Admin 配置按维护域拆分：`core.admin` 是自动发现入口，成员/角色在 `core.admin_identity`，提案在 `core.admin_proposals`，任务/资源/申诉在 `core.admin_operations`，只读历史和事件账本在 `core.admin_events`。底层、危险和兜底维护操作统一归 control 后台；world runtime 只保留成员工作台、观察台、报名入口和 API。
 - 当前模型定义按领域拆分在 `core.models` 包：身份/角色在 `identity`，提案在 `proposals`，项目计划在 `planning`，仿真记录在 `simulation`，仿真快照归档在 `simulation_archives`，任务/积分/资源在 `operations`，事件账本在 `events`，申诉/容量在 `disputes`。`core.models.__init__` 只用于稳定导出。
 - 治理内核不再保留 `core.governance` 大门面；统一事件账本、提案、权限和角色任命应分别从对应领域模块导入。
-- 不要在业务代码中直接根据 Credential/NFT/Badge 判断权限。所有运行时权限判断必须通过 RoleAssignment / RolePermission。详见 `docs/architecture/overview.md` Credential/NFT 章节。
+- 不要在业务代码中直接根据 Credential/NFT/Badge、`Member.status`、`member_no` 或 Django `is_staff` 判断业务权限。所有运行时权限判断必须通过 `AuthorizationService`。详见 `docs/architecture/overview.md` Credential/NFT 章节。
 - 当前本地开发拆为三个站点入口：`bigadmin.local` 使用 `live_os.settings_admin` 和 `live_os.urls_admin`，承载 control plane 的 `/admin/` 与 `/admin/simulation-lab/`；`bigreal.local` 使用 `live_os.settings_real` 和 `live_os.urls_real`，承载真实世界 runtime；`bigsim.local` 使用 `live_os.settings_sim` 和 `live_os.urls_sim`，承载仿真世界 runtime。
 - 真实世界和仿真世界 runtime 使用同一组根路径：`/workspace/`、`/`、`/register/`、`/api/v0.1/`。`/register/` 是账号注册入口，`/workspace/apply/` 是登录后的成员报名入口。`/apply/`、`/apply/partner/`、`/apply/member/`、历史 world-prefix 路由族、旧 `/member/` workspace route 和 `/live-admin/` 已移除，产品代码和测试不能再使用。
 - 当前 `/workspace/` 是固定 world 的成员自助工作台，归属 `workspace` app。身份必须从当前登录账号绑定的 `Member` 推导，不要重新引入 `/members/{member_no}/workspace/` 这种按 URL 选择成员的页面入口。

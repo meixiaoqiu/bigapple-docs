@@ -12,6 +12,7 @@ title: 开发说明
 - 已存在的 MySQL 容器：`mysql97`
 - 已存在的 nginx 容器：`nginx`
 - 可连接的 MySQL 数据库，推荐 `utf8mb4` 字符集和 `utf8mb4_0900_as_cs` 排序规则
+- OpenFGA 由 `docker-compose.dev.yml` 启动两个本地实例：realworld 和 simulation 分离
 
 ## 安装
 
@@ -48,6 +49,45 @@ Docker 开发模式下，Django 进程运行在 `big-apple-admin`、`big-apple-r
 `BIG_APPLE_CONTRACTS_ROOT` 默认使用 `../bigapple-docs/static/technical-contracts`，通常不需要手动设置；当前运行时代码不直接读取 contracts 文件，普通 CI 和 Live OS 自检也不要求相邻 docs 仓库存在。
 
 `start.bat` 会检查 Docker Desktop、`.env`、`dev-net`、`mysql97`、`nginx` 和本地域名映射。它只启动和连接已有容器，不会创建数据库容器、nginx 容器、Docker network 或数据卷。
+
+## OpenFGA 本地授权服务
+
+本地开发环境使用两个独立 OpenFGA 实例：
+
+| 用途 | Docker service | 宿主机 API | 宿主机 Playground | 推荐 nginx 域名 |
+| --- | --- | --- | --- | --- |
+| 真实世界授权 | `openfga-real` | `127.0.0.1:20103` | `127.0.0.1:20105` | `openfga-real.local` |
+| 仿真世界授权 | `openfga-sim` | `127.0.0.1:20106` | `127.0.0.1:20108` | `openfga-sim.local` |
+
+两个实例使用各自的数据卷。仿真 world 可以频繁重置；sim OpenFGA 独立运行，必要时可以清空 sim store 或重建 sim tuple，而不会影响 realworld 授权数据。
+
+Django 容器内访问 OpenFGA 使用 Compose service name；宿主机浏览器或调试脚本使用 `127.0.0.1:20103` / `127.0.0.1:20106`。`.env` 中需要保留下列配置键，值由本地 bootstrap 命令生成，不要把真实 store id 或 model id 写进公开文档：
+
+```dotenv
+BIG_APPLE_AUTHORIZATION_BACKEND=openfga
+OPENFGA_REAL_API_URL=http://openfga-real:8080
+OPENFGA_REAL_STORE_ID=...
+OPENFGA_REAL_AUTHORIZATION_MODEL_ID=...
+OPENFGA_SIM_API_URL=http://openfga-sim:8082
+OPENFGA_SIM_STORE_ID=...
+OPENFGA_SIM_AUTHORIZATION_MODEL_ID=...
+```
+
+初始化或更新授权模型后，需要从 Django 权威数据重建 tuple：
+
+```bat
+docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py openfga_rebuild_tuples --world-kind real --world-id realworld --settings=live_os.settings_admin
+docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py openfga_rebuild_tuples --world-kind sim --world-id simulation0001 --settings=live_os.settings_admin
+```
+
+对照检查：
+
+```bat
+docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py openfga_authorization_probe --world-kind real --world-id realworld --fail-on-diff --settings=live_os.settings_admin
+docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py openfga_authorization_probe --world-kind sim --world-id simulation0001 --fail-on-diff --settings=live_os.settings_admin
+```
+
+`openfga_rebuild_tuples` 是完整重建：先删除目标 store 中已有 tuple，再根据当前 Django 权威数据写入新的投影。重建失败不能视为成功迁移；运行时 OpenFGA 不可用或 store/model 配置缺失时必须失败关闭，成员工作台和治理/财务权限都应拒绝访问。
 
 ## 常用命令
 
@@ -199,9 +239,13 @@ http://127.0.0.1:20101/workspace/   # realworld 成员工作台
 http://127.0.0.1:20102/             # simulation 公开首页
 http://bigsim.local/
 http://127.0.0.1:20102/workspace/   # simulation 成员工作台
+http://127.0.0.1:20105/playground/  # realworld OpenFGA Playground
+http://127.0.0.1:20108/playground/  # simulation OpenFGA Playground
 ```
 
 真实世界和仿真世界 runtime 不暴露 `/live-admin/` 或 `/admin/`。底层维护、仿真实验和高影响操作统一进入 control plane；成员日常使用 `/workspace/`，公开观察使用公开首页 `/`。
+
+业务授权统一通过 `AuthorizationService` 调用 OpenFGA；Django 中的 `Member`、`RoleAssignment`、`RolePermission` 和 `Permission` 仍是权威事实来源。业务页面、API 和 service 不应直接查询角色表来判断运行时权限。
 
 产品边界说明：
 

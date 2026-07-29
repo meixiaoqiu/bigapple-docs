@@ -102,7 +102,7 @@ python manage.py seed_demo --world-id realworld
 - 业务 `Event` 是给 API 和 observer 使用的可回放业务事件流，不注册到 Django Admin，也不能通过 Admin 修改历史事件。
 - 统一事件账本是只追加哈希链审计依据，覆盖提案、投票、执行、角色任命、角色撤销、任务生命周期、申诉生命周期和积分变动，不能通过 Admin 新增、修改或删除；如需校验链路，使用 `core.event_ledger.verify_event_chain()`。
 - 当前统一事件账本只是玩具版篡改可发现机制，不是绝对不可篡改存证；它没有外部锚定，数据库级写入或 ORM `update()` 仍可绕过 model/admin 保护，但链路校验应能发现不一致。
-- 当前治理权限判断只走 `Member -> RoleAssignment -> RolePermission`。临时授权不再是独立模型，而是有较短 `end_at` 的角色任命；`resource=None` 表示不限定具体资源，只判断是否在任一资源范围具备该权限。
+- 当前治理权限判断只走 `Member -> RoleAssignment -> RolePermission`，并由 `AuthorizationService` 统一调用 OpenFGA 计算。临时授权不再是独立模型，而是有较短 `end_at` 的角色任命；`resource=None` 表示不限定具体资源，只判断是否在任一资源范围具备该权限。具体资源操作必须传入 `Resource` 做对象级授权，OpenFGA rebuild 会把全局 `RolePermission` 与 `constraints_json.resource_id` / `resource_ids` 分别投影为全局资源授权和具体资源授权。
 - 容量评估属于具体 world 的业务评估数据，不是 control DB 的全局技术配置。真实世界和仿真世界各自拥有自己的 `CapacityAssessment` 记录；observer 可展示摘要。重大容量决策应通过提案或专门流程落账。
 - 规则版本属于具体 world 的业务规则数据，不是 control DB 的全局技术配置。真实世界和仿真世界各自拥有自己的 `Ruleset` 数据；后续规则变更应通过提案或专门规则发布流程创建新版本。
 - 项目执行计划是主线任务线源头，可以在 Admin 中编辑，但模拟运行结果不能自动改写计划本体；后续应通过修订建议和计划版本处理。
@@ -115,9 +115,11 @@ python manage.py seed_demo --world-id realworld
 - 当前 Admin 可以用于早期维护资源、供应商报价、成员和申诉数据，但涉及审计链的操作后续应迁移到运营后台。库存流水是只读查账记录，不能通过 Admin 新增、修改或删除。资源运营页会基于已发布计划需求、当前库存和有效供应商报价展示资源缺口，并展示近期库存流水；这不是完整采购系统，也不会自动创建采购单。
 - 固定 world 站点的公开入口：`/register/` 用于账号注册，`/workspace/apply/` 用于登录后的成员报名。`/apply/` 和 `/apply/partner/` 已移除。零起点仿真通过 workspace 表单流程提交成员报名，通过 service adapter 提交合作方报名；字段、校验或保存链路失败会让仿真 run 以 system-interaction failure 结束。
 
-## 治理权限迁移
+## 治理权限与 OpenFGA
 
-当前治理入口的主路径是 `Member -> RoleAssignment -> RolePermission -> Permission`。`core.access.user_has_governance_permission()` 会根据用户关联的 `Member` 检查角色能力；`基础角色 / 治理成员` 只是普通角色名，本身不再作为隐式权限 fallback。
+当前治理入口的主路径是 `Member -> RoleAssignment -> RolePermission -> Permission`，但运行时判断由 `AuthorizationService` 统一调用 OpenFGA。Django 仍保存权威事实；OpenFGA 保存从这些事实投影出的授权 tuple。`基础角色 / 治理成员` 只是普通角色名，本身不再作为隐式权限 fallback。
+
+`core.access.user_has_governance_permission()` 会根据用户关联的 `Member` 调用 `AuthorizationService`；财务审核和付款同理通过 `is_finance_reviewer()` / `is_finance_payer()` 进入 `AuthorizationService`。OpenFGA 不可用、store/model 未配置或 check 失败时，业务 runtime 应失败关闭，而不是回退到 Django 角色表直接放行。
 
 基础治理和财务权限 code：
 
@@ -152,8 +154,9 @@ python manage.py grant_governance_admin --world-id realworld --member-no mem-000
 
 1. 在 Admin 中创建或确认 `Member`，并按需关联对应 Django `User`。
 2. 运行 `python manage.py init_governance_permissions --world-id realworld`。
-3. 在 `RoleAssignment` 中把该 `Member` 任命到 `大苹果治理组 / 治理管理员`。
-4. 保持任命状态为 `active`；撤销、暂停或过期任命不会授予治理权限。
+3. 通过 `grant_governance_admin`、`create_role_assignment()` 或治理提案执行，把该 `Member` 任命到 `大苹果治理组 / 治理管理员`。
+4. 重建目标 world 的 OpenFGA tuple，或由对应业务流程触发投影更新。
+5. 保持任命状态为 `active`；撤销、暂停、过期任命、缺少正式成员资格或成员被冻结都不会授予治理权限。
 
 Admin 中的治理关系查看入口：
 
@@ -165,6 +168,7 @@ Admin 中的治理关系查看入口：
 - `Proposal` 是通用治理提案入口；角色任命只是 `proposal_type=role_appointment` 的一种。流程是 `Proposal -> ProposalVote -> ProposalExecution -> SystemEvent`。
 - 角色任命流程是 `role_appointment Proposal -> 表决通过 -> ProposalExecution -> RoleAssignment`。提案通过不等于执行完成，执行结果由 `ProposalExecution` 记录；投票资格以提案创建时的快照为准。
 - `Permission` 和 `RolePermission` 仍保留为底层模型供角色 inline、自动补全和初始化命令使用，但不作为成员管理的顶层入口。
+- OpenFGA model / store / tuple 不是新的事实来源。若授权数据异常，应以 Django 权威数据为准运行 `openfga_rebuild_tuples` 完整重建，而不是手工在 Playground 中长期维护 tuple。
 - `LedgerEntry` 是贡献积分业务流水，余额从 `posted` 流水汇总得到；冲正通过新的 `reversal` 流水表达，流水会关联到对应 `SystemEvent`，排序和审计顺序使用 `SystemEvent.seq`。
 - `Task` 列表会显示来源类型，支持区分直接运营创建、提案执行、计划派生、仿真产生或系统规则产生的任务；由提案执行产生的任务会关联来源提案和执行记录。
 - `ExpenseClaim`、`FinanceReview` 和 `FinanceTransaction` 是公开财务流程的底层记录。Admin 只读查看；提交、审核、付款和撤回必须走 workspace 财务页面或 `core.finance_services`，权限来自 `finance.review` / `finance.pay` 等 RolePermission。
@@ -224,7 +228,7 @@ live_os.api.tasks
 - Django Admin 登录入口仍使用 Django 原生 `User.is_active`、`User.is_staff`、`User.is_superuser` 和 model permissions；治理权限不是 Admin 登录凭证。
 - `superuser` 只作为技术 root、初始化和救急账号使用，不应批量授予日常治理人员。
 - `is_staff=True` 只表示 control 技术账号可以进入 Django Admin 技术入口；它不等同于拥有大苹果业务治理权限。
-- 普通世界治理管理员推荐账号状态是 `is_active=True`、`is_staff=False`、`is_superuser=False`，并通过 `Member -> RoleAssignment -> RolePermission -> Permission` 获得具体治理权限。
+- 普通世界治理管理员推荐账号状态是 `is_active=True`、`is_staff=False`、`is_superuser=False`，并通过 `AuthorizationService` / OpenFGA 获得具体治理权限；OpenFGA tuple 来自 `Member -> RoleAssignment -> RolePermission -> Permission` 权威事实投影。
 - `grant_governance_admin` 只授予 `Member` 的治理管理员角色任命，不会修改 `is_staff` 或 `is_superuser`。真实和仿真 world 不暴露 `/admin/`，所以业务治理账号不需要 `is_staff=True`。
-- `core.access.user_has_governance_permission()` 的主路径是 `User -> Member -> RoleAssignment -> RolePermission -> Permission`。普通治理管理员应被授予 `治理管理员` 角色或其他绑定了 `governance.*` 权限的角色，不能只依赖 `基础角色 / 治理成员`。财务审核和付款同理只看 `finance.*` RolePermission，不看 Django staff/superuser。
+- `core.access.user_has_governance_permission()` 的主路径是 `User -> Member -> AuthorizationService -> OpenFGA`。普通治理管理员应被授予 `治理管理员` 角色或其他绑定了 `governance.*` 权限的角色，并确保目标 world 的 OpenFGA tuple 已重建。财务审核和付款同理只看 `finance.*` 授权，不看 Django staff/superuser。
 - 当前 Django Admin 的模型增删改查权限仍主要依赖 Django model permissions；这意味着普通 staff 不会自动拥有所有模型权限，但精细到 `governance.*` 业务权限的 Admin 对象级控制仍是后续工作。
