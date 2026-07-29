@@ -35,11 +35,7 @@ start.bat
 http://127.0.0.1:20100/admin/
 ```
 
-如果没有超级用户，先创建：
-
-```bash
-python manage.py createsuperuser
-```
+如果没有超级用户，按照 [开发说明](../development/setup.md) 中的“创建 Django Admin 超级用户”步骤操作。该账号创建在 control DB，仅用于 `bigadmin.local/admin/`，不会成为 realworld 或 simulation world 的成员账号。
 
 多数据库本地环境推荐用 `bootstrap_world` 创建首批账号：
 

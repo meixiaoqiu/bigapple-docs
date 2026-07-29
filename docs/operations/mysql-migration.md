@@ -129,7 +129,7 @@ JSONField 和行锁能力。
 start.bat
 ```
 
-启动脚本不会输出包含密码的 `DATABASE_URL`。它会检查已有 `dev-net`、`mysql97` 和 `nginx`，启动已存在的容器并连接网络，但不会创建数据库容器、nginx 容器、Docker network 或数据卷。
+启动脚本不会输出包含密码的 `DATABASE_URL`。它会检查 `dev-net`、`mysql97` 和 `nginx`；缺少 `dev-net` 时自动创建，并启动已有的数据库和 nginx 容器、连接网络，但不会创建数据库容器、nginx 容器或它们的数据卷。
 
 ## 验收失败处理
 

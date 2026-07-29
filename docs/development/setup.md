@@ -8,7 +8,7 @@ title: 开发说明
 ## 本地依赖
 
 - Docker Desktop
-- 已存在的 Docker network：`dev-net`
+- Docker network：`dev-net`（缺少时由 `start.bat` 自动创建）
 - 已存在的 MySQL 容器：`mysql97`
 - 已存在的 nginx 容器：`nginx`
 - 可连接的 MySQL 数据库，推荐 `utf8mb4` 字符集和 `utf8mb4_0900_as_cs` 排序规则
@@ -47,7 +47,7 @@ Docker 开发模式下，Django 进程运行在 `big-apple-admin`、`big-apple-r
 
 `BIG_APPLE_CONTRACTS_ROOT` 默认使用 `../bigapple-docs/static/technical-contracts`，通常不需要手动设置；当前运行时代码不直接读取 contracts 文件，普通 CI 和 Live OS 自检也不要求相邻 docs 仓库存在。
 
-`start.bat` 会检查 Docker Desktop、`.env`、`dev-net`、`mysql97`、`nginx` 和本地域名映射。它只启动和连接已有容器，不会创建数据库容器、nginx 容器、Docker network 或数据卷。
+`start.bat` 会检查 Docker Desktop、`.env`、`dev-net`、`mysql97`、`nginx` 和本地域名映射。缺少 `dev-net` 时会自动创建；它会启动已有的数据库和 nginx 容器并连接网络，但不会创建数据库容器、nginx 容器或它们的数据卷。
 
 ## 常用命令
 
@@ -74,9 +74,11 @@ start.bat
 - 切换到 Live OS 仓库根目录。
 - 校验 `.env` 中的 `DATABASE_URL=mysql://...@mysql97:3306/...`。
 - 检查 Docker Desktop 是否可用。
-- 检查 `dev-net` 网络是否存在。
+- 检查 `dev-net` 网络，缺少时自动创建。
 - 启动已有的 `mysql97` 容器并连接到 `dev-net`。
 - 等待 `mysql97` health check 通过。
+- 构建缺失的 `big-apple-live-os:dev` 镜像并迁移 control、realworld 和 simulation0001 数据库。
+- 启动并初始化 real/sim OpenFGA，重建权限 tuples，并比较 Django 权威数据与 OpenFGA 权限结果。
 - 通过 `docker compose -f docker-compose.dev.yml up -d --force-recreate big-apple-admin big-apple-real big-apple-sim` 启动三个 Django 站点。
 - 启动已有的 `nginx` 容器并连接到 `dev-net`。
 - 输出直连 Django 和 nginx gateway 访问地址。
@@ -98,6 +100,14 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py m
 docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py createsuperuser --settings=live_os.settings_admin
 ```
 
+根据提示填写用户名、邮箱和密码，然后登录：
+
+```text
+http://bigadmin.local/admin/
+```
+
+该命令只创建 control DB 的 Django Admin 超级用户，不会创建 `bigreal.local` 或 `bigsim.local` 的成员账号。world 成员与治理管理员的初始化方式见 [World 数据库与生命周期](./world-databases.md)。
+
 写入后台预览用演示数据：
 
 ```bat
@@ -106,6 +116,115 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py s
 
 `seed_demo` 是幂等命令，重复执行不会重复插入同一批演示记录。它不会删除任何已有数据。运行时启用 world 数据库路由后，直接执行必须显式传入 `--world-id`；被 `seed_world` 或 `smoke_workflow` 调用时会复用已绑定的 world 上下文。
 当前 seed 数据包含 `bigapple001据点执行计划`，可在 Admin 中编辑计划、版本、节点、依赖、需求和容量影响，并在观察台中查看主线进度。
+
+## OpenFGA 本地初始化与 ID 恢复
+
+本地开发使用两套 OpenFGA：
+
+| 用途 | 容器内 API | 宿主机 API | Playground |
+| --- | --- | --- | --- |
+| realworld | `http://openfga-real:8080` | `http://127.0.0.1:20103` | `http://openfga-real.local/playground` |
+| simulation0001 | `http://openfga-sim:8082` | `http://127.0.0.1:20106` | `http://openfga-sim.local/playground` |
+
+`.env` 中必须为两套服务分别配置 store 和 authorization model：
+
+```dotenv
+OPENFGA_REAL_STORE_NAME=big-apple-realworld
+OPENFGA_REAL_STORE_ID=
+OPENFGA_REAL_AUTHORIZATION_MODEL_ID=
+OPENFGA_SIM_STORE_NAME=big-apple-simulation0001
+OPENFGA_SIM_STORE_ID=
+OPENFGA_SIM_AUTHORIZATION_MODEL_ID=
+```
+
+### 首次创建 store 和 model
+
+首次启动时，如果 `.env` 中的 ID 为空，`start.bat` 会调用 bootstrap 命令并输出需要填写的 `OPENFGA_*` 值，然后停止启动。也可以在 Live OS 仓库根目录手工执行。
+
+创建或复用 realworld store，并写入当前授权模型：
+
+```powershell
+docker compose -f docker-compose.dev.yml run --rm --no-deps big-apple-admin python manage.py openfga_bootstrap --world-kind real --api-url http://openfga-real:8080
+```
+
+创建或复用 simulation0001 store，并写入当前授权模型：
+
+```powershell
+docker compose -f docker-compose.dev.yml run --rm --no-deps big-apple-admin python manage.py openfga_bootstrap --world-kind sim --api-url http://openfga-sim:8082
+```
+
+每条命令都会输出对应的 API URL、store ID 和 authorization model ID。把输出值手工写入 `.env` 中同名变量，然后重新运行：
+
+```powershell
+.\start.bat
+```
+
+`openfga_bootstrap` 每次执行都会向目标 store 写入一个新的授权模型。不要为了普通查询重复执行；只有首次初始化、当前 model 已丢失，或者明确发布新版权限模型时才运行。
+
+### 查询 store ID
+
+查询 realworld stores：
+
+```powershell
+(Invoke-RestMethod http://127.0.0.1:20103/stores).stores |
+    Select-Object id, name
+```
+
+查询 simulation stores：
+
+```powershell
+(Invoke-RestMethod http://127.0.0.1:20106/stores).stores |
+    Select-Object id, name
+```
+
+根据 `.env` 中的 `OPENFGA_REAL_STORE_NAME` 或 `OPENFGA_SIM_STORE_NAME` 选择名称匹配的 store，不要把 real 与 sim 的 ID 混用。
+
+### 查询 authorization model ID
+
+先填入上一步查到的 store ID，再列出该 store 的全部 model：
+
+```powershell
+$storeId = "替换为store-id"
+
+(Invoke-RestMethod "http://127.0.0.1:20106/stores/$storeId/authorization-models").authorization_models |
+    Select-Object id, schema_version
+```
+
+上例查询 simulation；查询 realworld 时把端口 `20106` 改为 `20103`。
+
+如果结果为空，说明该 store 中没有 authorization model，必须运行对应的 `openfga_bootstrap` 创建模型。如果存在多个 model，不要仅凭 ID 猜测应使用哪一个；优先使用最近一次明确执行 bootstrap 或权限模型发布时输出并记录的 ID。
+
+### 权限服务不可用排查
+
+如果 OpenFGA 容器正在运行，但 workspace 显示“权限服务不可用”，先检查 Django 和 OpenFGA 日志：
+
+```powershell
+docker logs --tail 120 big-apple-sim
+docker logs --tail 120 big-apple-openfga-sim
+```
+
+出现以下错误表示 `.env` 中的 model ID 不属于当前 store，或对应模型已经随 OpenFGA 数据卷变化而丢失：
+
+```text
+authorization_model_not_found
+Authorization Model '...' not found
+```
+
+处理顺序：
+
+1. 按上文查询 store 和 model，确认 `.env` 中的两个 ID 是否真实存在且对应同一套 real/sim 服务。
+2. store 中存在正确 model 时，手工修正 `.env` 中对应的 ID。
+3. store 中没有 model 时，运行对应的 `openfga_bootstrap`，将其输出的新 ID 写入 `.env`。
+4. 重新运行 `start.bat`，使 Django 容器重新读取环境变量，并重建 OpenFGA tuples。
+5. 再次检查 workspace 和容器日志。
+
+World 重置不会创建 OpenFGA model，也不会修改 `.env`。重置世界后可以重新运行 `start.bat`，由本地 OpenFGA setup 重建 tuples；也可以在确认 store/model 配置有效后单独执行：
+
+```powershell
+docker compose -f docker-compose.dev.yml run --rm --no-deps big-apple-sim python manage.py openfga_rebuild_tuples --settings=live_os.settings_sim --world-kind sim
+```
+
+该命令会删除 sim store 中现有 tuples，再根据 simulation0001 的 Django 权威数据完整重建。当前本地配置只有一个 simulation store；增加多个仿真世界前，需要先明确每个 world 的 store 或 tuple 隔离边界。OpenFGA store/model 属于本地部署配置，不属于世界重置状态。
 
 ## 前端资源
 
