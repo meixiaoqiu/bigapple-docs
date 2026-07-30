@@ -705,7 +705,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `title` | string | 是 | 人类可读任务标题。 |
 | `task_type` | enum string | 是 | `cooking`、`dishwashing`、`public_cleaning` 等。 |
 | `status` | enum string | 是 | `draft`、`open`、`claimed`、`in_progress`、`pending_review`、`accepted`、`rejected`、`disputed`、`closed`、`reversed`。 |
-| `standard_hours` | decimal | 是 | 标准工时。 |
+| `standard_minutes` | positive integer | 是 | 完成任务所需的标准整数分钟数。 |
 | `base_points` | integer | 是 | 基础积分。 |
 | `role_coefficient` | decimal | 是 | 规则系数。 |
 | `physical_load` | decimal | 否 | 0-100 体力负担。 |

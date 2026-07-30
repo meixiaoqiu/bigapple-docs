@@ -154,6 +154,11 @@ http://bigadmin.local/admin/
 docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py seed_demo --world-id realworld --settings=live_os.settings_admin
 ```
 
+演示任务领取者 `mem-0001` 同时拥有 active `ROLE_FORMAL_MEMBER` 和
+`ROLE_CONTRIBUTOR`。完整工作台权限以 active role assignment 为准；
+`Member.status=ADMITTED` 本身不能代替正式成员角色。`smoke_workflow`
+依赖这一演示身份，并会通过真实任务领取 API 验证权限链。
+
 `seed_demo` 是幂等命令，重复执行不会重复插入同一批演示记录。它不会删除任何已有数据。运行时启用 world 数据库路由后，直接执行必须显式传入 `--world-id`；被 `seed_world` 或 `smoke_workflow` 调用时会复用已绑定的 world 上下文。
 当前 seed 数据包含 `bigapple001据点执行计划`，可在 Admin 中编辑计划、版本、节点、依赖、需求和容量影响，并在观察台中查看主线进度。
 
@@ -166,7 +171,7 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py s
 | realworld | `http://openfga-real:8080` | `http://127.0.0.1:20103` | `http://openfga-real.local/playground` |
 | simulation0001 | `http://openfga-sim:8082` | `http://127.0.0.1:20106` | `http://openfga-sim.local/playground` |
 
-`.env` 中必须为两套服务分别配置 store 和 authorization model：
+`.env` 中必须为两套服务分别配置 store、authorization model 和当前模型文件的 SHA-256：
 
 ```dotenv
 OPENFGA_REAL_STORE_NAME=big-apple-realworld
@@ -175,11 +180,31 @@ OPENFGA_REAL_AUTHORIZATION_MODEL_ID=
 OPENFGA_SIM_STORE_NAME=big-apple-simulation0001
 OPENFGA_SIM_STORE_ID=
 OPENFGA_SIM_AUTHORIZATION_MODEL_ID=
+OPENFGA_AUTHORIZATION_MODEL_SHA256=
 ```
+
+这些值由开发者根据 bootstrap 输出手工维护。`start.bat` 和 `scripts/Invoke-OpenFgaLocalSetup.ps1` 只读取、校验 `.env`，不会修改文件。
+
+### 启动时的只读校验
+
+`start.bat` 会先启动 OpenFGA 容器以便检查，然后调用 `scripts/Invoke-OpenFgaLocalSetup.ps1` 校验：
+
+- real/sim OpenFGA HTTP API 是否可访问。
+- real/sim store ID 和 authorization model ID 是否已填写。
+- 配置的 store 是否真实存在。
+- 配置的 authorization model 是否属于对应 store。
+- real 与 sim 各自 model ID 对应的远端模型内容，是否都与当前 `openfga/bigapple.authorization-model.json` 一致。
+- `OPENFGA_AUTHORIZATION_MODEL_SHA256` 是否等于当前 `openfga/bigapple.authorization-model.json` 的 SHA-256。
+
+任何检查失败时，启动脚本会列出具体原因、bootstrap 命令和本文档地址，然后退出。开发者应检查输出、按需修改 `.env`，再重新运行 `start.bat`。启动脚本不会自动创建 model、选择 model ID 或改写本地配置。
+
+`OPENFGA_AUTHORIZATION_MODEL_SHA256` 只是本地模型文件版本标记，不能单独证明 real/sim 正在使用该模型。启动脚本会分别读取两个 model ID 的远端内容，忽略 OpenFGA 补充的空默认字段，并对规范化后的 `schema_version`、`type_definitions` 和 `conditions` 做内容比较。两套模型必须分别通过。
+
+配置有效后，启动流程才会重建权限 tuples、执行 Django/OpenFGA 权限结果比对并启动站点。
 
 ### 首次创建 store 和 model
 
-首次启动时，如果 `.env` 中的 ID 为空，`start.bat` 会调用 bootstrap 命令并输出需要填写的 `OPENFGA_*` 值，然后停止启动。也可以在 Live OS 仓库根目录手工执行。
+首次运行 `start.bat` 时，OpenFGA 容器会启动，但因为 `.env` 中的 ID 和 SHA-256 为空，配置校验会失败。这是预期行为。保持 OpenFGA 容器运行，在 Live OS 仓库根目录执行以下命令。
 
 创建或复用 realworld store，并写入当前授权模型：
 
@@ -193,13 +218,22 @@ docker compose -f docker-compose.dev.yml run --rm --no-deps big-apple-admin pyth
 docker compose -f docker-compose.dev.yml run --rm --no-deps big-apple-admin python manage.py openfga_bootstrap --world-kind sim --api-url http://openfga-sim:8082
 ```
 
-每条命令都会输出对应的 API URL、store ID 和 authorization model ID。把输出值手工写入 `.env` 中同名变量，然后重新运行：
+命令只操作 OpenFGA，不修改宿主机 `.env`。每条命令都会输出可复制的配置，例如：
+
+```dotenv
+OPENFGA_SIM_API_URL=http://openfga-sim:8082
+OPENFGA_SIM_STORE_ID=...
+OPENFGA_SIM_AUTHORIZATION_MODEL_ID=...
+OPENFGA_AUTHORIZATION_MODEL_SHA256=...
+```
+
+把 real 命令输出的 `OPENFGA_REAL_STORE_ID`、`OPENFGA_REAL_AUTHORIZATION_MODEL_ID`，sim 命令输出的 `OPENFGA_SIM_STORE_ID`、`OPENFGA_SIM_AUTHORIZATION_MODEL_ID`，以及任一命令输出的 `OPENFGA_AUTHORIZATION_MODEL_SHA256` 手工写入 `.env`。检查无误后重新运行：
 
 ```powershell
 .\start.bat
 ```
 
-`openfga_bootstrap` 每次执行都会向目标 store 写入一个新的授权模型。不要为了普通查询重复执行；只有首次初始化、当前 model 已丢失，或者明确发布新版权限模型时才运行。
+`openfga_bootstrap` 每次执行都会向目标 store 写入一个新的授权模型。不要把它当作查询命令重复执行；普通查询使用下文的只读 API。
 
 ### 查询 store ID
 
@@ -232,7 +266,7 @@ $storeId = "替换为store-id"
 
 上例查询 simulation；查询 realworld 时把端口 `20106` 改为 `20103`。
 
-如果结果为空，说明该 store 中没有 authorization model，必须运行对应的 `openfga_bootstrap` 创建模型。如果存在多个 model，不要仅凭 ID 猜测应使用哪一个；优先使用最近一次明确执行 bootstrap 或权限模型发布时输出并记录的 ID。
+如果结果为空，说明该 store 中没有 authorization model，需要运行对应的 `openfga_bootstrap`。如果存在多个 model，不要仅凭 ID 猜测应使用哪一个；应使用最近一次明确执行 bootstrap 或权限模型发布时输出并手工写入 `.env` 的 model ID。
 
 ### 权限服务不可用排查
 
@@ -252,11 +286,14 @@ Authorization Model '...' not found
 
 处理顺序：
 
-1. 按上文查询 store 和 model，确认 `.env` 中的两个 ID 是否真实存在且对应同一套 real/sim 服务。
-2. store 中存在正确 model 时，手工修正 `.env` 中对应的 ID。
-3. store 中没有 model 时，运行对应的 `openfga_bootstrap`，将其输出的新 ID 写入 `.env`。
-4. 重新运行 `start.bat`，使 Django 容器重新读取环境变量，并重建 OpenFGA tuples。
-5. 再次检查 workspace 和容器日志。
+1. 阅读 `start.bat` 输出的每一项配置错误，不要只确认容器状态。
+2. 按上文查询 store 和 model，确认 `.env` 中的 ID 是否真实存在且 real/sim 没有混用。
+3. 某一套 store/model 缺失或失效时，只运行对应 world kind 的 `openfga_bootstrap`，把新 store/model ID 手工写入 `.env`。
+4. `OPENFGA_AUTHORIZATION_MODEL_SHA256` 与仓库模型不一致时，说明授权模型文件已经变化。分别为 real 和 sim 运行 `openfga_bootstrap`，更新两套 model ID，并写入命令输出的新 SHA-256。
+5. 重新运行 `start.bat`，让脚本重新校验配置、重建 OpenFGA tuples，并重新创建 Django 容器。
+6. 再次检查 workspace 和容器日志。
+
+模型升级时不能只 bootstrap real 或只 bootstrap sim 后更新全局 SHA-256。另一套旧 model 即使 ID 仍然存在，也会因为远端内容与仓库模型不一致而被启动检查拒绝。
 
 World 重置不会创建 OpenFGA model，也不会修改 `.env`。重置世界后可以重新运行 `start.bat`，由本地 OpenFGA setup 重建 tuples；也可以在确认 store/model 配置有效后单独执行：
 

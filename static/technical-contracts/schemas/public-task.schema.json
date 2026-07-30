@@ -10,7 +10,7 @@
     "title",
     "task_type",
     "status",
-    "standard_hours",
+    "standard_minutes",
     "base_points",
     "role_coefficient",
     "requires_review",
@@ -56,9 +56,10 @@
         "reversed"
       ]
     },
-    "standard_hours": {
-      "type": "number",
-      "minimum": 0
+    "standard_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "完成任务所需的标准整数分钟数。"
     },
     "base_points": {
       "type": "integer"

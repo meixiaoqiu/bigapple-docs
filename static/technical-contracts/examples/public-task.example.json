@@ -3,7 +3,7 @@
   "title": "Prepare lunch",
   "task_type": "cooking",
   "status": "open",
-  "standard_hours": 3.5,
+  "standard_minutes": 210,
   "base_points": 30,
   "role_coefficient": 1.2,
   "physical_load": 45,
