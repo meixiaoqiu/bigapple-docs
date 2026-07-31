@@ -112,7 +112,7 @@ docker compose -f docker-compose.dev.yml exec -T big-apple-admin python manage.p
 三库迁移完成后，可用 `bootstrap_world` 一次性创建：
 
 - control DB 的 Django Admin 技术 root：默认用户名 `admin`，`is_staff=True`，`is_superuser=True`。
-- 目标 world DB 的世界治理管理员：默认用户名和成员编号 `member-admin-0001`，`is_staff=False`，`is_superuser=False`，并拥有 `治理管理员` 角色任命和 `governance.*` 基础权限。
+- 目标 world DB 的首个维护者：默认用户名和成员编号 `member-admin-0001`，`is_staff=False`，`is_superuser=False`，并拥有维护者任命和 `governance.*` 基础权限；该职责不自动取得议事者任期或投票权。
 
 推荐用环境变量传入密码，避免把密码写入 shell 历史：
 
@@ -137,18 +137,18 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py b
 该命令是幂等的；重复执行不会重复创建同一个 `Permission`、`Role`、`Member`、`User` 或 active `RoleAssignment`。control plane 的 `/admin/` 登录使用 control DB 技术账号；固定 world 站点的 `/login/` 登录使用对应 world DB 内的账号。
 world 登录成功后统一进入 `/workspace/`。真实世界和仿真世界 runtime 不暴露独立业务后台；需要执行底层维护或高影响操作时，使用 control plane 的 `/admin/`，账号名固定使用 `member_no`。
 
-仿真 world 的首个治理管理员可以通过 `.env` 配置：
+仿真 world 的首个维护者可以通过 `.env` 配置：
 
 ```env
-BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_ENABLED=true
-BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_USERNAME=your-simulation-admin
-BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_PASSWORD=CHANGE_ME
-BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_EMAIL=
-BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_MEMBER_NO=your-simulation-admin
-BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_DISPLAY_NAME=Simulation admin
+BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_ENABLED=true
+BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_USERNAME=your-simulation-maintainer
+BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_PASSWORD=CHANGE_ME
+BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_EMAIL=
+BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_MEMBER_NO=your-simulation-maintainer
+BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_DISPLAY_NAME=Simulation maintainer
 ```
 
-只有显式启用并同时提供用户名和密码时，`seed_world` 每次成功初始化目标仿真 world 后才会确保该账号存在并拥有治理管理员角色。`BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_PASSWORD=CHANGE_ME` 是模板占位符，启用前必须改掉，否则命令会失败。这样重置 `simulation0001` 对应数据库后，再运行 `seed_world simulation0001 --template ...`，即可继续使用该账号登录 `bigsim.local/workspace/`。
+只有显式启用并同时提供用户名和密码时，`seed_world` 每次成功初始化目标仿真 world 后才会确保该账号存在并拥有维护者职责。`BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_PASSWORD=CHANGE_ME` 是模板占位符，启用前必须改掉，否则命令会失败。这样重置 `simulation0001` 对应数据库后，再运行 `seed_world simulation0001 --template ...`，即可继续使用该账号登录 `bigsim.local/workspace/`。
 
 ## World 生命周期命令
 
@@ -161,7 +161,7 @@ BIG_APPLE_SIMULATION_BOOTSTRAP_ADMIN_DISPLAY_NAME=Simulation admin
 3. 重启 Django 进程，让新的 alias 进入 `settings.DATABASES`。
 4. 用 `create_world` 登记 world。
 5. 用 `migrate_world` 初始化该 world 数据库结构。
-6. 用 `bootstrap_world --world-id simulation0002` 创建该仿真 world 的首个治理管理员。
+6. 用 `bootstrap_world --world-id simulation0002` 创建该仿真 world 的首个维护者。
 7. 如需后台预览数据，用 `seed_world simulation0002 --template demo` 初始化仿真 world；如需真正从一个发起人开始推演，用 `seed_world simulation0002 --template zero_start`。
 
 登记一个已配置数据库 alias 的仿真世界：
@@ -237,7 +237,7 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py s
 | --- | --- | --- |
 | `qa-a` | `test-password` | 测试成员 A |
 | `qa-b` | `test-password` | 测试成员 B |
-| `qa-gov` | `test-password` | 治理成员 |
+| `qa-gov` | `test-password` | 维护者测试账号 |
 
 测试商户：
 

@@ -460,7 +460,7 @@ docs/ 中的说明书和截图
       "passwordEnv": "DOCS_SCREENSHOT_MEMBER_PASSWORD"
     },
     "governance": {
-      "description": "治理成员",
+      "description": "维护者",
       "loginPath": "/login/",
       "loginEnv": "DOCS_SCREENSHOT_GOVERNANCE_LOGIN",
       "passwordEnv": "DOCS_SCREENSHOT_GOVERNANCE_PASSWORD"
@@ -485,7 +485,7 @@ docs/ 中的说明书和截图
 账号应由维护者在 Live OS 中通过正常的产品或管理流程准备：
 
 - **普通成员账号**：能正常登录并访问成员工作区；
-- **治理成员账号**：按 Live OS 正常角色与权限机制获得报名审核权限；
+- **维护者账号**：按 Live OS 正常角色与权限机制获得报名处理权限；
 - **管理后台账号**：在控制面数据库中正常创建并具有 `staff` / `superuser` 权限。
 
 Docs 不规定账号的具体用户名、Member 编号或 Live OS 内部如何创建角色。
@@ -518,8 +518,8 @@ Copy-Item .env.screenshots.example .env.screenshots
 | --- | --- |
 | `DOCS_SCREENSHOT_MEMBER_LOGIN` | 已有普通成员账号的登录标识 |
 | `DOCS_SCREENSHOT_MEMBER_PASSWORD` | 已有普通成员账号的密码 |
-| `DOCS_SCREENSHOT_GOVERNANCE_LOGIN` | 已有治理成员账号的登录标识 |
-| `DOCS_SCREENSHOT_GOVERNANCE_PASSWORD` | 已有治理成员账号的密码 |
+| `DOCS_SCREENSHOT_GOVERNANCE_LOGIN` | 已有维护者账号的登录标识 |
+| `DOCS_SCREENSHOT_GOVERNANCE_PASSWORD` | 已有维护者账号的密码 |
 | `DOCS_SCREENSHOT_SUPERUSER_LOGIN` | 已有管理账号的登录标识 |
 | `DOCS_SCREENSHOT_SUPERUSER_PASSWORD` | 已有管理账号的密码 |
 

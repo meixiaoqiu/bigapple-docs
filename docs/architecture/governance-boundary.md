@@ -85,13 +85,14 @@ title: 治理交互模型边界
 
 角色任命可以来自：
 
-- 直接任命：上级或治理管理员通过服务直接创建。
+- 直接任命：维护者通过服务直接创建。
+- 本人申请：有效正式成员可立即创建一年期议事者任命，无需审核。
 - 提案执行：`role_appointment` 提案通过后执行，创建 `RoleAssignment`。
-- 初始化：bootstrap 或治理权限初始化命令创建基础任命。
+- 初始化：bootstrap 或维护权限初始化命令创建必要任命。
 
-`RoleAssignment.source_type`、`source_proposal` 和 `source_proposal_execution` 用于记录任命来源。直接任命、提案执行和初始化最终都会落到同一张 `RoleAssignment` 表，避免保留多套平行任命结构。
+`RoleAssignment.source_type`、`source_proposal` 和 `source_proposal_execution` 用于记录任命来源。直接任命、本人申请、提案执行和初始化最终都会落到同一张 `RoleAssignment` 表，避免保留多套平行任命结构。
 
-**创建约束**：所有 RoleAssignment 必须通过 `core.role_assignment_services.create_role_assignment()` 创建。该 service 强制执行前置条件校验：`ROLE_GOVERNANCE_MEMBER`、`governance.*` permission 角色和 `finance.*` permission 角色都要求 `ROLE_FORMAL_MEMBER`；`SUSPENDED`/`EXITED` 成员拒绝一切新角色。`bootstrap_first_governance_member()` 是唯一可按事务顺序授予完整权限链的入口，内部仍调用 `create_role_assignment()` 并受校验保护。Django Admin 中的 RoleAssignment 已设为只读，禁止手工创建或修改。
+**创建约束**：所有 RoleAssignment 必须通过 `core.role_assignment_services.create_role_assignment()` 创建。议事者和维护者以及带 `governance.*` / `finance.*` permission 的职责都要求有效正式成员资格；`SUSPENDED`/`EXITED` 成员拒绝一切新职责。议事者本人申请使用专用服务，任期一年且不会自动续任。Django Admin 中的 RoleAssignment 已设为只读，禁止手工创建或修改。
 
 无论来源是什么，最终权限判断仍走：
 
@@ -99,7 +100,7 @@ title: 治理交互模型边界
 Member -> active RoleAssignment -> RolePermission -> Permission
 ```
 
-运行时授权由 `AuthorizationService` 统一执行。Django 的 `Member`、`RoleAssignment`、`RolePermission` 和 `Permission` 仍是权威事实来源；OpenFGA 是这些事实的授权计算投影。启用 OpenFGA 后，完整成员工作台、治理权限、财务权限和资源级权限都必须通过 OpenFGA check 得出结论，不能在页面、API 或后台任务中重新拼接角色表查询。
+运行时授权由 `AuthorizationService` 统一执行。Django 的 `Member`、`RoleAssignment`、`RolePermission` 和 `Permission` 仍是权威事实来源；OpenFGA 是这些事实的授权计算投影。启用 OpenFGA 后，完整成员工作台、维护权限、财务权限和资源级权限都必须通过 OpenFGA check 得出结论，不能在页面、API 或后台任务中重新拼接角色表查询。
 
 资源级权限需要区分两种问题：`resource=None` 只回答“成员是否在任一范围拥有该权限”；传入具体 `Resource` 时才回答“成员是否能对这个资源执行该权限”。OpenFGA tuple rebuild 会把全局 `RolePermission` 投影为全局资源授权，把 `constraints_json.resource_id` / `resource_ids` 投影为具体资源授权；资源级入口不能用 `resource=None` 的结果替代具体对象判断。
 
@@ -153,9 +154,9 @@ member_admission Proposal -> ProposalVote -> ProposalExecution -> MemberApplicat
 role_appointment Proposal -> ProposalVote -> ProposalExecution -> RoleAssignment
 ```
 
-成员报名提交自动创建最小权限 `Member`、`MemberApplication` 和 `member_admission` 提案，提案直接进入 VOTING 状态。治理成员不执行单独审核标记，也不手动发起准入提案——“成员报名审核”只是准入提案工作台。成员准入是 `yes`/`no` 二元表决：赞成票超过投票资格快照半数时立即通过，反对票超过半数时立即未通过并自动拒绝报名；未形成多数前保持表决中，截止仍未通过则失败。正式接纳只能由 `execute_proposal` 经 `admit_member_application_from_proposal` 完成，执行结果落到报名、成员状态和正式成员角色任命上，不新建平行投票表。拒绝/未通过来自提案投票结果或提案生命周期，而不是单人后台审核 action。
+成员报名提交自动创建最小 `Member`、`MemberApplication` 和 `member_admission` 提案，提案直接进入 VOTING 状态。准入提案不使用单人审核标记，也不引入平行审核表。普通议事的选民必须同时具有有效正式成员资格和议事者任期；成员准入是 `yes`/`no` 二元表决。正式接纳只能由 `execute_proposal` 经 `admit_member_application_from_proposal` 完成，执行结果落到报名、成员状态和正式成员角色任命上。
 
-治理成员可在 `/workspace/applications/` 进入成员报名审核模块，查看报名资料、准入提案、投票和执行已通过提案。该模块只复用上述既有服务与表，不引入平行审核表或投票表。模块入口与所有动作 URL 都要求治理权限（`governance.view_admin`），且必须绑定 `Member` 身份；未绑定 `Member` 的 Django staff/superuser 不能绕过成员身份要求。成员准入投票只允许 `yes`/`no`，不提供弃权；反对票必须填写理由。
+维护者可在 `/workspace/applications/` 进入成员报名处理模块，查看报名资料、准入提案、投票和执行已通过提案。该模块只复用上述既有服务与表，不引入平行审核表或投票表。维护入口要求 `governance.view_admin` 且必须绑定 `Member` 身份；未绑定 `Member` 的 Django staff/superuser 不能绕过成员身份要求。成员准入投票只允许 `yes`/`no`，不提供弃权；反对票必须填写理由。
 
 
 未来规则、政策、预算、项目计划、重大申诉裁决和重大任务发布可以使用同一套提案流程，但执行后仍应落到具体业务对象。

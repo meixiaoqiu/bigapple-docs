@@ -23,7 +23,7 @@ DATABASE_URL=mysql://用户名:URL编码后的密码@主机:3306/数据库名?ch
 
 ## core_member
 
-成员权威记录。Django `User` 只负责登录账号；`Member` 才是大苹果治理主体。成员身份类型、是否虚拟成员和单个 `role_id` 字段已删除，成员角色统一由 active `RoleAssignment` 表示。每个成员至少应拥有 `基础角色 / 大苹果成员`，并可同时拥有多个角色。
+成员权威记录。Django `User` 只负责登录账号；`Member` 才是大苹果的授权主体。成员身份类型、是否虚拟成员和单个 `role_id` 字段已删除；当前有效的直接角色事实由 `RoleAssignment` 表示。已注册但没有有效正式成员资格的成员是“贡献者”这一派生状态，不创建基础角色任命。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -45,15 +45,15 @@ DATABASE_URL=mysql://用户名:URL编码后的密码@主机:3306/数据库名?ch
 
 Django `User` 仍只负责技术登录和 Admin 入口控制：`is_active` 控制账号是否可用，`is_staff` 控制是否可进入 Django Admin，`is_superuser` 是技术 root / 初始化 / 救急账号。日常治理人员不应被批量设置为 superuser。
 
-大苹果业务治理权限由 `AuthorizationService` / OpenFGA 计算，权威事实主路径是 `User -> Member -> RoleAssignment -> RolePermission -> Permission`。临时授权不再是独立模型，而是有较短 `end_at` 的角色任命。`基础角色 / 治理成员` 只是普通角色名，本身不再授予治理权限；治理权限必须来自 `RolePermission` 投影出的 OpenFGA 授权。
+大苹果业务权限由 `AuthorizationService` / OpenFGA 计算，权威事实主路径是 `User -> Member -> RoleAssignment -> RolePermission -> Permission`。直接角色事实只有正式成员、议事者和维护者；临时或有期限的职责通过 `end_at` 表达。具体权限必须来自 `RolePermission` 投影出的 OpenFGA 授权，不能以显示标签或 Django 技术账号标记作为放行依据。
 
-普通世界治理管理员推荐账号状态是 `is_active=True`、`is_staff=False`、`is_superuser=False`，并拥有有效 `Member`、`RoleAssignment` 和对应 `Permission`。`grant_governance_admin` 只创建或复用治理管理员角色任命，不会修改 `is_staff` 或 `is_superuser`；真实和仿真 world 不暴露 `/admin/`，业务治理账号不需要 Django staff 权限。
+普通 world 的维护者账号推荐为 `is_active=True`、`is_staff=False`、`is_superuser=False`，并拥有有效 `Member`、`RoleAssignment` 和对应 `Permission`。`grant_maintainer` 只创建或复用维护者任命，不会修改 `is_staff` 或 `is_superuser`；真实和仿真 world 不暴露 `/admin/`，业务维护账号不需要 Django staff 权限。
 
 成员是否虚拟不再是成员字段，而由当前世界实例类型决定：`WORLD_INSTANCE_TYPE=simulation` 时 actor 输出为 `virtual_member`，`WORLD_INSTANCE_TYPE=real` 时 actor 输出为 `human_member`。当前默认值是 `simulation`。
 
 ## core_member_public_profile
 
-公开展示资料表，不是权限来源。职务、治理身份必须从 RoleAssignment / RolePermission 动态计算，不能手填。
+公开展示资料表，不是权限来源。成员资格、职责和专业资格必须从 `RoleAssignment`、`MemberProfessionalQualification` 与权限服务动态计算，不能手填。
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
@@ -87,13 +87,13 @@ MemberApplication stores public member applications. Member applications are sub
 | `linked_member_id` | fk | 否 | 提交后创建或复用的最小权限 `Member`。 |
 | `dynamic_answers` | json | 是 | 动态 textarea 问答数组，元素包含 `key`、`label`、`type`、`answer`。 |
 | `frozen_at` | datetime | 否 | 报名提交并二次确认的时间；业务入口不提供提交后的撤回或修改。 |
-| `admission_proposal_id` | fk | 否 | 接纳该申请者为正式成员的治理提案。 |
-| `decided_by_id` | fk | 否 | 决议人（执行准入或提案拒绝的治理成员）。 |
+| `admission_proposal_id` | fk | 否 | 接纳该申请者为正式成员的提案。 |
+| `decided_by_id` | fk | 否 | 决议人（执行准入或提案拒绝的维护者）。 |
 | `submitted_at` | datetime | 是 | 提交时间。 |
 | `decided_at` | datetime | 否 | 决议时间（准入执行或拒绝的时间）。 |
 | `metadata` | json | 是 | 扩展数据；仿真会写入 `simulation_run_id`、`simulation_hour`、`driver_mode` 和 `external_ref`。 |
 
-提交会创建登录账号、创建或复用 `status=pending_review` 的最小权限 `Member`、自动创建 `member_admission` 治理提案，并追加 `member_application_submitted` 统一事件。当前个人报名页按 steps 分步展示：第一步只采集 `role_gap` 和 `availability_slots`，第二步采集账号、密码、称呼、联系方式，第三步采集报名理由选项和可选的其他理由；不再向个人采集能力自述或责任文件能力。拒绝后同一账号可以再次提交一条新申请；提交成功后不可撤回或修改。正式接纳通过关联的 `member_admission` 提案投票并执行完成，执行后才把报名状态改为 `admitted`、把成员状态改为 `admitted` 并授予正式成员角色。准入执行或提案拒绝会追加 `member_application_reviewed` 统一事件。
+提交会创建登录账号、创建或复用最小 `Member`、自动创建 `member_admission` 提案，并追加 `member_application_submitted` 统一事件。已注册但尚未取得正式成员资格的成员显示为贡献者，不创建同名角色。正式接纳经关联提案投票并执行完成后，才把报名状态改为 `admitted`、把成员状态改为 `admitted` 并授予正式成员任命；选民必须同时具有有效正式成员资格和议事者任期。准入执行或提案拒绝会追加 `member_application_reviewed` 统一事件。
 
 ## core_partner_application
 
@@ -129,6 +129,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | --- | --- | --- | --- |
 | `id` | integer pk | 是 | 内部主键。 |
 | `name` | string | 是 | 组织名称。 |
+| `role_catalog_key` | string | 否 | 唯一稳定目录标识；仅“成员资格与职责”规范角色目录使用，其他组织留空。 |
 | `parent_id` | fk self | 否 | 上级组织。 |
 | `status` | enum string | 是 | `active`、`inactive`、`archived`。 |
 | `created_at` | datetime | 是 | 创建时间。 |
@@ -136,7 +137,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 
 ## core_role
 
-组织下的角色，例如电工、仓库管理员、安全委员、群落管理员。系统会创建 `基础角色` 组织承载成员基础角色，包括 `大苹果成员`、`观察者`、`贡献者`、`预备成员`、`正式成员` 和 `治理成员`。真实世界和仿真世界使用同一套角色语义，是否仿真只由当前 world / actor 上下文表达，不再通过单独的 `仿真成员` 角色表达。
+组织下的角色，例如电工、仓库维护者、安全委员。只有带 `role_catalog_key=member-role-catalog` 的成员资格与职责目录才承载三项可直接记录的规范角色：正式成员、议事者、维护者；其他组织即使使用同名角色，也不能形成规范成员资格或职责。贡献者、匿名访问和正式成员申请分别是派生参与状态或流程状态，不是角色。真实世界和仿真世界使用同一套角色语义，是否仿真只由当前 world / actor 上下文表达，不创建单独的仿真角色。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -167,7 +168,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `created_at` | datetime | 是 | 创建时间。 |
 | `updated_at` | datetime | 是 | 更新时间。 |
 
-基础治理和财务权限由 `python manage.py init_governance_permissions --world-id realworld` 幂等初始化：
+基础维护和财务权限由 `python manage.py init_maintainer_permissions --world-id realworld` 幂等初始化：
 
 | code | 说明 |
 | --- | --- |
@@ -181,9 +182,9 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `finance.pay` | 允许将已批准报销标记为已付款并生成财务流水。 |
 | `finance.view_private` | 预留权限：允许查看非公开财务凭证或隐私材料。 |
 
-初始化命令会创建或复用 `大苹果治理组` / `大苹果财务组` 组织、`治理管理员` / `财务审核员` / `财务付款员` 角色，并通过 `core_role_permission` 绑定上述基础权限。它不会自动批量授权成员；需要治理或财务权限的成员应被显式任命到绑定了相应权限的角色。
+初始化命令会创建或复用维护者及财务权限所需的目录项，并通过 `core_role_permission` 绑定明确能力。它不会自动批量授权成员；需要维护或财务权限的成员必须通过规范任命或专业资格流程获得相应授权。
 
-可以用 `python manage.py grant_governance_admin --world-id realworld --username <username>` 或 `--world-id realworld --member-no <member_no>` 把一个已有 `Member` 授予 `治理管理员` 角色。该命令会复用基础权限初始化逻辑，重复执行不会重复创建 active `RoleAssignment`；首次创建任命时会追加 `role_assigned` 统一事件。运行时启用 world 数据库路由后，直接执行必须显式传入 `--world-id`。
+可以用 `python manage.py grant_maintainer --world-id realworld --username <username>` 或 `--world-id realworld --member-no <member_no>` 把一个已有且有效的正式成员任命为维护者。该命令不会自动授予正式成员资格，也不会创建议事者任期或投票权；重复执行不会重复创建 active `RoleAssignment`。运行时启用 world 数据库路由后，直接执行必须显式传入 `--world-id`。
 
 ## core_role_assignment
 
@@ -199,13 +200,42 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `end_at` | datetime | 是 | 结束时间；所有角色任命必须有结束时间。 |
 | `granted_by_id` | fk | 否 | 任命人。 |
 | `revoked_by_id` | fk | 否 | 卸任处理人。 |
-| `source_type` | enum string | 是 | 来源类型：`direct`、`proposal`、`initialization`、`system`。 |
+| `source_type` | enum string | 是 | 来源类型：`direct`、`self_application`、`proposal`、`initialization`、`system`。 |
 | `source_proposal_id` | fk | 否 | 如果该任命由提案执行产生，关联来源提案。 |
 | `source_proposal_execution_id` | fk | 否 | 如果该任命由提案执行产生，关联具体执行记录。 |
 | `created_at` | datetime | 是 | 创建时间。 |
 | `updated_at` | datetime | 是 | 更新时间。 |
 
-新增记录会追加一次 `role_assigned` 统一事件；状态从 `active` 变为 `revoked` 时追加一次 `role_revoked` 统一事件。普通字段编辑不会重复追加任命或卸任事件。事件 payload 会包含 `source_type`、`source_proposal_id` 和 `source_proposal_execution_id`，用于区分直接任命、提案执行、初始化或系统规则产生的任命。
+新增记录会追加一次 `role_assigned` 统一事件；状态从 `active` 变为 `revoked` 时追加一次 `role_revoked` 统一事件。普通字段编辑不会重复追加任命或卸任事件。事件 payload 会包含 `source_type`、`source_proposal_id` 和 `source_proposal_execution_id`，用于区分直接任命、本人申请、提案执行、初始化或系统规则产生的任命。议事者只能由有效正式成员本人申请，任期为一年且不会自动续任；维护者是独立职责，不会自动创建议事者任期。
+
+## core_professional_domain
+
+专业议事提案可引用的专业领域目录。领域代码是稳定标识，只有启用状态的领域可以用于新提案。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `code` | string unique | 稳定领域代码。 |
+| `name` | string | 中文领域名称。 |
+| `description` | text | 领域说明。 |
+| `status` | enum string | `active` 或 `archived`。 |
+| `created_at` / `updated_at` | datetime | 记录创建与更新时间。 |
+
+## core_member_professional_qualification
+
+成员专业资格的权威事实。资格由具备 `governance.manage_professional_qualifications` 权限的维护者录入或撤销；系统只记录外部确认结果，不实现面试、考试或评估流程。资格不是角色，也不自动赋予维护者职责。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `member_id` | fk | 取得资格的成员。 |
+| `domain_id` | fk | 对应专业领域。 |
+| `status` | enum string | `active`、`revoked` 或 `expired`。 |
+| `external_confirmation_source` | string | 外部确认来源。 |
+| `confirmed_by_id` / `confirmed_at` | fk / datetime | 确认人和确认时间。 |
+| `valid_from` / `valid_until` | datetime | 生效与失效时间；失效时间可为空。 |
+| `revoked_by_id` / `revoked_at` | fk / datetime | 撤销处理人和撤销时间。 |
+| `notes` | text | 补充备注。 |
+
+运行时只有当前有效的专业资格才能参与对应领域的专业议事提案投票。
 
 ## core_proposal
 
@@ -222,10 +252,9 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `proposer_member_id` | fk | 否 | 提案人。 |
 | `proposer_role_assignment_id` | fk | 否 | 提案时角色身份；后台会按已选择的提案人过滤为该成员拥有的角色任命。 |
 | `organization_id` | fk | 否 | 提案所属组织。 |
-| `voter_scope_type` | enum string | 是 | `role`、`organization`、`all_members`。 |
-| `voter_scope_role_id` | fk | 否 | 以某个角色作为投票范围。 |
-| `voter_scope_organization_id` | fk | 否 | 以某个组织作为投票范围。 |
-| `eligible_voters_snapshot_json` | json | 是 | 提案开始时冻结的投票资格成员快照；只包含具备登录账号的成员。 |
+| `electorate_policy` | enum string | 是 | `general_deliberation` 或 `professional_deliberation`。 |
+| `professional_domain_id` | fk | 否 | 专业议事提案必须指定一个启用中的专业领域；普通议事提案必须为空。 |
+| `eligible_voters_snapshot_json` | json | 是 | 提案开始时冻结的投票资格成员快照。 |
 | `pass_ratio` | integer | 是 | 通过所需赞成比例，1 到 100；`50` 表示严格超过 50%，例如 2 人需 2 票、4 人需 3 票。 |
 | `quorum_count` | integer | 是 | 最低参与人数。 |
 | `allow_vote_change` | boolean | 是 | 截止前是否允许改票。 |
@@ -240,7 +269,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `created_at` | datetime | 是 | 创建时间。 |
 | `updated_at` | datetime | 是 | 更新时间。 |
 
-`member_admission` 是 yes/no 二元表决，使用严格多数决：赞成票超过 eligible voters 半数（`eligible // 2 + 1`）时立即 PASSED；反对票超过半数时立即 FAILED 并自动将关联 `MemberApplication` 设为 REJECTED。分母始终是 `eligible_voters_snapshot_json` 的人数。提案通过后不会直接接纳成员，必须执行 `ProposalExecution(action_type=admit_member_application)` 后才更新 `MemberApplication`、`Member` 并授予正式成员角色。`payload_json` 至少包含 `application_id`、`target_member_id`、`target_member_no`、`applicant_name`、`role_gap`、`reason`。
+普通议事的选民为同时具有有效正式成员资格和议事者任期的成员；专业议事在此基础上还要求拥有指定领域的当前有效专业资格。成员资格、议事者任期、专业资格和用户可用状态会在投票时重新校验，因此快照不能绕过之后失效的授权。`member_admission` 是 yes/no 二元表决，提案通过后必须执行 `ProposalExecution(action_type=admit_member_application)` 才更新 `MemberApplication`、`Member` 并授予正式成员任命。
 
 `role_appointment` 的 `payload_json` 至少包含内部 `target_member_id`、可读 `target_member_no`、`role_id`、`assignment_type`、`resource_id`、`scope_json`、`reason`、`start_at`、`end_at`。提案通过后不会直接创建任命，必须执行 `ProposalExecution(action_type=create_role_assignment)` 后才创建 `RoleAssignment`。
 
@@ -260,7 +289,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `created_at` | datetime | 是 | 创建时间。 |
 | `updated_at` | datetime | 是 | 更新时间。 |
 
-约束：同一 `proposal_id`、`voter_member_id` 唯一。投票资格只看 `eligible_voters_snapshot_json`，避免表决期间角色变化导致结果漂移。人工 workspace 投票要求成员可登录：成员需绑定 active `User`，或存在 active `User.username == Member.member_no` 的兼容登录账号。
+约束：同一 `proposal_id`、`voter_member_id` 唯一。快照用于记录开票时的选民范围，但投票时仍必须由 `AuthorizationService` 重新验证当前资格，避免已失效成员继续投票。人工 workspace 投票要求成员可登录：成员需绑定 active `User`，或存在 active `User.username == Member.member_no` 的兼容登录账号。
 
 ## core_proposal_execution
 
@@ -735,7 +764,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `open` | 已发布，成员可以领取，运营人员也可以指派。 |
 | `claimed` | 已绑定负责人，等待成员执行或提交。 |
 | `in_progress` | 成员正在执行。 |
-| `pending_review` | 成员已提交劳动记录，等待运营或治理成员验收。 |
+| `pending_review` | 成员已提交劳动记录，等待运营或维护者验收。 |
 | `accepted` | 验收通过，通常已经产生贡献积分流水。 |
 | `rejected` | 验收驳回，需要成员重新处理或发起申诉。 |
 | `disputed` | 任务进入争议流程。 |
@@ -822,7 +851,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `source` | string | 固定为 `control_resource_adjustment`。 |
-| `operator` | ActorRef object | 记录操作治理成员。 |
+| `operator` | ActorRef object | 记录执行操作的维护者。 |
 | `reason` | string | 人类可读调整或处置原因。 |
 | `delta` | string decimal | 本次库存变动数量，正数为补充，负数为扣减，`0` 为仅记录处置说明。 |
 | `old_stock` | string decimal | 调整前库存。 |
@@ -852,7 +881,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 
 ## core_communityfeedback
 
-公开反馈 / 公众参与层记录。它不是治理提案，不直接改变权威状态；治理成员可以回应、隐藏或关联到正式提案。反馈生命周期只写普通公开 `core_event`，不写 `core_system_event` 哈希链。
+公开反馈 / 公众参与层记录。它不是提案，不直接改变权威状态；维护者可以回应、隐藏或关联到正式提案。反馈生命周期只写普通公开 `core_event`，不写 `core_system_event` 哈希链。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -862,8 +891,8 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `category` | enum string | 是 | `question`、`suggestion`、`concern`、`proposal_seed`、`other`。 |
 | `body` | text | 是 | 反馈正文，纯文本。 |
 | `status` | enum string | 是 | `open`、`acknowledged`、`answered`、`linked`、`closed`、`hidden`。 |
-| `official_response` | text | 否 | 治理成员公开回应。 |
-| `responded_by_id` | fk | 否 | 最近一次回应或处理反馈的治理成员。 |
+| `official_response` | text | 否 | 维护者公开回应。 |
+| `responded_by_id` | fk | 否 | 最近一次回应或处理反馈的维护者。 |
 | `responded_at` | datetime | 否 | 最近一次回应或处理时间。 |
 | `linked_proposal_id` | fk | 否 | 由该反馈转入的正式治理提案。 |
 | `created_at` | datetime | 是 | 创建时间。 |
@@ -968,7 +997,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `is_warning` | boolean | 调整后是否仍低于或等于预警线。 |
 | `replenishment_method` | string | 本次记录使用的补充方式。 |
 | `reason` | string | 操作原因。 |
-| `operator` | ActorRef object | 操作治理成员。 |
+| `operator` | ActorRef object | 执行操作的维护者。 |
 
 SystemEvent(event_type=resource_adjusted) v2 `public_facts` 公开：`name`、`resource_type`、`unit`、`delta`、`is_warning`、`transaction_id`。`old_stock`/`new_stock`/`warning_threshold`/`reason_raw`/`actor` 只记录为 `private_commitments`，不公开原值。
 
@@ -1013,7 +1042,7 @@ SystemEvent(event_type=resource_adjusted) v2 `public_facts` 公开：`name`、`r
 | --- | --- | --- |
 | `review_started_at` | datetime string | 申诉受理时间。 |
 | `review_started_note` | string | 受理备注。 |
-| `resolved_by` | ActorRef object | 记录处理结论的治理成员。 |
+| `resolved_by` | ActorRef object | 记录处理结论的维护者。 |
 | `resolved_at` | datetime string | 处理结论记录时间。 |
 | `decision` | string | `resolved` 或 `rejected`。 |
 

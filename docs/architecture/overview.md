@@ -11,7 +11,7 @@ Big Apple Live OS 是社区运行的权威系统。
 
 v0.1 必须保证真实用户和 Simulation Engine 使用同一套 API。Simulation Engine 是外部客户端，不是权威系统，不能直接修改业务表。
 
-产品规划按照中远期完全体来描述，当前实现只是完整系统的阶段性切片。完整系统应同时服务观察者、成员、管理员、治理成员和 Simulation Engine；当前 Django Admin 只是内部维护入口，不代表最终运营后台边界。
+产品规划按照中远期完全体来描述，当前实现只是完整系统的阶段性切片。完整系统应同时服务匿名访问者、成员、维护者和 Simulation Engine；当前 Django Admin 只是内部维护入口，不代表最终运营后台边界。
 
 治理交互模型遵循 [治理交互模型边界](./governance-boundary.md)：任务、申诉、角色任命、积分流水等具体业务保留自己的结构化模型；提案只作为需要共同决定时的决策机制；统一事件账本只记录已经发生的关键事实和责任链，不替代业务状态机。
 
@@ -230,9 +230,9 @@ Credential    → 公开事实证明（非权限来源）
 
 2. **Member 是所有注册用户的业务身份。** 任何人通过 `/register/` 注册后，系统立即创建 `Member` 记录。Member 是业务世界的唯一主体：领取任务、提交申诉、持有角色、获得 Credential 都以 Member 为锚点。Member 和 User 是一对一绑定关系。
 
-3. **注册后自动获得基础角色。** 新注册 Member 即刻获得一个基础角色（如 `community_member`），该角色承载所有注册用户共有的最小权限（访问 workspace、维护公开资料、报名正式成员等）。不绑定基础角色的 Member 不能使用任何业务功能。
+3. **注册状态不创建基础角色。** 新注册用户只创建 User 与 Member。已注册但没有当前有效正式成员资格的成员，其参与状态派生显示为“贡献者”；匿名访问公开内容只是观察行为。两者都不创建同名 Role、RoleAssignment 或 OpenFGA tuple。最小 workspace、公开资料维护和正式成员报名依据账号与 Member 绑定开放，不依赖虚构的基础角色。
 
-4. **正式社区成员只是更高权限角色之一。** "正式成员"不是一个新的 Member 记录，也不是一个新的 account——它只是 Member 获得了 `full_member` 角色。该角色通过 `member_admission` 提案投票通过后执行授予，在 RoleAssignment 表中留下一条活跃任命记录，并同时发放正式成员编号 Credential。权限检查只看 RoleAssignment 是否活跃，不查"是不是正式成员"这种硬编码标记。
+4. **正式成员是独立的成员资格事实。** "正式成员"不是新的 Member 或账号，而是 Member 获得当前有效的 `ROLE_FORMAL_MEMBER` 任命。该资格通过 `member_admission` 提案执行后写入 RoleAssignment，并同时发放正式成员编号 Credential。资格有效性统一考虑任命状态、起止时间、成员生命周期和关联 User 是否启用，不使用 `Member.status` 或 Credential 旁路授权。
 
 5. **正式成员编号是一次性发放、永不复用的 Credential。**
    - 每个正式编号（如 `BA-0001`）全局唯一，只发放一次。
@@ -248,16 +248,16 @@ Credential    → 公开事实证明（非权限来源）
 
    不允许为 Credential / NFT / Badge、`Member.status` 或 member_no 字符串编写第二套权限路径。`is_staff` / `is_superuser` 仅限 Django Admin 技术后台边界使用，不能等同于业务治理权限。
 
-   **当前落地**：`/register/` 创建 User+Member+ROLE_BIG_APPLE_MEMBER，`/workspace/apply/` 处理正式成员报名（登录后）。完整成员工作台主授权通过 `AuthorizationService` 查询 OpenFGA 的 `formal_member` 关系；OpenFGA tuple 来自 Django 权威数据投影，并保留 `SUSPENDED`/`EXITED` veto。`Member.status` 不再作为权限来源。
+   **当前落地**：`/register/` 只创建 User 与 Member，`/workspace/apply/` 处理登录后的正式成员报名。正式成员资格、议事者职责和维护者职责分别由 `ROLE_FORMAL_MEMBER`、`ROLE_DELIBERATOR` 和 `ROLE_MAINTAINER` 的当前有效 RoleAssignment 表达；贡献者是派生状态。完整成员工作台主授权通过 `AuthorizationService` 查询 OpenFGA 的 `formal_member` 关系；OpenFGA tuple 来自 Django 权威数据投影，并保留 `SUSPENDED`/`EXITED` veto。`Member.status` 不作为权限来源。
    **资源级权限**：`member_has_permission(member, code, resource=None)` 只表示成员是否在任一范围拥有该权限；带具体 `Resource` 时才检查全局资源授权或该资源的 scoped 授权。`RolePermission.constraints_json.resource_id` / `resource_ids` 会在 OpenFGA rebuild 时投影为具体资源 permission object，不能用无资源上下文的结果替代对象级判断。
-   **高权限角色前置条件**：`ROLE_GOVERNANCE_MEMBER`、任何带 `governance.*` permission 的角色和任何带 `finance.*` permission 的角色要求目标成员已拥有 `ROLE_FORMAL_MEMBER`。`SUSPENDED` / `EXITED` 成员不能授予任何新角色。`create_role_assignment()` 默认执行前置校验；`bootstrap_first_governance_member()` 在事务内按顺序授予完整权限链。RoleAssignment Admin 只读，禁止手工创建或修改。
+   **职责前置条件**：议事者、维护者以及任何带 `governance.*` 或 `finance.*` permission 的职责，都要求目标成员已拥有当前有效的 `ROLE_FORMAL_MEMBER`。`SUSPENDED` / `EXITED` 成员不能获得新职责。普通授予统一调用 `create_role_assignment()`；首次系统初始化使用 `bootstrap_initial_maintainer()` 在事务内建立正式成员资格和维护者职责。维护者不会自动获得议事者任期或投票权。RoleAssignment Admin 只读，禁止手工创建或修改。
 
 ### 注册与报名的拆分展望
 
 当前实现已拆分为两个独立步骤：1) `/register/` 创建账号和基础 Member；2) `/workspace/apply/` 提交正式成员报名。
 
-1. **注册** → 创建 User + Member + 基础角色（`community_member`），可立即访问最小 workspace。
-2. **报名正式成员** → 已注册 Member 提交申请，创建 `member_admission` 提案，通过后授予 `full_member` 角色并发放正式成员编号 Credential。
+1. **注册** → 只创建 User + Member，可立即访问最小 workspace；贡献者状态由“没有当前有效正式成员资格”派生。
+2. **报名正式成员** → 已注册 Member 提交申请，创建 `member_admission` 提案，通过后授予 `ROLE_FORMAL_MEMBER` 任命并发放正式成员编号 Credential。
 
 这一拆分依赖中远期报名流程重构，当前不做迁移。
 
@@ -275,11 +275,11 @@ Credential    → 公开事实证明（非权限来源）
 
 - 未登录用户可以浏览公开反馈。
 - 注册用户可以提交公开问题、建议、担忧、提案种子或其他反馈。
-- 治理成员可以回应、隐藏或把反馈关联到正式 `Proposal`。
-- 反馈提交、治理回应和关联提案只写普通公开 `Event`，用于首页和事件流展示。
+- 维护者可以回应、隐藏或把反馈关联到正式 `Proposal`。
+- 反馈提交、维护回应和关联提案只写普通公开 `Event`，用于首页和事件流展示。
 - 隐藏反馈不写新的公开 Event，并会把该反馈既有公开 Event 转为 internal，避免放大违规内容。
 - Feedback 不写 `SystemEvent` 哈希链，不改变 RoleAssignment、RolePermission、Credential、Proposal 执行结果或其他权威状态。
-- Feedback 不能作为运行时权限来源；如反馈需要变成正式行动，必须由治理成员转入 Proposal 或对应领域服务流程。
+- Feedback 不能作为运行时权限来源；如反馈需要变成正式行动，必须由维护者转入 Proposal 或对应领域服务流程。
 
 ## Public Finance / 公开财务层
 

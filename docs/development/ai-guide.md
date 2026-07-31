@@ -17,14 +17,16 @@ title: AI 开发指南
 - 算法可以建议，但不能成为最终责任人。
 - 治理处置必须保留具体实名责任人。
 - **任何 Credential / NFT / Badge 相关功能不得绕过 AuthorizationService。** Django 的权限事实路径是 `Member → active RoleAssignment → RolePermission → Permission`，运行时必须通过 `AuthorizationService` / OpenFGA 计算授权。不得出现 `has_credential`、`has_nft`、`has_badge` 等直接授权路径。
-- **CredentialTemplate.metadata.recruitment 只影响报名页展示，不授予 Role 或 Credential。** 通过 `/workspace/apply/` 提交的申请方向来自 recruitment 配置，但申请通过后不会自动发放对应 Credential 或 Role。治理成员可以通过 `/workspace/recruitment/` 维护招募配置，包括新增受限模板（certificate / public / active）。不要把这个页面当成完整 CredentialTemplate 管理器——它只能创建 recruitment template，不允许删除、不允许改 credential_type / visibility / status。
-- **注册与报名拆分后**：注册创建基础 Member + 基础角色；正式成员报名只申请更高角色和正式编号 Credential。Member 和 Role 的耦合只存在于 RoleAssignment 表，不存在于 Member 的字段标记。
+- **CredentialTemplate.metadata.recruitment 只影响报名页展示，不授予 Role 或 Credential。** 通过 `/workspace/apply/` 提交的申请方向来自 recruitment 配置，但申请通过后不会自动发放对应 Credential 或 Role。维护者可以通过 `/workspace/recruitment/` 维护招募配置，包括新增受限模板（certificate / public / active）。不要把这个页面当成完整 CredentialTemplate 管理器——它只能创建 recruitment template，不允许删除、不允许改 credential_type / visibility / status。
+- **注册与报名拆分后**：注册只创建 User 与 Member；已注册但没有当前有效正式成员资格的参与状态是贡献者，不创建同名角色。正式成员资格、议事者职责和维护者职责只通过 RoleAssignment 表表达，Member 不保存角色字段。
+- **角色与权限制度**：可直接记录的角色只有正式成员、议事者和维护者。议事者由有效正式成员本人申请，任期一年且不自动续任；维护者不自动取得投票权。普通议事提案要求正式成员资格和议事者任期，专业议事提案还要求相同领域的当前有效专业资格。
+- **文档语言**：项目文档和 OpenSpec 规划产物的说明性内容必须使用中文。仅代码、命令、文件路径、API、schema、payload、变量名、类名、函数名、协议名、产品名、OpenSpec 结构关键字和无法准确翻译的专业术语可保留原文。
 - **不要用 Member.status 判断正式成员权限**：完整 workspace 和 `/workspace/apply/` 的"已是正式成员"判断必须基于 active `ROLE_FORMAL_MEMBER`（`SUSPENDED` / `EXITED` 可 veto）。`Member.status` 只作为生命周发展示字段。
 - **对象级权限必须传入对象上下文**：需要判断某个成员能否操作具体 `Resource` 时，必须通过 `AuthorizationService.member_has_permission(member, code, resource=resource)`。`resource=None` 只表示“是否在任一资源范围拥有该权限”，不能替代具体资源授权判断；OpenFGA rebuild 会根据 `RolePermission.constraints_json.resource_id` / `resource_ids` 投影具体资源授权。
 - **OpenFGA 不可用时失败关闭**：`BIG_APPLE_AUTHORIZATION_BACKEND=openfga` 时，store/model 缺失、OpenFGA 请求失败或 check 返回拒绝，都不能回退到直接查 Django 角色表放行。修复路径是恢复 OpenFGA 服务、更新 model、运行 `openfga_rebuild_tuples` 和 `openfga_authorization_probe`，不是在业务入口补临时 `if`。
-- **禁止直接创建 RoleAssignment**：所有角色授予必须通过 `core.role_assignment_services.create_role_assignment()` 或 `bootstrap_first_governance_member()`。RoleAssignment Admin 已设为只读，不能通过 Django Admin 手工新增或修改角色任命。
-- **高权限角色前置条件**：授予 `ROLE_GOVERNANCE_MEMBER`、任何带 `governance.*` permission 的角色或任何带 `finance.*` permission 的角色前，目标成员必须已拥有 `ROLE_FORMAL_MEMBER`。`SUSPENDED`/`EXITED` 成员拒绝一切新角色。
-- **注册与报名分离**：`/register/` 只创建 User + Member + ROLE_BIG_APPLE_MEMBER，不写公开 Event、不创建 MemberApplication。`/workspace/apply/` 是登录后的正式成员报名入口，属于 workspace 子功能。
+- **禁止直接创建 RoleAssignment**：普通角色授予必须通过 `core.role_assignment_services.create_role_assignment()`；首次维护者初始化使用 `bootstrap_initial_maintainer()`。RoleAssignment Admin 已设为只读，不能通过 Django Admin 手工新增或修改角色任命。
+- **职责前置条件**：授予议事者、维护者或任何带 `governance.*` / `finance.*` permission 的职责前，目标成员必须已经拥有有效正式成员资格。`SUSPENDED`/`EXITED` 成员拒绝一切新职责。
+- **注册与报名分离**：`/register/` 只创建 User + Member，不写公开 Event、不创建 MemberApplication。`/workspace/apply/` 是登录后的正式成员报名入口，属于 workspace 子功能。
 - **公开反馈不是治理提案**：`CommunityFeedback` 只用于注册用户公开提问、建议、担忧或倡议。它不得直接改变权威状态，不得授予权限，不得替代 Proposal；如需正式行动，必须转入 Proposal 或对应领域服务。Feedback 不写 `SystemEvent` 哈希链，只按规则写普通公开 `Event`；隐藏反馈必须撤下既有公开 Event，避免放大违规内容。
 - **公开财务不是第二套治理权限系统**：报销、审核和付款必须通过 `core.finance_services`，权限只看 `finance.review` / `finance.pay` / `finance.view_private` 这类 RolePermission。财务角色属于高信任角色，授予前同样要求目标成员已经是 `ROLE_FORMAL_MEMBER`，并禁止申请人自审或自付。
 
@@ -89,7 +91,7 @@ title: AI 开发指南
 - 仍在 `running` 但已经确认没有继续价值的 run，应先在 `/admin/simulation-lab/` 详情页执行“中止本轮仿真”，状态变为 `aborted` 后再归档或废弃。
 - 修改任务创建、发布、指派、关闭、领取、提交、验收、资源调整、公开财务报销、申诉处理、仿真推进、账本、事件或 world 边界逻辑后，必须运行对应 app 测试；完整本地回归使用 `python manage.py test core live_os observer workspace simulation simulation_lab worlds --settings=live_os.test_settings`。
 - 新增后台高风险动作（如清空世界数据、直接修改权威状态）必须测试 world 边界：不得对 `realworld` 生效，只允许作用 `world_type=simulation` 的 `active` world，且必须写入 control DB 的审计记录。
-- 已实现最小 session 身份绑定：`User.username == Member.member_no` 代表成员本人，活跃治理成员或 staff / superuser 可执行运营写入。不要重新引入由 payload 或表单选择责任人的 actor 绑定。
+- 已实现最小 session 身份绑定：`User.username == Member.member_no` 代表成员本人，拥有对应维护权限的成员或 staff / superuser 可执行运营写入。不要重新引入由 payload 或表单选择责任人的 actor 绑定。
 - 观察台中的满意度、疲劳值等指标目前是占位值，后续需要每日指标表。
 - 修改 observer 模板中的 Tailwind class 后，必须运行 `python manage.py tailwind build` 并提交编译后的 `theme/static/css/dist/styles.css`。
 
