@@ -7,6 +7,16 @@ const sidebars = {
     'index',
     {
       type: 'category',
+      label: '术语与概念',
+      link: {type: 'doc', id: 'terminology/index'},
+      items: [
+        'terminology/big-apple-community',
+        'terminology/free-living',
+        'terminology/covenant-keeper',
+      ],
+    },
+    {
+      type: 'category',
       label: '运行制度',
       link: {type: 'doc', id: 'governance-instruments/index'},
       items: [],
