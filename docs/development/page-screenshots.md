@@ -460,7 +460,7 @@ docs/ 中的说明书和截图
       "passwordEnv": "DOCS_SCREENSHOT_MEMBER_PASSWORD"
     },
     "governance": {
-      "description": "维护者",
+      "description": "典守者",
       "loginPath": "/login/",
       "loginEnv": "DOCS_SCREENSHOT_GOVERNANCE_LOGIN",
       "passwordEnv": "DOCS_SCREENSHOT_GOVERNANCE_PASSWORD"
@@ -482,10 +482,10 @@ docs/ 中的说明书和截图
 
 受保护页面截图使用**预先存在的本地测试账号**。Docs 不负责创建账号、分配角色或写入数据——这些是 Live OS 自己的职责。
 
-账号应由维护者在 Live OS 中通过正常的产品或管理流程准备：
+账号应由典守者在 Live OS 中通过正常的产品或管理流程准备：
 
 - **普通成员账号**：能正常登录并访问成员工作区；
-- **维护者账号**：按 Live OS 正常角色与权限机制获得报名处理权限；
+- **典守者账号**：按 Live OS 正常角色与权限机制获得报名处理权限；
 - **管理后台账号**：在控制面数据库中正常创建并具有 `staff` / `superuser` 权限。
 
 Docs 不规定账号的具体用户名、Member 编号或 Live OS 内部如何创建角色。
@@ -518,8 +518,8 @@ Copy-Item .env.screenshots.example .env.screenshots
 | --- | --- |
 | `DOCS_SCREENSHOT_MEMBER_LOGIN` | 已有普通成员账号的登录标识 |
 | `DOCS_SCREENSHOT_MEMBER_PASSWORD` | 已有普通成员账号的密码 |
-| `DOCS_SCREENSHOT_GOVERNANCE_LOGIN` | 已有维护者账号的登录标识 |
-| `DOCS_SCREENSHOT_GOVERNANCE_PASSWORD` | 已有维护者账号的密码 |
+| `DOCS_SCREENSHOT_GOVERNANCE_LOGIN` | 已有典守者账号的登录标识 |
+| `DOCS_SCREENSHOT_GOVERNANCE_PASSWORD` | 已有典守者账号的密码 |
 | `DOCS_SCREENSHOT_SUPERUSER_LOGIN` | 已有管理账号的登录标识 |
 | `DOCS_SCREENSHOT_SUPERUSER_PASSWORD` | 已有管理账号的密码 |
 
@@ -599,7 +599,7 @@ Copy-Item .env.screenshots.example .env.screenshots
 
 截图内容取决于当前所连接的 Live OS 本地测试环境。Docs 不负责初始化 Live OS 业务数据。
 
-如果维护者希望截图长期稳定，应在 Live OS 自己的开发环境中维护通用测试数据或演示世界。这类数据能力应当对 Live OS 本身有独立价值，不应为了 Docs 截图专门写入。Docs 只消费页面最终呈现结果。
+如果典守者希望截图长期稳定，应在 Live OS 自己的开发环境中维护通用测试数据或演示世界。这类数据能力应当对 Live OS 本身有独立价值，不应为了 Docs 截图专门写入。Docs 只消费页面最终呈现结果。
 
 ### 架构边界
 

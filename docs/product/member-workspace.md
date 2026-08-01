@@ -36,23 +36,23 @@ User -> Member
 
 ## 长期架构：所有注册用户都拥有最小 workspace
 
-当前 workspace 入口只对已绑定 Member 的登录用户开放，正式成员和报名审核中的申请人看到的页面不同。长期架构下，**所有注册用户都拥有最小 workspace**，其设计原则如下：
+当前 workspace 入口只对已绑定 Member 的登录用户开放，守约者和报名审核中的申请人看到的页面不同。长期架构下，**所有注册用户都拥有最小 workspace**，其设计原则如下：
 
-1. **注册即获 workspace。** 通过 `/register/` 注册并绑定 Member 的用户，无论是否通过正式成员审核，都可访问 `/workspace/`。最小 workspace 不依赖正式成员身份。`/workspace/apply/` 是登录后的正式成员报名入口，不会创建账号。
+1. **注册即获 workspace。** 通过 `/register/` 注册并绑定 Member 的用户，无论是否通过守约者审核，都可访问 `/workspace/`。最小 workspace 不依赖守约者身份。`/workspace/apply/` 是登录后的守约者报名入口，不会创建账号。
 
 2. **最小 workspace 至少包含：**
    - 公开资料维护（`/workspace/profile/`）：编辑公开姓名、头像 URL，展示在 Observer 公开主页。
-   - 正式成员报名入口：已注册但尚未成为正式成员的用户，可在 workspace 内发起正式成员报名申请。
+   - 守约者报名入口：已注册但尚未成为守约者的用户，可在 workspace 内发起守约者报名申请。
    - 基础身份信息展示：当前角色、Credential 列表、近期活动摘要。
 
-3. **正式成员通过资格获得更多功能。** 正式成员资格由当前有效的 `ROLE_FORMAL_MEMBER` 任命表达。workspace 通过 `AuthorizationService` 检查具体权限并展示对应功能模块（任务、申诉、议事与维护入口等）；功能扩展来自有效资格、职责及其权限绑定，不是“切换 workspace 版本”。
+3. **守约者通过资格获得更多功能。** 守约者资格由当前有效的 `ROLE_COVENANTER` 任命表达。workspace 通过 `AuthorizationService` 检查具体权限并展示对应功能模块（任务、申诉、议事与维护入口等）；功能扩展来自有效资格、职责及其权限绑定，不是“切换 workspace 版本”。
 
-   **当前落地**：完整 workspace 主授权看 active `ROLE_FORMAL_MEMBER`（`member_has_role(member, ROLE_FORMAL_MEMBER)`）。`SUSPENDED` / `EXITED` 作为生命周期禁用状态行使 veto——即使有 `ROLE_FORMAL_MEMBER`，禁用状态成员也不能进入完整 workspace。`Member.status` 只作为生命周发展示字段，不作为权限来源。
+   **当前落地**：完整 workspace 主授权看 active `ROLE_COVENANTER`（`member_has_role(member, ROLE_COVENANTER)`）。`SUSPENDED` / `EXITED` 作为生命周期禁用状态行使 veto——即使有 `ROLE_COVENANTER`，禁用状态成员也不能进入完整 workspace。`Member.status` 只作为生命周发展示字段，不作为权限来源。
 
-4. **正式成员编号不是登录账号，也不是权限来源。**
+4. **守约者编号不是登录账号，也不是权限来源。**
    - 登录仍使用 `User.username`，不因获得正式编号而创建新账号。
-   - 正式成员编号（如 `#1`）是一次性发放的 Credential Grant，永不复用，退出后保留为历史归属证明。
-   - 编号不参与任何权限判断。成员退出后 RoleAssignment 撤销、workspace 功能回收，编号只作为"曾经是第几号正式成员"的公开记录存在。
+   - 守约者编号（如 `#1`）是一次性发放的 Credential Grant，永不复用，退出后保留为历史归属证明。
+   - 编号不参与任何权限判断。成员退出后 RoleAssignment 撤销、workspace 功能回收，编号只作为"曾经是第几号守约者"的公开记录存在。
 
 ## 当前功能
 
@@ -84,13 +84,13 @@ POST /workspace/profile/update/
 
 当前成员可以维护公开姓名和头像 URL，展示在 `/u/<member_no>/` 公开主页。公开主页包含身份头部、公开凭证列表、成员资格与职责，以及近期公开记录。不能编辑角色、权限或职责；成员资格与职责由 RoleAssignment 动态计算，不来自个人填写。
 
-公开资料页（`/workspace/profile/`）的"我的凭证"区域展示当前成员的 Credential Grant 列表（通过 `credentials_for_member()` 获取），如正式成员编号 `#1`。凭证只读显示，用户不能编辑。凭证是公开事实/荣誉/资格证明，不是权限来源。
+公开资料页（`/workspace/profile/`）的"我的凭证"区域展示当前成员的 Credential Grant 列表（通过 `credentials_for_member()` 获取），如守约者编号 `#1`。凭证只读显示，用户不能编辑。凭证是公开事实/荣誉/资格证明，不是权限来源。
 
 ### 公开反馈
 
 注册用户可以通过 `/feedback/` 和 `/feedback/new/` 提交公开问题、建议、担忧、提案种子或其他反馈。反馈是公众参与层，不是正式治理提案，不直接改变系统权威状态。
 
-反馈页面会显示作者公开身份并链接到 `/u/<member_no>/`。维护者可以回应、关闭、隐藏或关联正式提案；普通注册用户不能执行这些维护操作。`hidden` 反馈不会出现在公开列表或首页。
+反馈页面会显示作者公开身份并链接到 `/u/<member_no>/`。典守者可以回应、关闭、隐藏或关联正式提案；普通注册用户不能执行这些维护操作。`hidden` 反馈不会出现在公开列表或首页。
 
 ### 公开财务 / 报销
 
@@ -108,25 +108,25 @@ POST /workspace/finance/claims/<claim_id>/withdraw/
 
 财务审核和付款不是用户自助资料的一部分，必须由财务角色执行。申请人不能审核或付款自己的报销；拒绝报销必须填写理由。已批准并付款的记录会生成只追加 `FinanceTransaction` 流水，并进入 `/finance/` 公开财务页。
 
-### 积分功能（正式成员 + 维护者）
+### 积分功能（守约者 + 典守者）
 
 ```text
-GET  /workspace/credits/budgets/                # 积分预算（维护者：发行池余额、任务锁定预算、发行积分、锁定/退回预算）
+GET  /workspace/credits/budgets/                # 积分预算（典守者：发行池余额、任务锁定预算、发行积分、锁定/退回预算）
 POST /workspace/credits/budgets/
-GET  /workspace/credits/transfer/              # 积分转账（正式成员）
+GET  /workspace/credits/transfer/              # 积分转账（守约者）
 POST /workspace/credits/transfer/
-GET  /workspace/credits/redemption/             # 兑换订单列表、创建、取消、申诉（正式成员）
+GET  /workspace/credits/redemption/             # 兑换订单列表、创建、取消、申诉（守约者）
 POST /workspace/credits/redemption/
-GET  /workspace/credits/redemption/review/      # 兑换履约（维护者）
+GET  /workspace/credits/redemption/review/      # 兑换履约（典守者）
 POST /workspace/credits/redemption/review/
-GET  /workspace/credits/merchant-settlements/   # 商户结算记录（维护者看全部，现金结算商户 operator 看自己的）
+GET  /workspace/credits/merchant-settlements/   # 商户结算记录（典守者看全部，现金结算商户 operator 看自己的）
 ```
 
-工作台首页显示当前积分、可用积分、历史贡献，并提供积分转账和兑换订单入口。维护者额外可见积分预算、兑换履约入口；维护者或现金结算商户经营者可见商户结算入口。
+工作台首页显示当前积分、可用积分、历史贡献，并提供积分转账和兑换订单入口。典守者额外可见积分预算、兑换履约入口；典守者或现金结算商户经营者可见商户结算入口。
 
-#### 积分预算（维护者）
+#### 积分预算（典守者）
 
-积分发行到公共池，维护者为任务锁定预算。锁定预算从发行池扣除，任务发布前必须已有足够锁定预算。未用预算可退回发行池。表单使用 per-render `idempotency_key` 防重复提交。
+积分发行到公共池，典守者为任务锁定预算。锁定预算从发行池扣除，任务发布前必须已有足够锁定预算。未用预算可退回发行池。表单使用 per-render `idempotency_key` 防重复提交。
 
 #### 商户规则
 
@@ -134,12 +134,12 @@ GET  /workspace/credits/merchant-settlements/   # 商户结算记录（维护者
 - `member_micro_merchant`：不走兑换订单，应使用成员间积分转账。
 - 商户结算记录不是积分提现，不代表商户持有可流通积分。
 
-### 任务管理（维护者）
+### 任务管理（典守者）
 
 ```text
-GET  /workspace/tasks/new/       # 创建任务草稿、发布任务（维护者）
+GET  /workspace/tasks/new/       # 创建任务草稿、发布任务（典守者）
 POST /workspace/tasks/new/
-GET  /workspace/tasks/review/    # 查看 pending_review 任务、验收通过/驳回（维护者）
+GET  /workspace/tasks/review/    # 查看 pending_review 任务、验收通过/驳回（典守者）
 POST /workspace/tasks/review/
 ```
 
@@ -148,14 +148,14 @@ POST /workspace/tasks/review/
 - 有积分任务验收通过后从锁定预算发放积分；0 积分任务验收通过只改变任务状态，不发放积分，不增加余额/历史贡献。
 - 验收驳回时积分预算保留，不退回发行池。
 
-### 招募方向维护（维护者）
+### 招募方向维护（典守者）
 
 ```text
 GET  /workspace/recruitment/
 POST /workspace/recruitment/  (action=create / action=update)
 ```
 
-维护者可以在工作台维护报名页 `/workspace/apply/` 展示的申请方向配置：
+典守者可以在工作台维护报名页 `/workspace/apply/` 展示的申请方向配置：
 - 新增招募方向模板（`action=create`）：创建受限 `CredentialTemplate`（certificate / public / active），自动写入 `metadata.recruitment`。
 - 更新已有方向配置（`action=update`）：修改 `show_on_application`、`public_label`、`public_description`、`required_count`、`sort_order`，并同步 `CredentialTemplate.name` 和 `description`。
 - 不支持删除模板——只能通过取消"在报名页展示"来隐藏。
@@ -163,9 +163,9 @@ POST /workspace/recruitment/  (action=create / action=update)
 
 普通成员和未登录用户看不到该入口。
 
-### 成员报名处理（维护者）
+### 成员报名处理（典守者）
 
-`/workspace/` 在正式成员工作台之外，为具备 `governance.view_admin` 权限的维护者提供成员报名处理入口。普通正式成员、待处理报名人、未绑定 `Member` 的 Django staff/superuser 都看不到入口，直接访问处理 URL 返回 403。
+`/workspace/` 在守约者工作台之外，为具备 `governance.view_admin` 权限的典守者提供成员报名处理入口。普通守约者、待处理报名人、未绑定 `Member` 的 Django staff/superuser 都看不到入口，直接访问处理 URL 返回 403。
 
 `/workspace/apply/` 提交成员报名后，系统自动创建 `MemberApplication` 和 `member_admission` Proposal，提案直接进入 `VOTING` 状态。准入不存在独立的单人审核动作，完全由提案生命周期驱动。
 

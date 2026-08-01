@@ -4,18 +4,18 @@
   "status": "admitted",
   "batch_id": "batch-0001",
   "role_names": [
-    "正式成员"
+    "守约者"
   ],
   "roles": [
     {
       "role_assignment_id": 1,
       "role_id": 1,
-      "role": "成员资格与职责 - 正式成员",
-      "role_name": "正式成员",
+      "role": "成员资格与职责 - 守约者",
+      "role_name": "守约者",
       "organization_name": "成员资格与职责"
     }
   ],
-  "role_name": "正式成员",
+  "role_name": "守约者",
   "joined_simulation_day": 1,
   "credit_floor": -300,
   "profile": {

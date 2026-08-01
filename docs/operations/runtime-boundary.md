@@ -16,7 +16,7 @@ title: 运行入口与操作边界
 /api/v0.1/
 ```
 
-`/apply/`、`/apply/partner/` 已删除。正式成员报名是 workspace 子功能 (`/workspace/apply/`)。合作方/供应商系统后续单独设计。`/live-admin/` 已移除。真实世界和仿真世界 runtime 不暴露 `/admin/`，也不暴露独立业务后台。
+`/apply/`、`/apply/partner/` 已删除。守约者报名是 workspace 子功能 (`/workspace/apply/`)。合作方/供应商系统后续单独设计。`/live-admin/` 已移除。真实世界和仿真世界 runtime 不暴露 `/admin/`，也不暴露独立业务后台。
 
 ## Control 后台
 
@@ -47,7 +47,7 @@ bigsim.local/
 bigsim.local/register/
 ```
 
-`/workspace/apply/` 是正式成员报名入口（workspace 子功能）。`/apply/`、`/apply/partner/` 已删除。
+`/workspace/apply/` 是守约者报名入口（workspace 子功能）。`/apply/`、`/apply/partner/` 已删除。
 
 `/workspace/` 只面向当前登录成员本人，身份来自当前 world 数据库中的 `User -> Member` 绑定。它不是底层管理后台。
 

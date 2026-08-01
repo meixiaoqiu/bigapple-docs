@@ -11,7 +11,7 @@ Big Apple Live OS 是社区运行的权威系统。
 
 v0.1 必须保证真实用户和 Simulation Engine 使用同一套 API。Simulation Engine 是外部客户端，不是权威系统，不能直接修改业务表。
 
-产品规划按照中远期完全体来描述，当前实现只是完整系统的阶段性切片。完整系统应同时服务匿名访问者、成员、维护者和 Simulation Engine；当前 Django Admin 只是内部维护入口，不代表最终运营后台边界。
+产品规划按照中远期完全体来描述，当前实现只是完整系统的阶段性切片。完整系统应同时服务匿名访问者、成员、典守者和 Simulation Engine；当前 Django Admin 只是内部维护入口，不代表最终运营后台边界。
 
 治理交互模型遵循 [治理交互模型边界](./governance-boundary.md)：任务、申诉、角色任命、积分流水等具体业务保留自己的结构化模型；提案只作为需要共同决定时的决策机制；统一事件账本只记录已经发生的关键事实和责任链，不替代业务状态机。
 
@@ -69,7 +69,7 @@ MySQL
 当前默认运行入口分为三个站点：
 
 - `bigadmin.local` / `live_os.settings_admin`：control plane。`/admin/` 是技术后台、原始数据和兜底维护入口；`/admin/simulation-lab/` 是仿真实验后台，负责启动、推进、归档和废弃仿真实验。
-- `bigreal.local` / `live_os.settings_real`：真实世界 runtime。固定绑定 `realworld`，使用根路径 `/api/v0.1/`、`/`、`/workspace/`、`/register/`。正式成员报名是 workspace 子功能（`/workspace/apply/`），`/apply/` 和 `/apply/partner/` 已删除。
+- `bigreal.local` / `live_os.settings_real`：真实世界 runtime。固定绑定 `realworld`，使用根路径 `/api/v0.1/`、`/`、`/workspace/`、`/register/`。守约者报名是 workspace 子功能（`/workspace/apply/`），`/apply/` 和 `/apply/partner/` 已删除。
 - `bigsim.local` / `live_os.settings_sim`：仿真世界 runtime。固定绑定 `simulation0001`，使用与真实世界相同的根路径和同一套页面/服务代码。
 
 带 world 前缀的历史路由族已经从 runtime URLConf 移除。真实世界和仿真世界由固定 host settings 绑定，不再通过 URL 中的 world id 选择。
@@ -230,14 +230,14 @@ Credential    → 公开事实证明（非权限来源）
 
 2. **Member 是所有注册用户的业务身份。** 任何人通过 `/register/` 注册后，系统立即创建 `Member` 记录。Member 是业务世界的唯一主体：领取任务、提交申诉、持有角色、获得 Credential 都以 Member 为锚点。Member 和 User 是一对一绑定关系。
 
-3. **注册状态不创建基础角色。** 新注册用户只创建 User 与 Member。已注册但没有当前有效正式成员资格的成员，其参与状态派生显示为“贡献者”；匿名访问公开内容只是观察行为。两者都不创建同名 Role、RoleAssignment 或 OpenFGA tuple。最小 workspace、公开资料维护和正式成员报名依据账号与 Member 绑定开放，不依赖虚构的基础角色。
+3. **注册状态不创建基础角色。** 新注册用户只创建 User 与 Member。已注册但没有当前有效守约者资格的成员，其参与状态派生显示为“贡献者”；匿名访问公开内容只是观察行为。两者都不创建同名 Role、RoleAssignment 或 OpenFGA tuple。最小 workspace、公开资料维护和守约者报名依据账号与 Member 绑定开放，不依赖虚构的基础角色。
 
-4. **正式成员是独立的成员资格事实。** "正式成员"不是新的 Member 或账号，而是 Member 获得当前有效的 `ROLE_FORMAL_MEMBER` 任命。该资格通过 `member_admission` 提案执行后写入 RoleAssignment，并同时发放正式成员编号 Credential。资格有效性统一考虑任命状态、起止时间、成员生命周期和关联 User 是否启用，不使用 `Member.status` 或 Credential 旁路授权。
+4. **守约者是独立的成员资格事实。** "守约者"不是新的 Member 或账号，而是 Member 获得当前有效的 `ROLE_COVENANTER` 任命。该资格通过 `member_admission` 提案执行后写入 RoleAssignment，并同时发放守约者编号 Credential。资格有效性统一考虑任命状态、起止时间、成员生命周期和关联 User 是否启用，不使用 `Member.status` 或 Credential 旁路授权。
 
-5. **正式成员编号是一次性发放、永不复用的 Credential。**
+5. **守约者编号是一次性发放、永不复用的 Credential。**
    - 每个正式编号（如 `BA-0001`）全局唯一，只发放一次。
    - 成员退出后编号不回收、不重新分配给其他人。
-   - 编号作为 `Credential Instance` 持久保留：它记录"谁在什么时间以什么方式成为正式成员"这一历史事实。
+   - 编号作为 `Credential Instance` 持久保留：它记录"谁在什么时间以什么方式成为守约者"这一历史事实。
    - 编号自身不自动赋予任何权限——成员退出后 RoleAssignment 已撤销，编号只作为历史归属证明存在。
 
 6. **RoleAssignment / RolePermission 是唯一权限事实来源。** 所有 view、service、API 的运行时权限判断必须走 `AuthorizationService`；OpenFGA tuple 从下列事实链投影：
@@ -248,16 +248,16 @@ Credential    → 公开事实证明（非权限来源）
 
    不允许为 Credential / NFT / Badge、`Member.status` 或 member_no 字符串编写第二套权限路径。`is_staff` / `is_superuser` 仅限 Django Admin 技术后台边界使用，不能等同于业务治理权限。
 
-   **当前落地**：`/register/` 只创建 User 与 Member，`/workspace/apply/` 处理登录后的正式成员报名。正式成员资格、议事者职责和维护者职责分别由 `ROLE_FORMAL_MEMBER`、`ROLE_DELIBERATOR` 和 `ROLE_MAINTAINER` 的当前有效 RoleAssignment 表达；贡献者是派生状态。完整成员工作台主授权通过 `AuthorizationService` 查询 OpenFGA 的 `formal_member` 关系；OpenFGA tuple 来自 Django 权威数据投影，并保留 `SUSPENDED`/`EXITED` veto。`Member.status` 不作为权限来源。
+   **当前落地**：`/register/` 只创建 User 与 Member，`/workspace/apply/` 处理登录后的守约者报名。守约者资格、执衡者职责和典守者职责分别由 `ROLE_COVENANTER`、`ROLE_DELIBERATOR` 和 `ROLE_MAINTAINER` 的当前有效 RoleAssignment 表达；贡献者是派生状态。完整成员工作台主授权通过 `AuthorizationService` 查询 OpenFGA 的 `covenanter` 关系；OpenFGA tuple 来自 Django 权威数据投影，并保留 `SUSPENDED`/`EXITED` veto。`Member.status` 不作为权限来源。
    **资源级权限**：`member_has_permission(member, code, resource=None)` 只表示成员是否在任一范围拥有该权限；带具体 `Resource` 时才检查全局资源授权或该资源的 scoped 授权。`RolePermission.constraints_json.resource_id` / `resource_ids` 会在 OpenFGA rebuild 时投影为具体资源 permission object，不能用无资源上下文的结果替代对象级判断。
-   **职责前置条件**：议事者、维护者以及任何带 `governance.*` 或 `finance.*` permission 的职责，都要求目标成员已拥有当前有效的 `ROLE_FORMAL_MEMBER`。`SUSPENDED` / `EXITED` 成员不能获得新职责。普通授予统一调用 `create_role_assignment()`；首次系统初始化使用 `bootstrap_initial_maintainer()` 在事务内建立正式成员资格和维护者职责。维护者不会自动获得议事者任期或投票权。RoleAssignment Admin 只读，禁止手工创建或修改。
+   **职责前置条件**：执衡者、典守者以及任何带 `governance.*` 或 `finance.*` permission 的职责，都要求目标成员已拥有当前有效的 `ROLE_COVENANTER`。`SUSPENDED` / `EXITED` 成员不能获得新职责。普通授予统一调用 `create_role_assignment()`；首次系统初始化使用 `bootstrap_initial_maintainer()` 在事务内建立守约者资格和典守者职责。典守者不会自动获得执衡者任期或投票权。RoleAssignment Admin 只读，禁止手工创建或修改。
 
 ### 注册与报名的拆分展望
 
-当前实现已拆分为两个独立步骤：1) `/register/` 创建账号和基础 Member；2) `/workspace/apply/` 提交正式成员报名。
+当前实现已拆分为两个独立步骤：1) `/register/` 创建账号和基础 Member；2) `/workspace/apply/` 提交守约者报名。
 
-1. **注册** → 只创建 User + Member，可立即访问最小 workspace；贡献者状态由“没有当前有效正式成员资格”派生。
-2. **报名正式成员** → 已注册 Member 提交申请，创建 `member_admission` 提案，通过后授予 `ROLE_FORMAL_MEMBER` 任命并发放正式成员编号 Credential。
+1. **注册** → 只创建 User + Member，可立即访问最小 workspace；贡献者状态由“没有当前有效守约者资格”派生。
+2. **报名守约者** → 已注册 Member 提交申请，创建 `member_admission` 提案，通过后授予 `ROLE_COVENANTER` 任命并发放守约者编号 Credential。
 
 这一拆分依赖中远期报名流程重构，当前不做迁移。
 
@@ -267,7 +267,7 @@ Credential    → 公开事实证明（非权限来源）
 - **禁止出现** `if member.has_nft(...): allow_xxx` 或 `if member.has_credential(...): allow_xxx` 这类运行时授权路径。
 - Credential / NFT / Badge 可以作为**授予 RoleAssignment 的依据**（例如治理提案决议"持有 X NFT 的成员获得治理角色"），但链上状态必须先导入/验证为系统记录，再通过治理规则或同步服务生成 RoleAssignment。应用运行时仍只查 RoleAssignment / RolePermission，不直接查询 NFT 所有权或 Credential 持有情况。
 - 如果未来链上 NFT 上线，必须经过导入层写入链上证据表，再由治理流程授予相应角色。运行时权限链始终保持：`Member → active RoleAssignment → RolePermission → Permission`。
-- Credential Template 与 Credential Grant 已落地：内置模板（如"正式成员编号"）由 `ensure_builtin_credential_templates()` 幂等创建；发放 `issuance` 本身是一个有审计记录的业务动作（写入 `SystemEvent`）；发放后是否影响权限，必须通过另一份提案授予 RoleAssignment。正式成员编号是 CredentialTemplate 的一个实例，不是 Member 字段，不是权限来源。
+- Credential Template 与 Credential Grant 已落地：内置模板（如"守约者编号"）由 `ensure_builtin_credential_templates()` 幂等创建；发放 `issuance` 本身是一个有审计记录的业务动作（写入 `SystemEvent`）；发放后是否影响权限，必须通过另一份提案授予 RoleAssignment。守约者编号是 CredentialTemplate 的一个实例，不是 Member 字段，不是权限来源。
 
 ## Community Feedback / 公众参与层
 
@@ -275,11 +275,11 @@ Credential    → 公开事实证明（非权限来源）
 
 - 未登录用户可以浏览公开反馈。
 - 注册用户可以提交公开问题、建议、担忧、提案种子或其他反馈。
-- 维护者可以回应、隐藏或把反馈关联到正式 `Proposal`。
+- 典守者可以回应、隐藏或把反馈关联到正式 `Proposal`。
 - 反馈提交、维护回应和关联提案只写普通公开 `Event`，用于首页和事件流展示。
 - 隐藏反馈不写新的公开 Event，并会把该反馈既有公开 Event 转为 internal，避免放大违规内容。
 - Feedback 不写 `SystemEvent` 哈希链，不改变 RoleAssignment、RolePermission、Credential、Proposal 执行结果或其他权威状态。
-- Feedback 不能作为运行时权限来源；如反馈需要变成正式行动，必须由维护者转入 Proposal 或对应领域服务流程。
+- Feedback 不能作为运行时权限来源；如反馈需要变成正式行动，必须由典守者转入 Proposal 或对应领域服务流程。
 
 ## Public Finance / 公开财务层
 
@@ -289,7 +289,7 @@ Credential    → 公开事实证明（非权限来源）
 - `FinanceReview` 记录财务审核决定。审核人必须拥有 `finance.review` 权限，并且不能审核自己的报销；拒绝必须填写理由。
 - `FinanceTransaction` 是只追加财务流水。标记付款的人必须拥有 `finance.pay` 权限，并且不能给自己的报销标记付款。
 - 财务角色由 `ensure_finance_roles()` 幂等创建，属于 `大苹果财务组`，运行时权限仍通过 `AuthorizationService` / OpenFGA 判断；OpenFGA tuple 来自 `Member -> active RoleAssignment -> RolePermission -> Permission` 权威事实投影。
-- 任何带 `finance.*` permission 的角色都属于高信任角色，授予前要求目标成员已经拥有 `ROLE_FORMAL_MEMBER`。
+- 任何带 `finance.*` permission 的角色都属于高信任角色，授予前要求目标成员已经拥有 `ROLE_COVENANTER`。
 - 报销提交、审核和付款会写普通公开 `Event`，进入首页、事件流和 `/finance/` 公开财务页；同时写入 `SystemEvent` 哈希链，便于审计证明。
 - 撤回报销只写普通公开 `Event`，不写新的 `SystemEvent` 哈希链记录。
 - 公开页面只展示业务摘要、金额、状态、申请人/审核人/付款人公开名称和可公开说明，不展示内部 pk、User.id、Member.id、联系方式或私密凭证材料。

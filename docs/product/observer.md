@@ -42,9 +42,9 @@ title: 公开首页
 ```
 
 页面结构包含 4 个区域：
-- **身份头部**：头像、公开姓名、`@member_no`、身份 badge（贡献者 / 正式成员 / 议事者 / 维护者）、正式成员编号 Credential（如 `正式成员 #1`）。不展示 bio 或 is_visible 字段
-- **公开凭证区**：`credentials_for_member()` 获取，只展示业务字段（`template_name`、`display_no`、`title`、`source_type`、`issued_at`），正式成员编号置顶，不暴露内部 pk
-- **成员资格与职责区**：从 active RoleAssignment 动态计算，显示正式成员、议事者、维护者及专业资格，不是裸 permission code。RoleAssignment → RolePermission 是唯一权限来源
+- **身份头部**：头像、公开姓名、`@member_no`、身份 badge（贡献者 / 守约者 / 执衡者 / 典守者）、守约者编号 Credential（如 `守约者 #1`）。不展示 bio 或 is_visible 字段
+- **公开凭证区**：`credentials_for_member()` 获取，只展示业务字段（`template_name`、`display_no`、`title`、`source_type`、`issued_at`），守约者编号置顶，不暴露内部 pk
+- **成员资格与职责区**：从 active RoleAssignment 动态计算，显示守约者、执衡者、典守者及专业资格，不是裸 permission code。RoleAssignment → RolePermission 是唯一权限来源
 - **公开记录**：最近 20 条 SystemEvent（投票、提案、执行、凭证发放等），展示时间、标题、摘要、投票选择/理由、hash 短值和链校验状态。执行维护职责者的姓名公开，不脱敏
 
 成员本人在 workspace `/workspace/profile/` 维护公开姓名和头像 URL。成员报名时间线中的投票人名称链接到该主页。
@@ -90,7 +90,7 @@ title: 公开首页
 
 `/feedback/` 是公开反馈列表，未登录用户可以浏览，注册用户可以提交问题、建议、担忧、提案种子或其他反馈。反馈不是治理提案，不直接形成治理决议。
 
-`/feedback/<feedback_id>/` 展示反馈正文、作者公开身份、当前状态、维护回应和关联提案。维护者可以回应、关闭、隐藏或关联正式提案；普通用户不能执行维护操作。
+`/feedback/<feedback_id>/` 展示反馈正文、作者公开身份、当前状态、维护回应和关联提案。典守者可以回应、关闭、隐藏或关联正式提案；普通用户不能执行维护操作。
 
 首页展示最近 5 条非隐藏反馈。反馈提交、治理回应和关联提案会写普通公开 `core_event`，进入首页和 `/events/`；隐藏反馈不会写新的公开 Event，并会把该反馈既有公开 Event 转为 internal。Feedback 不写 `core_system_event` 哈希链。
 
@@ -108,7 +108,7 @@ title: 公开首页
 
 成员报名公开展示聚合到 `/member-applications/<application_id>/`。submitted/admitted/rejected 阶段 Event 保留为聚合数据源，但 `/events/<stage-event-id>/` 不再作为公开页面，直接 404。
 
-事项详情页是“提案时间线 + 审计证明一体化”：页面使用 daisyUI compact vertical timeline / timeline-snap-icon 样式，左侧窄轨道表示审计链顺序，右侧全宽节点卡片展示业务语义（收到成员报名 / 准入提案已创建 / 议事者已投票 / 提案结果 / 成员接纳等），内嵌可展开的哈希证明和现场复算按钮。投票人公开姓名和投票选择，报名者继续使用脱敏标签。审计记录 seq 是事实顺序。Hash 复算和 json_script 安全机制与普通事件详情页一致。
+事项详情页是“提案时间线 + 审计证明一体化”：页面使用 daisyUI compact vertical timeline / timeline-snap-icon 样式，左侧窄轨道表示审计链顺序，右侧全宽节点卡片展示业务语义（收到成员报名 / 准入提案已创建 / 执衡者已投票 / 提案结果 / 成员接纳等），内嵌可展开的哈希证明和现场复算按钮。投票人公开姓名和投票选择，报名者继续使用脱敏标签。审计记录 seq 是事实顺序。Hash 复算和 json_script 安全机制与普通事件详情页一致。
 
 底层 `SystemEvent` 审计记录仍逐条保留。
 
@@ -196,7 +196,7 @@ Observer 不再承载仿真控制动作。仿真实验启动和推进在 `/admin
 
 - 观察台读取页面仍是公开只读入口。
 - 仿真推进和自动跑到失败动作已经要求治理权限。
-- 仍未实现匿名访问、成员、维护者之间的完整产品级登录和导航分层。
+- 仍未实现匿名访问、成员、典守者之间的完整产品级登录和导航分层。
 - 满意度、疲劳值等每日聚合指标还没有独立表。
 - 当前是 Django Templates 服务端渲染，使用 Tailwind、daisyUI 和 HTMX。
 - 自动模拟还没有连续播放、暂停继续、随机种子和多运行对比。

@@ -146,7 +146,7 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py c
 http://bigadmin.local/admin/
 ```
 
-该命令只创建 control DB 的 Django Admin 超级用户，不会创建 `bigreal.local` 或 `bigsim.local` 的成员账号。world 成员与维护者的初始化方式见 [World 数据库与生命周期](./world-databases.md)。
+该命令只创建 control DB 的 Django Admin 超级用户，不会创建 `bigreal.local` 或 `bigsim.local` 的成员账号。world 成员与典守者的初始化方式见 [World 数据库与生命周期](./world-databases.md)。
 
 写入后台预览用演示数据：
 
@@ -154,9 +154,9 @@ http://bigadmin.local/admin/
 docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py seed_demo --world-id realworld --settings=live_os.settings_admin
 ```
 
-演示任务领取者 `mem-0001` 拥有 active `ROLE_FORMAL_MEMBER`。贡献者是派生状态，
+演示任务领取者 `mem-0001` 拥有 active `ROLE_COVENANTER`。贡献者是派生状态，
 不创建 `ROLE_CONTRIBUTOR`。完整工作台权限以 active role assignment 为准；
-`Member.status=ADMITTED` 本身不能代替正式成员角色。`smoke_workflow`
+`Member.status=ADMITTED` 本身不能代替守约者角色。`smoke_workflow`
 依赖这一演示身份，并会通过真实任务领取 API 验证权限链。
 
 `seed_demo` 是幂等命令，重复执行不会重复插入同一批演示记录。它不会删除任何已有数据。运行时启用 world 数据库路由后，直接执行必须显式传入 `--world-id`；被 `seed_world` 或 `smoke_workflow` 调用时会复用已绑定的 world 上下文。

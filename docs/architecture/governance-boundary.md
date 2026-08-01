@@ -85,14 +85,14 @@ title: 治理交互模型边界
 
 角色任命可以来自：
 
-- 直接任命：维护者通过服务直接创建。
-- 本人申请：有效正式成员可立即创建一年期议事者任命，无需审核。
+- 直接任命：典守者通过服务直接创建。
+- 本人申请：有效守约者可立即创建一年期执衡者任命，无需审核。
 - 提案执行：`role_appointment` 提案通过后执行，创建 `RoleAssignment`。
 - 初始化：bootstrap 或维护权限初始化命令创建必要任命。
 
 `RoleAssignment.source_type`、`source_proposal` 和 `source_proposal_execution` 用于记录任命来源。直接任命、本人申请、提案执行和初始化最终都会落到同一张 `RoleAssignment` 表，避免保留多套平行任命结构。
 
-**创建约束**：所有 RoleAssignment 必须通过 `core.role_assignment_services.create_role_assignment()` 创建。议事者和维护者以及带 `governance.*` / `finance.*` permission 的职责都要求有效正式成员资格；`SUSPENDED`/`EXITED` 成员拒绝一切新职责。议事者本人申请使用专用服务，任期一年且不会自动续任。Django Admin 中的 RoleAssignment 已设为只读，禁止手工创建或修改。
+**创建约束**：所有 RoleAssignment 必须通过 `core.role_assignment_services.create_role_assignment()` 创建。执衡者和典守者以及带 `governance.*` / `finance.*` permission 的职责都要求有效守约者资格；`SUSPENDED`/`EXITED` 成员拒绝一切新职责。执衡者本人申请使用专用服务，任期一年且不会自动续任。Django Admin 中的 RoleAssignment 已设为只读，禁止手工创建或修改。
 
 无论来源是什么，最终权限判断仍走：
 
@@ -114,15 +114,15 @@ Proposal 可以决定授予/撤销角色，也可以决定授予 Credential。�
 
 | 概念 | 是什么 | 不是什么 |
 | --- | --- | --- |
-| `Credential Template` | 治理流程创建的可发放凭证模板（如"年度贡献者""导师"）；内置模板（如正式成员编号）由 `ensure_builtin_credential_templates()` 幂等创建 | 不是权限模板，不能自动派生 RolePermission |
+| `Credential Template` | 治理流程创建的可发放凭证模板（如"年度贡献者""导师"）；内置模板（如守约者编号）由 `ensure_builtin_credential_templates()` 幂等创建 | 不是权限模板，不能自动派生 RolePermission |
 | `Credential Grant` | 按模板发放给某个 Member 的具体凭证实例 | 不是 RoleAssignment，不参与运行时权限判断 |
 | `NFT / Badge` | 链上或系统内不可篡改的所有权标记 | 不是授权 token，不能绕过 RoleAssignment 放行 |
-| `Formal Member Number` | 正式成员编号 Credential Grant，一次性发放、永不复用 | 不是登录账号，不是 member_no 的替代品 |
+| `Formal Member Number` | 守约者编号 Credential Grant，一次性发放、永不复用 | 不是登录账号，不是 member_no 的替代品 |
 
 #### Credential 生命周期
 
-1. **模板创建**：内置模板由 `ensure_builtin_credential_templates()` 幂等创建（如正式成员编号模板 `formal_member_number`）。社区成员可通过 `credential_template` 提案创建更多模板。
-2. **实例发放**：满足条件的 Member 获得 Credential Grant。正式成员编号在授予 `ROLE_FORMAL_MEMBER` 时自动发放（`create_role_assignment` → `issue_formal_member_number`）。其他凭证可由提案执行触发，或由业务规则自动触发。
+1. **模板创建**：内置模板由 `ensure_builtin_credential_templates()` 幂等创建（如守约者编号模板 `covenanter_number`）。社区成员可通过 `credential_template` 提案创建更多模板。
+2. **实例发放**：满足条件的 Member 获得 Credential Grant。守约者编号在授予 `ROLE_COVENANTER` 时自动发放（`create_role_assignment` → `issue_covenanter_number`）。其他凭证可由提案执行触发，或由业务规则自动触发。
 3. **公开展示**：Credential 在 Observer 公开主页（`templates/themes/default_game/member_profile.html`）和 workspace 个人资料（`templates/workspace/profile.html`）中展示，只展示业务字段（`template_name`、`display_no`、`source_type`、`issued_at`），不暴露内部 pk。
 4. **权限转换（唯一入口）**：如果某个 Credential 需要影响权限（如"持有导师 Credential 的成员可以审核任务"），**必须**通过一份独立提案授予 RoleAssignment：
 
@@ -137,13 +137,13 @@ Proposal 可以决定授予/撤销角色，也可以决定授予 Credential。�
 - **禁止** `if member.has_credential("mentor"): allow_review()` —— 必须走 `if member.has_permission("tasks.review_task"):`。
 - **禁止** `if member.has_nft("governance_nft"): allow_vote()` —— 必须走 RoleAssignment。
 - **禁止** 在 view 或 service 中直接查询 Credential 表来判断操作权限。
-- **禁止** 将正式成员编号（或其他 Credential ID）直接用作权限白名单的 key。
+- **禁止** 将守约者编号（或其他 Credential ID）直接用作权限白名单的 key。
 
 ### 提案
 
-`Proposal` 只处理“是否批准某件事”。它负责提案内容、表决范围、投票资格快照、通过比例、最低参与人数、截止时间和执行结果。
+`Proposal` 只处理“是否批准某件事”。它引用一个不可变的 `ElectorateRuleVersion`，保存本提案规范化后的规则快照、投票资格快照、通过比例、最低参与人数、截止时间和执行结果。
 
-投票资格快照只包含能登录 workspace 的成员：成员必须满足角色/组织/全员范围规则，并且绑定 active Django `User`，或存在 active `User.username == Member.member_no` 的兼容登录账号。没有登录账号的系统主体、历史主体或仿真主体不能进入人工投票快照。
+选民规则只允许使用 `ALL`、`ANY`、`NOT` 和已注册选择器，提案发起人不能提交任意表达式或原始查询。提案类型限制可选模板：社区共议允许贡献者参与；守约事务要求有效守约者与执衡者；专业事务再要求对应专业资格；典守事务只选择典守者。开始表决时固定选民快照，投票时仍重新计算当前资格。
 
 通过比例按严格超过阈值计算。`pass_ratio=50` 表示赞成票必须超过半数，而不是达到一半；因此 1 人需 1 票、2 人需 2 票、3 人需 2 票、4 人需 3 票。
 
@@ -154,9 +154,9 @@ member_admission Proposal -> ProposalVote -> ProposalExecution -> MemberApplicat
 role_appointment Proposal -> ProposalVote -> ProposalExecution -> RoleAssignment
 ```
 
-成员报名提交自动创建最小 `Member`、`MemberApplication` 和 `member_admission` 提案，提案直接进入 VOTING 状态。准入提案不使用单人审核标记，也不引入平行审核表。普通议事的选民必须同时具有有效正式成员资格和议事者任期；成员准入是 `yes`/`no` 二元表决。正式接纳只能由 `execute_proposal` 经 `admit_member_application_from_proposal` 完成，执行结果落到报名、成员状态和正式成员角色任命上。
+成员报名提交自动创建最小 `Member`、`MemberApplication` 和 `member_admission` 提案，提案直接进入 VOTING 状态。准入提案使用“守约事务”规则，选民必须同时具有有效守约者资格和执衡者任期；成员准入是 `yes`/`no` 二元表决。正式接纳只能由 `execute_proposal` 经 `admit_member_application_from_proposal` 完成。
 
-维护者可在 `/workspace/applications/` 进入成员报名处理模块，查看报名资料、准入提案、投票和执行已通过提案。该模块只复用上述既有服务与表，不引入平行审核表或投票表。维护入口要求 `governance.view_admin` 且必须绑定 `Member` 身份；未绑定 `Member` 的 Django staff/superuser 不能绕过成员身份要求。成员准入投票只允许 `yes`/`no`，不提供弃权；反对票必须填写理由。
+典守者可在 `/workspace/applications/` 进入成员报名处理模块，查看报名资料、准入提案、投票和执行已通过提案。该模块只复用上述既有服务与表，不引入平行审核表或投票表。维护入口要求 `governance.view_admin` 且必须绑定 `Member` 身份；未绑定 `Member` 的 Django staff/superuser 不能绕过成员身份要求。成员准入投票只允许 `yes`/`no`，不提供弃权；反对票必须填写理由。
 
 
 未来规则、政策、预算、项目计划、重大申诉裁决和重大任务发布可以使用同一套提案流程，但执行后仍应落到具体业务对象。
@@ -172,7 +172,7 @@ ExpenseClaim -> FinanceReview -> FinanceTransaction -> Event/SystemEvent
 - 报销申请由 `ExpenseClaim` 承载，提交后写公开 `Event` 和 `expense_claim_submitted` 统一事件。
 - 审核决定由 `FinanceReview` 承载，审核人必须拥有 `finance.review`，不能自审；拒绝必须填写理由。
 - 付款流水由只追加的 `FinanceTransaction` 承载，记录人必须拥有 `finance.pay`，不能自付；历史流水不能修改，只能后续用冲正类流水表达更正。
-- 财务角色由 `ensure_finance_roles()` 初始化，并通过 RoleAssignment 授予。`finance.*` 权限角色和 `governance.*` 权限角色一样，需要目标成员先具备 `ROLE_FORMAL_MEMBER`。
+- 财务角色由 `ensure_finance_roles()` 初始化，并通过 RoleAssignment 授予。`finance.*` 权限角色和 `governance.*` 权限角色一样，需要目标成员先具备 `ROLE_COVENANTER`。
 - 报销流程本身不要求 Proposal；只有高影响预算、异常争议、财务规则变更或需要共同授权的情况，才应升级为 Proposal。
 
 ### 统一事件账本

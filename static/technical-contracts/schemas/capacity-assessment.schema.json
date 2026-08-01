@@ -7,8 +7,8 @@
   "required": [
     "assessment_id",
     "simulation_day",
-    "current_formal_members",
-    "current_candidate_members",
+    "current_covenanters",
+    "current_contributors",
     "maximum_admissible_members",
     "recommended_new_members",
     "bottlenecks",
@@ -24,11 +24,11 @@
     "simulation_day": {
       "$ref": "common.schema.json#/$defs/simulationDay"
     },
-    "current_formal_members": {
+    "current_covenanters": {
       "type": "integer",
       "minimum": 0
     },
-    "current_candidate_members": {
+    "current_contributors": {
       "type": "integer",
       "minimum": 0
     },
