@@ -84,6 +84,9 @@ MySQL
 
 - `core.models.identity`、`proposals`、`planning`、`simulation_runs`、`simulation_feedback`、`operations`、`events`、`disputes`：权威业务模型按领域拆分，但仍归属 `core` app，避免为了 app 名称重复造平行模型。
 - `core.models`：稳定导出入口；新模型应进入对应领域文件，不要重新写回单个大文件。
+- `core.file_processing.*`：与业务 owner 无关的文件大小限制、Magika 内容识别、Pillow 图片解码/规范化和哈希原语。
+- `core.file_storage.*`：Django Storage gateway、随机对象 key、临时对象和严格的 world/生命周期前缀校验；业务代码不直接依赖 bucket 或供应商 URL。
+- `core.avatar_services`：个人头像上传、替换、恢复默认和维护移除的权威状态变化；头像是可删除的当前展示资产，不是永久附件。
 - `live_os.api.*`：contract-facing JSON API 和 contract serializers，不承载页面模板，不放回 core 规则引擎。
 - `core.access`：User / Member 到治理权限的纯权限桥接，不返回 HTTP response。
 - `live_os.access`：Django request、页面 decorator、JSON 401/403 和 request actor 解析，供 API、workspace 和 simulation_lab 使用。
@@ -141,6 +144,14 @@ Task / Resource / Event / CapacityAssessment
 `core.models.*` 负责持久化权威状态；`core.models` 包入口保留稳定导入面。
 
 ## 权威边界
+
+### 文件资产与未来永久附件边界
+
+第一阶段文件上传只落地个人头像。输入经过 Magika 内容识别；Pillow 读取图片头部尺寸并在完整解码前执行边长和总像素限制，通过后才完整解码，最终统一输出为去除来源元数据的 `512 × 512` 静态 WebP。数据库只保存当前私有对象 key、SHA-256、字节数和更新时间。成员本人可以替换或恢复默认头像，维护人员仅在具有 `governance.manage_people` 权限时移除违规头像，不能代成员上传。公开头像 URL 使用更新时间作为版本参数，替换或移除后地址立即变化；有效头像可长期缓存，默认或存储故障回退只短期缓存。
+
+对象存储通过 Django Storage 抽象接入。当前生产目标是 OCI Object Storage 的 S3 兼容接口，终极形态可以替换为园区内网兼容后端而不改变成员资料或页面语义。真实 world、仿真 world、临时对象、当前头像和未来永久附件必须使用不可混淆的 bucket/prefix 边界。
+
+头像只表达当前展示状态，成功替换后旧对象可以删除。未来报销凭证、提案资料、任务交付物等进入审计记录的附件不得直接复用头像删除生命周期：它们应增加独立 `AttachmentCollection` / `Attachment` 权威模型、真实业务外键、只追加更正版本、冻结/密封/归档和只读永久对象审计。两类对象只复用内容识别、图片处理、哈希、随机 key 和 Storage 写入原语。
 
 Live OS 对以下数据拥有权威：
 

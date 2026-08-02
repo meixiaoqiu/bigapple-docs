@@ -47,7 +47,7 @@ title: 公开首页
 - **成员资格与职责区**：从 active RoleAssignment 动态计算，显示守约者、执衡者、典守者及专业资格，不是裸 permission code。RoleAssignment → RolePermission 是唯一权限来源
 - **公开记录**：最近 20 条 SystemEvent（投票、提案、执行、凭证发放等），展示时间、标题、摘要、投票选择/理由、hash 短值和链校验状态。执行维护职责者的姓名公开，不脱敏
 
-成员本人在 workspace `/workspace/profile/` 维护公开姓名和头像 URL。成员报名时间线中的投票人名称链接到该主页。
+成员本人在 workspace `/workspace/profile/` 维护公开姓名并上传头像。头像由 Live OS 完整解码、统一转换为私有存储中的 WebP，并通过 `/u/<member_no>/avatar/` 受控读取；公开页面不使用成员填写的外部头像 URL。成员报名时间线中的投票人名称链接到该主页。
 
 隐藏高级审计入口（不在普通导航中展示）：
 

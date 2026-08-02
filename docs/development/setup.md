@@ -7,6 +7,34 @@ title: 开发说明
 
 ## 本地依赖
 
+头像能力新增 Pillow、Magika、`django-storages` 和 boto3，随项目依赖一起安装。Pillow 负责完整解码与 WebP 重编码，Magika 负责内容类型识别，后两者用于 OCI Object Storage 的 S3 兼容接入；Magika 不替代图片解码或病毒扫描。
+
+本地开发默认使用：
+
+```dotenv
+BIG_APPLE_AVATAR_STORAGE_BACKEND=filesystem
+```
+
+处理后的当前头像和临时对象分别位于被 Git 忽略的 `var/avatars/` 与 `var/avatar_temporary/`。生产 OCI 配置使用私有 bucket：
+
+```dotenv
+BIG_APPLE_AVATAR_STORAGE_BACKEND=oci_s3
+BIG_APPLE_OCI_S3_ENDPOINT_URL=https://<namespace>.compat.objectstorage.<region>.oraclecloud.com
+BIG_APPLE_OCI_S3_REGION=<region>
+BIG_APPLE_OCI_S3_BUCKET=<private-bucket>
+BIG_APPLE_OCI_S3_ACCESS_KEY=<customer-secret-access-key>
+BIG_APPLE_OCI_S3_SECRET_KEY=<customer-secret-key>
+```
+
+不要提交或输出 Customer Secret Key。完成 bucket 和最小权限配置后，可在目标环境运行：
+
+```powershell
+python manage.py probe_avatar_storage --world-id realworld --settings=live_os.settings_admin
+python manage.py audit_avatar_storage --world-id realworld --settings=live_os.settings_admin
+```
+
+`probe_avatar_storage` 只写入并清理一个临时测试对象。`audit_avatar_storage` 默认 dry-run，报告缺失、无引用、过期临时对象和元数据不一致；只有显式增加 `--clean` 才清理已经证明无当前引用的头像/临时对象，且命令拒绝永久附件前缀。
+
 - Docker Desktop
 - Docker network：`dev-net`（缺少时由 `start.bat` 自动创建）
 - 已存在的 MySQL 容器：`mysql97`

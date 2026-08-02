@@ -59,11 +59,16 @@ Django `User` 仍只负责技术登录和 Admin 入口控制：`is_active` 控�
 | --- | --- | --- |
 | `member_id` | FK | 关联 Member (OneToOne) |
 | `public_name` | string | 公开显示名，优先于 display_name |
-| `avatar_url` | string | 公开头像 URL |
+| `avatar_key` | string | 系统生成的当前头像私有对象 key；为空时使用默认头像，不允许由表单直接填写。 |
+| `avatar_sha256` | string | 处理后 WebP 的 SHA-256，仅用于一致性检查，不进入公开 URL。 |
+| `avatar_size` | integer nullable | 处理后 WebP 的字节数；使用默认头像时为空。 |
+| `avatar_updated_at` | datetime nullable | 当前头像最后成功切换或移除的时间。 |
 | `bio` | text | 公开简介 |
-| `is_visible` | boolean | 关闭后只回落 display_name |
+| `is_visible` | boolean | 遗留兼容字段；当前 Observer 不把它作为公开资料开关。无论其值为何，公开主页仍按 `public_name → display_name → member_no` 的顺序选择姓名，并在存在当前头像时展示头像。 |
 | `created_at` | datetime | 创建时间 |
 | `updated_at` | datetime | 更新时间 |
+
+头像是可替换的当前展示资产，不是永久审计附件。系统不保存原始文件名、原图或历史头像；替换流程在新对象和数据库引用成功后删除旧对象。头像对象、临时上传和未来永久附件使用分离的 world 存储前缀，头像清理不得访问永久附件前缀。
 
 ## core_member_application
 

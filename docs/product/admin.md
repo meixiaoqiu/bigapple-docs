@@ -158,7 +158,7 @@ Admin 中的角色与权限查看入口：
 
 - `Member` 列表显示 `User`、显示名称、当前角色、状态和创建时间；详情页内联只读显示该成员的 `RoleAssignment`。角色任命列表和 inline 会显示来源类型；由提案执行产生的任命会关联来源提案和执行记录。新增或撤销角色任命必须通过领域服务或对应命令完成。
 - 成员账号绑定、当前角色任命、权限来源和任命历史当前通过 control Admin 兜底维护；后续专用业务页面应支持按 `member_no` 创建或绑定登录账号、重置密码、启停账号，以及授予或撤销生效中的角色任命。
-- MemberPublicProfile 在 Member 详情页通过 inline 维护（public_name、avatar_url、bio、is_visible）。这是公开展示资料，不同于 Django User 和 Member 权威身份。职务/权限不能手填，来自角色任命。
+- MemberPublicProfile 在 Member 详情页通过 inline 展示（public_name、avatar_key、avatar_sha256、avatar_size、avatar_updated_at、bio、is_visible）。头像对象字段只读；成员自行上传头像，典守者通过受权业务服务移除违规头像，不能在 Admin 手填对象 key。这是公开展示资料，不同于 Django User 和 Member 权威身份。职务/权限不能手填，来自角色任命。
 - `Organization` 详情页内联显示组织下的 `Role`。
 - `Role` 列表显示该角色绑定的权限数量，并可配置任命表决角色、通过比例和截止天数；详情页内联显示该角色绑定的 `RolePermission`，并显示当前拥有该角色的 `RoleAssignment`。
 - `Proposal` 是通用治理提案入口；角色任命只是 `proposal_type=role_appointment` 的一种。流程是 `Proposal -> ProposalVote -> ProposalExecution -> SystemEvent`。
