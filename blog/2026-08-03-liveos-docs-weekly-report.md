@@ -1,6 +1,7 @@
 ---
 title: 开发周报202632
 date: 2026-08-03
+tags:
   - 周报
 authors: [xiaowang]
 description: 回顾 2026 年 7 月 26 日至 8 月 2 日 Big Apple Live OS 在积分工作台、OpenFGA 授权、角色体系和成员事务聚合方面的进展。
