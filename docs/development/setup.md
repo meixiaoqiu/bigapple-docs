@@ -49,6 +49,19 @@ copy .env.example .env
 notepad .env
 ```
 
+头像上传依赖 Pillow、Magika、`django-storages` 和 boto3，随项目依赖一起安装。Pillow 负责完整解码与 WebP 重编码，Magika 负责内容类型识别，后两者用于 OCI Object Storage 的 S3 兼容接入；Magika 不替代图片解码或病毒扫描。
+
+OCI S3 兼容后端使用 SigV4、path-style addressing，并把 botocore 的请求和响应 checksum 策略设为 `when_required`。OCI 不支持带 `aws-chunked` content encoding 的上传；不得移除该配置，否则新版 boto3/botocore 的尾随 checksum 可能让 PutObject 返回 HTTP 501。
+
+头像和临时对象共享同一 bucket/root，使用 `<world-id>/runtime/current-assets/avatars/` 和 `<world-id>/runtime/temporary/avatar-uploads/` 区分生命周期。旧版 `current/worlds/...` 对象使用以下命令先 dry-run，再执行无损迁移：
+
+```bat
+python manage.py migrate_avatar_storage_layout --world-id simulation0001 --settings=live_os.settings_sim
+python manage.py migrate_avatar_storage_layout --world-id simulation0001 --apply --settings=live_os.settings_sim
+```
+
+仿真世界重置会清理该 world 的 `runtime/` 对象，但不会读取或删除 `SimulationSnapshot` 与 `var/simulation_archives/`。
+
 ## 数据库连接配置
 
 本地运行推荐填写：

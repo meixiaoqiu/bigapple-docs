@@ -26,5 +26,9 @@
 ## 验证
 
 - 修改文档站配置或导航后，至少运行 `npm run build`。
+- Docs 开源提交终审必须运行 `npm run build`、`npm run check:orphan-pages` 和 `git diff --check`。
+- 终审通过时，Docusaurus 中英文生产构建必须成功，意外孤立页面数量必须为 0，未归入任何 sidebar 的文档数量必须为 0，且 `git diff --check` 不得报告错误。
+- 只有孤立页面检查器明确列入允许清单的 Docusaurus 框架自动生成页面可以没有导航入口。
+- 不得以“孤立页面与本次修改无关”为由忽略孤立页面检查失败；发现失败时必须修复导航或明确调整经审查的允许清单后才能通过终审。
 - 修改依赖后，运行 `npm install` 并检查生成的 `package-lock.json`。
 - 命令失败时报告失败命令、关键输出和是否属于网络、权限或外部服务问题。

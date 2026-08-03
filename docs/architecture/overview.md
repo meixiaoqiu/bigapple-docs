@@ -15,6 +15,12 @@ v0.1 必须保证真实用户和 Simulation Engine 使用同一套 API。Simulat
 
 治理交互模型遵循 [治理交互模型边界](./governance-boundary.md)：任务、申诉、角色任命、积分流水等具体业务保留自己的结构化模型；提案只作为需要共同决定时的决策机制；统一事件账本只记录已经发生的关键事实和责任链，不替代业务状态机。
 
+## 文件与头像运行期边界
+
+成员头像经过 Magika 识别、Pillow 安全解码和 `512 × 512` WebP 重编码后写入 Django Storage。对象 key 采用 `<world-id>/runtime/<lifecycle>/...`：当前头像位于 `current-assets/avatars/`，临时上传位于 `temporary/avatar-uploads/`。Storage alias 不再添加 `current/temporary` 顶层 location，因此数据库 key、OCI object key 和本地相对路径保持一致。
+
+仿真 world 重置只清理 `<world-id>/runtime/`，清理失败时不得 flush 数据库。该流程不查询或修改 control DB 的 `SimulationSnapshot`，也不访问本地 `var/simulation_archives/`；归档与重置是独立动作。真实 world、其它 world 前缀和历史归档均不属于本次清理范围。
+
 ## 仓库边界
 
 本仓库负责：

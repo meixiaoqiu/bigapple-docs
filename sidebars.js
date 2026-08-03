@@ -74,6 +74,7 @@ const sidebars = {
       items: [
         'architecture/overview',
         'architecture/governance-boundary',
+        'development/role-permission-acceptance',
         'architecture/database-schema',
       ],
     },
