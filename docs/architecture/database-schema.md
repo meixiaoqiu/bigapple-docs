@@ -45,9 +45,9 @@ DATABASE_URL=mysql://用户名:URL编码后的密码@主机:3306/数据库名?ch
 
 Django `User` 仍只负责技术登录和 Admin 入口控制：`is_active` 控制账号是否可用，`is_staff` 控制是否可进入 Django Admin，`is_superuser` 是技术 root / 初始化 / 救急账号。日常治理人员不应被批量设置为 superuser。
 
-大苹果业务权限由 `AuthorizationService` / OpenFGA 计算，权威事实主路径是 `User -> Member -> RoleAssignment -> RolePermission -> Permission`。直接角色事实只有守约者、执衡者和典守者；临时或有期限的职责通过 `end_at` 表达。具体权限必须来自 `RolePermission` 投影出的 OpenFGA 授权，不能以显示标签或 Django 技术账号标记作为放行依据。
+大苹果业务权限由 `AuthorizationService` / OpenFGA 计算，权威事实主路径是 `User -> Member -> RoleAssignment -> RolePermission -> Permission`。直接角色事实只有守约者、执衡者和管理员；临时或有期限的职责通过 `end_at` 表达。具体权限必须来自 `RolePermission` 投影出的 OpenFGA 授权，不能以显示标签或 Django 技术账号标记作为放行依据。
 
-普通 world 的典守者账号推荐为 `is_active=True`、`is_staff=False`、`is_superuser=False`，并拥有有效 `Member`、`RoleAssignment` 和对应 `Permission`。`grant_maintainer` 只创建或复用典守者任命，不会修改 `is_staff` 或 `is_superuser`；真实和仿真 world 不暴露 `/admin/`，业务维护账号不需要 Django staff 权限。
+普通 world 的管理员账号推荐为 `is_active=True`、`is_staff=False`、`is_superuser=False`，并拥有有效 `Member`、`RoleAssignment` 和对应 `Permission`。`grant_maintainer` 只创建或复用管理员任命，不会修改 `is_staff` 或 `is_superuser`；真实和仿真 world 不暴露 `/admin/`，业务维护账号不需要 Django staff 权限。
 
 成员是否虚拟不再是成员字段，而由当前世界实例类型决定：`WORLD_INSTANCE_TYPE=simulation` 时 actor 输出为 `virtual_member`，`WORLD_INSTANCE_TYPE=real` 时 actor 输出为 `human_member`。当前默认值是 `simulation`。
 
@@ -93,7 +93,7 @@ MemberApplication stores public member applications. Member applications are sub
 | `dynamic_answers` | json | 是 | 动态 textarea 问答数组，元素包含 `key`、`label`、`type`、`answer`。 |
 | `frozen_at` | datetime | 否 | 报名提交并二次确认的时间；业务入口不提供提交后的撤回或修改。 |
 | `admission_proposal_id` | fk | 否 | 接纳该申请者为守约者的提案。 |
-| `decided_by_id` | fk | 否 | 决议人（执行准入或提案拒绝的典守者）。 |
+| `decided_by_id` | fk | 否 | 决议人（执行准入或提案拒绝的管理员）。 |
 | `submitted_at` | datetime | 是 | 提交时间。 |
 | `decided_at` | datetime | 否 | 决议时间（准入执行或拒绝的时间）。 |
 | `metadata` | json | 是 | 扩展数据；仿真会写入 `simulation_run_id`、`simulation_hour`、`driver_mode` 和 `external_ref`。 |
@@ -142,7 +142,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 
 ## core_role
 
-组织下的角色，例如电工、仓库典守者、安全委员。只有带 `role_catalog_key=member-role-catalog` 的成员资格与职责目录才承载三项可直接记录的规范角色：守约者、执衡者、典守者；其他组织即使使用同名角色，也不能形成规范成员资格或职责。贡献者、匿名访问和守约者申请分别是派生参与状态或流程状态，不是角色。真实世界和仿真世界使用同一套角色语义，是否仿真只由当前 world / actor 上下文表达，不创建单独的仿真角色。
+组织下的角色，例如电工、仓库管理员、安全委员。只有带 `role_catalog_key=member-role-catalog` 的成员资格与职责目录才承载三项可直接记录的规范角色：守约者、执衡者、管理员；其他组织即使使用同名角色，也不能形成规范成员资格或职责。贡献者、匿名访问和守约者申请分别是派生参与状态或流程状态，不是角色。真实世界和仿真世界使用同一套角色语义，是否仿真只由当前 world / actor 上下文表达，不创建单独的仿真角色。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -187,9 +187,9 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `finance.pay` | 允许将已批准报销标记为已付款并生成财务流水。 |
 | `finance.view_private` | 预留权限：允许查看非公开财务凭证或隐私材料。 |
 
-初始化命令会创建或复用典守者及财务权限所需的目录项，并通过 `core_role_permission` 绑定明确能力。它不会自动批量授权成员；需要维护或财务权限的成员必须通过规范任命或专业资格流程获得相应授权。
+初始化命令会创建或复用管理员及财务权限所需的目录项，并通过 `core_role_permission` 绑定明确能力。它不会自动批量授权成员；需要维护或财务权限的成员必须通过规范任命或专业资格流程获得相应授权。
 
-可以用 `python manage.py grant_maintainer --world-id realworld --username <username>` 或 `--world-id realworld --member-no <member_no>` 把一个已有且有效的守约者任命为典守者。该命令不会自动授予守约者资格，也不会创建执衡者任期或投票权；重复执行不会重复创建 active `RoleAssignment`。运行时启用 world 数据库路由后，直接执行必须显式传入 `--world-id`。
+可以用 `python manage.py grant_maintainer --world-id realworld --username <username>` 或 `--world-id realworld --member-no <member_no>` 把一个已有且有效的守约者任命为管理员。该命令不会自动授予守约者资格，也不会创建执衡者任期或投票权；重复执行不会重复创建 active `RoleAssignment`。运行时启用 world 数据库路由后，直接执行必须显式传入 `--world-id`。
 
 ## core_role_assignment
 
@@ -211,7 +211,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `created_at` | datetime | 是 | 创建时间。 |
 | `updated_at` | datetime | 是 | 更新时间。 |
 
-新增记录会追加一次 `role_assigned` 统一事件；状态从 `active` 变为 `revoked` 时追加一次 `role_revoked` 统一事件。普通字段编辑不会重复追加任命或卸任事件。事件 payload 会包含 `source_type`、`source_proposal_id` 和 `source_proposal_execution_id`，用于区分直接任命、本人申请、提案执行、初始化或系统规则产生的任命。执衡者只能由有效守约者本人申请，任期为一年且不会自动续任；典守者是独立职责，不会自动创建执衡者任期。
+新增记录会追加一次 `role_assigned` 统一事件；状态从 `active` 变为 `revoked` 时追加一次 `role_revoked` 统一事件。普通字段编辑不会重复追加任命或卸任事件。事件 payload 会包含 `source_type`、`source_proposal_id` 和 `source_proposal_execution_id`，用于区分直接任命、本人申请、提案执行、初始化或系统规则产生的任命。执衡者只能由有效守约者本人申请，任期为一年且不会自动续任；管理员任命不自动创建执衡者任期。
 
 ## core_professional_domain
 
@@ -227,7 +227,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 
 ## core_member_professional_qualification
 
-成员专业资格的权威事实。资格由具备 `governance.manage_professional_qualifications` 权限的典守者录入或撤销；系统只记录外部确认结果，不实现面试、考试或评估流程。资格不是角色，也不自动赋予典守者职责。
+成员专业资格的权威事实。资格由具备 `governance.manage_professional_qualifications` 权限的管理员录入或撤销；系统只记录外部确认结果，不实现面试、考试或评估流程。资格不是角色，也不自动赋予管理员职责。
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
@@ -275,7 +275,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `created_at` | datetime | 是 | 创建时间。 |
 | `updated_at` | datetime | 是 | 更新时间。 |
 
-规则模板由 `core_electorate_rule_template` 和不可变的 `core_electorate_rule_version` 表达，`core_proposal_type_electorate_rule` 限制每种提案类型允许使用的模板和最低条件。社区共议允许贡献者参与；守约事务要求守约者和执衡者；专业事务再要求对应专业资格；典守事务只选择典守者。成员资格、任期、专业资格和用户状态会在投票时重新校验，因此快照不能绕过之后失效的授权。
+规则模板由 `core_electorate_rule_template` 和不可变的 `core_electorate_rule_version` 表达，`core_proposal_type_electorate_rule` 限制每种提案类型允许使用的模板和最低条件。社区共议允许贡献者参与；守约事务要求守约者和执衡者；专业事务再要求对应专业资格；管理事务只选择管理员。成员资格、任期、专业资格和用户状态会在投票时重新校验，因此快照不能绕过之后失效的授权。
 
 ## core_electorate_rule_template / core_electorate_rule_version
 
@@ -778,7 +778,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `open` | 已发布，成员可以领取，运营人员也可以指派。 |
 | `claimed` | 已绑定负责人，等待成员执行或提交。 |
 | `in_progress` | 成员正在执行。 |
-| `pending_review` | 成员已提交劳动记录，等待运营或典守者验收。 |
+| `pending_review` | 成员已提交劳动记录，等待运营或管理员验收。 |
 | `accepted` | 验收通过，通常已经产生贡献积分流水。 |
 | `rejected` | 验收驳回，需要成员重新处理或发起申诉。 |
 | `disputed` | 任务进入争议流程。 |
@@ -865,7 +865,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `source` | string | 固定为 `control_resource_adjustment`。 |
-| `operator` | ActorRef object | 记录执行操作的典守者。 |
+| `operator` | ActorRef object | 记录执行操作的管理员。 |
 | `reason` | string | 人类可读调整或处置原因。 |
 | `delta` | string decimal | 本次库存变动数量，正数为补充，负数为扣减，`0` 为仅记录处置说明。 |
 | `old_stock` | string decimal | 调整前库存。 |
@@ -895,7 +895,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 
 ## core_communityfeedback
 
-公开反馈 / 公众参与层记录。它不是提案，不直接改变权威状态；典守者可以回应、隐藏或关联到正式提案。反馈生命周期只写普通公开 `core_event`，不写 `core_system_event` 哈希链。
+公开反馈 / 公众参与层记录。它不是提案，不直接改变权威状态；管理员可以回应、隐藏或关联到正式提案。反馈生命周期只写普通公开 `core_event`，不写 `core_system_event` 哈希链。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -905,8 +905,8 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `category` | enum string | 是 | `question`、`suggestion`、`concern`、`proposal_seed`、`other`。 |
 | `body` | text | 是 | 反馈正文，纯文本。 |
 | `status` | enum string | 是 | `open`、`acknowledged`、`answered`、`linked`、`closed`、`hidden`。 |
-| `official_response` | text | 否 | 典守者公开回应。 |
-| `responded_by_id` | fk | 否 | 最近一次回应或处理反馈的典守者。 |
+| `official_response` | text | 否 | 管理员公开回应。 |
+| `responded_by_id` | fk | 否 | 最近一次回应或处理反馈的管理员。 |
 | `responded_at` | datetime | 否 | 最近一次回应或处理时间。 |
 | `linked_proposal_id` | fk | 否 | 由该反馈转入的正式治理提案。 |
 | `created_at` | datetime | 是 | 创建时间。 |
@@ -1011,7 +1011,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `is_warning` | boolean | 调整后是否仍低于或等于预警线。 |
 | `replenishment_method` | string | 本次记录使用的补充方式。 |
 | `reason` | string | 操作原因。 |
-| `operator` | ActorRef object | 执行操作的典守者。 |
+| `operator` | ActorRef object | 执行操作的管理员。 |
 
 SystemEvent(event_type=resource_adjusted) v2 `public_facts` 公开：`name`、`resource_type`、`unit`、`delta`、`is_warning`、`transaction_id`。`old_stock`/`new_stock`/`warning_threshold`/`reason_raw`/`actor` 只记录为 `private_commitments`，不公开原值。
 
@@ -1056,7 +1056,7 @@ SystemEvent(event_type=resource_adjusted) v2 `public_facts` 公开：`name`、`r
 | --- | --- | --- |
 | `review_started_at` | datetime string | 申诉受理时间。 |
 | `review_started_note` | string | 受理备注。 |
-| `resolved_by` | ActorRef object | 记录处理结论的典守者。 |
+| `resolved_by` | ActorRef object | 记录处理结论的管理员。 |
 | `resolved_at` | datetime string | 处理结论记录时间。 |
 | `decision` | string | `resolved` 或 `rejected`。 |
 

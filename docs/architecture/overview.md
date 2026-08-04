@@ -11,7 +11,7 @@ Big Apple Live OS 是社区运行的权威系统。
 
 v0.1 必须保证真实用户和 Simulation Engine 使用同一套 API。Simulation Engine 是外部客户端，不是权威系统，不能直接修改业务表。
 
-产品规划按照中远期完全体来描述，当前实现只是完整系统的阶段性切片。完整系统应同时服务匿名访问者、成员、典守者和 Simulation Engine；当前 Django Admin 只是内部维护入口，不代表最终运营后台边界。
+产品规划按照中远期完全体来描述，当前实现只是完整系统的阶段性切片。完整系统应同时服务匿名访问者、成员、管理员和 Simulation Engine；当前 Django Admin 只是内部维护入口，不代表最终运营后台边界。
 
 治理交互模型遵循 [治理交互模型边界](./governance-boundary.md)：任务、申诉、角色任命、积分流水等具体业务保留自己的结构化模型；提案只作为需要共同决定时的决策机制；统一事件账本只记录已经发生的关键事实和责任链，不替代业务状态机。
 
@@ -265,9 +265,9 @@ Credential    → 公开事实证明（非权限来源）
 
    不允许为 Credential / NFT / Badge、`Member.status` 或 member_no 字符串编写第二套权限路径。`is_staff` / `is_superuser` 仅限 Django Admin 技术后台边界使用，不能等同于业务治理权限。
 
-   **当前落地**：`/register/` 只创建 User 与 Member，`/workspace/apply/` 处理登录后的守约者报名。守约者资格、执衡者职责和典守者职责分别由 `ROLE_COVENANTER`、`ROLE_DELIBERATOR` 和 `ROLE_MAINTAINER` 的当前有效 RoleAssignment 表达；贡献者是派生状态。完整成员工作台主授权通过 `AuthorizationService` 查询 OpenFGA 的 `covenanter` 关系；OpenFGA tuple 来自 Django 权威数据投影，并保留 `SUSPENDED`/`EXITED` veto。`Member.status` 不作为权限来源。
+   **当前落地**：`/register/` 只创建 User 与 Member，`/workspace/apply/` 处理登录后的守约者报名。守约者资格、执衡者职责和管理员职责分别由 `ROLE_COVENANTER`、`ROLE_DELIBERATOR` 和 `ROLE_MAINTAINER` 的当前有效 RoleAssignment 表达；贡献者是派生状态。完整成员工作台主授权通过 `AuthorizationService` 查询 OpenFGA 的 `covenanter` 关系；OpenFGA tuple 来自 Django 权威数据投影，并保留 `SUSPENDED`/`EXITED` veto。`Member.status` 不作为权限来源。
    **资源级权限**：`member_has_permission(member, code, resource=None)` 只表示成员是否在任一范围拥有该权限；带具体 `Resource` 时才检查全局资源授权或该资源的 scoped 授权。`RolePermission.constraints_json.resource_id` / `resource_ids` 会在 OpenFGA rebuild 时投影为具体资源 permission object，不能用无资源上下文的结果替代对象级判断。
-   **职责前置条件**：执衡者、典守者以及任何带 `governance.*` 或 `finance.*` permission 的职责，都要求目标成员已拥有当前有效的 `ROLE_COVENANTER`。`SUSPENDED` / `EXITED` 成员不能获得新职责。普通授予统一调用 `create_role_assignment()`；首次系统初始化使用 `bootstrap_initial_maintainer()` 在事务内建立守约者资格和典守者职责。典守者不会自动获得执衡者任期或投票权。RoleAssignment Admin 只读，禁止手工创建或修改。
+   **职责前置条件**：执衡者、管理员以及任何带 `governance.*` 或 `finance.*` permission 的职责，都要求目标成员已拥有当前有效的 `ROLE_COVENANTER`。`SUSPENDED` / `EXITED` 成员不能获得新职责。普通授予统一调用 `create_role_assignment()`；首次系统初始化使用 `bootstrap_initial_maintainer()` 在事务内建立守约者资格和管理员职责。管理员不会自动获得执衡者任期或投票权。RoleAssignment Admin 只读，禁止手工创建或修改。
 
 ### 注册与报名的拆分展望
 
@@ -292,11 +292,11 @@ Credential    → 公开事实证明（非权限来源）
 
 - 未登录用户可以浏览公开反馈。
 - 注册用户可以提交公开问题、建议、担忧、提案种子或其他反馈。
-- 典守者可以回应、隐藏或把反馈关联到正式 `Proposal`。
+- 管理员可以回应、隐藏或把反馈关联到正式 `Proposal`。
 - 反馈提交、维护回应和关联提案只写普通公开 `Event`，用于首页和事件流展示。
 - 隐藏反馈不写新的公开 Event，并会把该反馈既有公开 Event 转为 internal，避免放大违规内容。
 - Feedback 不写 `SystemEvent` 哈希链，不改变 RoleAssignment、RolePermission、Credential、Proposal 执行结果或其他权威状态。
-- Feedback 不能作为运行时权限来源；如反馈需要变成正式行动，必须由典守者转入 Proposal 或对应领域服务流程。
+- Feedback 不能作为运行时权限来源；如反馈需要变成正式行动，必须由管理员转入 Proposal 或对应领域服务流程。
 
 ## Public Finance / 公开财务层
 

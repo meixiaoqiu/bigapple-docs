@@ -42,7 +42,7 @@ Simulation Lab 的控制中心，用于启动和管理仿真推演运行，是�
 - 所有操作均通过 admin 路由，受 `superuser_admin_view` 包装保护
 - 数据来自仿真世界数据库
 - `bigadmin.local` 的 Django Admin 权限仍使用 Django superuser 边界；重置动作维护的是目标仿真 world 的业务数据和 sim OpenFGA 授权投影
-- 截图由典守者预先配置的本地测试账号访问生成
+- 截图由管理员预先配置的本地测试账号访问生成
 
 ## 当前状态与限制
 

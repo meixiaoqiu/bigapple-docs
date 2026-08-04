@@ -85,14 +85,14 @@ title: 治理交互模型边界
 
 角色任命可以来自：
 
-- 直接任命：典守者通过服务直接创建。
+- 直接任命：管理员通过服务直接创建。
 - 本人申请：有效守约者可立即创建一年期执衡者任命，无需审核。
 - 提案执行：`role_appointment` 提案通过后执行，创建 `RoleAssignment`。
 - 初始化：bootstrap 或维护权限初始化命令创建必要任命。
 
 `RoleAssignment.source_type`、`source_proposal` 和 `source_proposal_execution` 用于记录任命来源。直接任命、本人申请、提案执行和初始化最终都会落到同一张 `RoleAssignment` 表，避免保留多套平行任命结构。
 
-**创建约束**：所有 RoleAssignment 必须通过 `core.role_assignment_services.create_role_assignment()` 创建。执衡者和典守者以及带 `governance.*` / `finance.*` permission 的职责都要求有效守约者资格；`SUSPENDED`/`EXITED` 成员拒绝一切新职责。执衡者本人申请使用专用服务，任期一年且不会自动续任。Django Admin 中的 RoleAssignment 已设为只读，禁止手工创建或修改。
+**创建约束**：所有 RoleAssignment 必须通过 `core.role_assignment_services.create_role_assignment()` 创建。执衡者和管理员以及带 `governance.*` / `finance.*` permission 的职责都要求有效守约者资格；`SUSPENDED`/`EXITED` 成员拒绝一切新职责。执衡者本人申请使用专用服务，任期一年且不会自动续任。Django Admin 中的 RoleAssignment 已设为只读，禁止手工创建或修改。
 
 无论来源是什么，最终权限判断仍走：
 
@@ -143,7 +143,7 @@ Proposal 可以决定授予/撤销角色，也可以决定授予 Credential。�
 
 `Proposal` 只处理“是否批准某件事”。它引用一个不可变的 `ElectorateRuleVersion`，保存本提案规范化后的规则快照、投票资格快照、通过比例、最低参与人数、截止时间和执行结果。
 
-选民规则只允许使用 `ALL`、`ANY`、`NOT` 和已注册选择器，提案发起人不能提交任意表达式或原始查询。提案类型限制可选模板：社区共议允许贡献者参与；守约事务要求有效守约者与执衡者；专业事务再要求对应专业资格；典守事务只选择典守者。开始表决时固定选民快照，投票时仍重新计算当前资格。
+选民规则只允许使用 `ALL`、`ANY`、`NOT` 和已注册选择器，提案发起人不能提交任意表达式或原始查询。提案类型限制可选模板：社区共议允许贡献者参与；守约事务要求有效守约者与执衡者；专业事务再要求对应专业资格；管理事务只选择管理员。开始表决时固定选民快照，投票时仍重新计算当前资格。
 
 通过比例按严格超过阈值计算。`pass_ratio=50` 表示赞成票必须超过半数，而不是达到一半；因此 1 人需 1 票、2 人需 2 票、3 人需 2 票、4 人需 3 票。
 
@@ -156,7 +156,7 @@ role_appointment Proposal -> ProposalVote -> ProposalExecution -> RoleAssignment
 
 成员报名提交自动创建最小 `Member`、`MemberApplication` 和 `member_admission` 提案，提案直接进入 VOTING 状态。准入提案使用“守约事务”规则，选民必须同时具有有效守约者资格和执衡者任期；成员准入是 `yes`/`no` 二元表决。正式接纳只能由 `execute_proposal` 经 `admit_member_application_from_proposal` 完成。
 
-典守者可在 `/workspace/applications/` 进入成员报名处理模块，查看报名资料、准入提案、投票和执行已通过提案。该模块只复用上述既有服务与表，不引入平行审核表或投票表。维护入口要求 `governance.view_admin` 且必须绑定 `Member` 身份；未绑定 `Member` 的 Django staff/superuser 不能绕过成员身份要求。成员准入投票只允许 `yes`/`no`，不提供弃权；反对票必须填写理由。
+管理员可在 `/workspace/applications/` 进入成员报名处理模块，查看报名资料、准入提案、投票和执行已通过提案。该模块只复用上述既有服务与表，不引入平行审核表或投票表。维护入口要求 `governance.view_admin` 且必须绑定 `Member` 身份；未绑定 `Member` 的 Django staff/superuser 不能绕过成员身份要求。成员准入投票只允许 `yes`/`no`，不提供弃权；反对票必须填写理由。
 
 
 未来规则、政策、预算、项目计划、重大申诉裁决和重大任务发布可以使用同一套提案流程，但执行后仍应落到具体业务对象。

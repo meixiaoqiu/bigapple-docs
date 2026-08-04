@@ -187,7 +187,7 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py c
 http://bigadmin.local/admin/
 ```
 
-该命令只创建 control DB 的 Django Admin 超级用户，不会创建 `bigreal.local` 或 `bigsim.local` 的成员账号。world 成员与典守者的初始化方式见 [World 数据库与生命周期](./world-databases.md)。
+该命令只创建 control DB 的 Django Admin 超级用户，不会创建 `bigreal.local` 或 `bigsim.local` 的成员账号。world 成员与管理员的初始化方式见 [World 数据库与生命周期](./world-databases.md)。
 
 写入后台预览用演示数据：
 

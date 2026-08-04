@@ -109,7 +109,7 @@ GET  /u/<member_no>/avatar/
 
 注册用户可以通过 `/feedback/` 和 `/feedback/new/` 提交公开问题、建议、担忧、提案种子或其他反馈。反馈是公众参与层，不是正式治理提案，不直接改变系统权威状态。
 
-反馈页面会显示作者公开身份并链接到 `/u/<member_no>/`。典守者可以回应、关闭、隐藏或关联正式提案；普通注册用户不能执行这些维护操作。`hidden` 反馈不会出现在公开列表或首页。
+反馈页面会显示作者公开身份并链接到 `/u/<member_no>/`。管理员可以回应、关闭、隐藏或关联正式提案；普通注册用户不能执行这些维护操作。`hidden` 反馈不会出现在公开列表或首页。
 
 ### 公开财务 / 报销
 
@@ -127,25 +127,25 @@ POST /workspace/finance/claims/<claim_id>/withdraw/
 
 财务审核和付款不是用户自助资料的一部分，必须由财务角色执行。申请人不能审核或付款自己的报销；拒绝报销必须填写理由。已批准并付款的记录会生成只追加 `FinanceTransaction` 流水，并进入 `/finance/` 公开财务页。
 
-### 积分功能（守约者 + 典守者）
+### 积分功能（守约者 + 管理员）
 
 ```text
-GET  /workspace/credits/budgets/                # 积分预算（典守者：发行池余额、任务锁定预算、发行积分、锁定/退回预算）
+GET  /workspace/credits/budgets/                # 积分预算（管理员：发行池余额、任务锁定预算、发行积分、锁定/退回预算）
 POST /workspace/credits/budgets/
 GET  /workspace/credits/transfer/              # 积分转账（守约者）
 POST /workspace/credits/transfer/
 GET  /workspace/credits/redemption/             # 兑换订单列表、创建、取消、申诉（守约者）
 POST /workspace/credits/redemption/
-GET  /workspace/credits/redemption/review/      # 兑换履约（典守者）
+GET  /workspace/credits/redemption/review/      # 兑换履约（管理员）
 POST /workspace/credits/redemption/review/
-GET  /workspace/credits/merchant-settlements/   # 商户结算记录（典守者看全部，现金结算商户 operator 看自己的）
+GET  /workspace/credits/merchant-settlements/   # 商户结算记录（管理员看全部，现金结算商户 operator 看自己的）
 ```
 
-工作台首页显示当前积分、可用积分、历史贡献，并提供积分转账和兑换订单入口。典守者额外可见积分预算、兑换履约入口；典守者或现金结算商户经营者可见商户结算入口。
+工作台首页显示当前积分、可用积分、历史贡献，并提供积分转账和兑换订单入口。管理员额外可见积分预算、兑换履约入口；管理员或现金结算商户经营者可见商户结算入口。
 
-#### 积分预算（典守者）
+#### 积分预算（管理员）
 
-积分发行到公共池，典守者为任务锁定预算。锁定预算从发行池扣除，任务发布前必须已有足够锁定预算。未用预算可退回发行池。表单使用 per-render `idempotency_key` 防重复提交。
+积分发行到公共池，管理员为任务锁定预算。锁定预算从发行池扣除，任务发布前必须已有足够锁定预算。未用预算可退回发行池。表单使用 per-render `idempotency_key` 防重复提交。
 
 #### 商户规则
 
@@ -153,12 +153,12 @@ GET  /workspace/credits/merchant-settlements/   # 商户结算记录（典守者
 - `member_micro_merchant`：不走兑换订单，应使用成员间积分转账。
 - 商户结算记录不是积分提现，不代表商户持有可流通积分。
 
-### 任务管理（典守者）
+### 任务管理（管理员）
 
 ```text
-GET  /workspace/tasks/new/       # 创建任务草稿、发布任务（典守者）
+GET  /workspace/tasks/new/       # 创建任务草稿、发布任务（管理员）
 POST /workspace/tasks/new/
-GET  /workspace/tasks/review/    # 查看 pending_review 任务、验收通过/驳回（典守者）
+GET  /workspace/tasks/review/    # 查看 pending_review 任务、验收通过/驳回（管理员）
 POST /workspace/tasks/review/
 ```
 
@@ -167,14 +167,14 @@ POST /workspace/tasks/review/
 - 有积分任务验收通过后从锁定预算发放积分；0 积分任务验收通过只改变任务状态，不发放积分，不增加余额/历史贡献。
 - 验收驳回时积分预算保留，不退回发行池。
 
-### 招募方向维护（典守者）
+### 招募方向维护（管理员）
 
 ```text
 GET  /workspace/recruitment/
 POST /workspace/recruitment/  (action=create / action=update)
 ```
 
-典守者可以在工作台维护报名页 `/workspace/apply/` 展示的申请方向配置：
+管理员可以在工作台维护报名页 `/workspace/apply/` 展示的申请方向配置：
 - 新增招募方向模板（`action=create`）：创建受限 `CredentialTemplate`（certificate / public / active），自动写入 `metadata.recruitment`。
 - 更新已有方向配置（`action=update`）：修改 `show_on_application`、`public_label`、`public_description`、`required_count`、`sort_order`，并同步 `CredentialTemplate.name` 和 `description`。
 - 不支持删除模板——只能通过取消"在报名页展示"来隐藏。
@@ -182,9 +182,9 @@ POST /workspace/recruitment/  (action=create / action=update)
 
 普通成员和未登录用户看不到该入口。
 
-### 成员报名处理（典守者）
+### 成员报名处理（管理员）
 
-`/workspace/` 在守约者工作台之外，为具备 `governance.view_admin` 权限的典守者提供成员报名处理入口。普通守约者、待处理报名人、未绑定 `Member` 的 Django staff/superuser 都看不到入口，直接访问处理 URL 返回 403。
+`/workspace/` 在守约者工作台之外，为具备 `governance.view_admin` 权限的管理员提供成员报名处理入口。普通守约者、待处理报名人、未绑定 `Member` 的 Django staff/superuser 都看不到入口，直接访问处理 URL 返回 403。
 
 `/workspace/apply/` 提交成员报名后，系统自动创建 `MemberApplication` 和 `member_admission` Proposal，提案直接进入 `VOTING` 状态。准入不存在独立的单人审核动作，完全由提案生命周期驱动。
 
