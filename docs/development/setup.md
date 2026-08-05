@@ -5,6 +5,10 @@ title: 开发说明
 
 # 开发说明
 
+执衡者考试迁移会为每个 world 初始化默认单题政策。部署后对 `realworld` 和 `simulation0001` 分别运行 `init_maintainer_permissions --world-id <world>`，再运行对应 world 的 `openfga_rebuild_tuples`，使典守者题库权限进入授权投影。本次只新增 Django workspace、Admin 和内部模型，没有新增公共 API 或技术契约。
+
+考试数据迁移必须显式指定 `--database realworld` 和 `--database simulation0001`；数据迁移使用 `schema_editor.connection.alias`，不得在迁移目标之外读取或初始化题库。财务职责授权模型更新后，要分别运行 `openfga_bootstrap --world-kind real|sim`，把输出的新 model ID 写入本地 `.env`，重建 Web 容器，再对两个 world 执行 tuple rebuild。model ID 属于本地部署配置，不写入公开文档。
+
 ## 本地依赖
 
 头像能力新增 Pillow、Magika、`django-storages` 和 boto3，随项目依赖一起安装。Pillow 负责完整解码与 WebP 重编码，Magika 负责内容类型识别，后两者用于 OCI Object Storage 的 S3 兼容接入；Magika 不替代图片解码或病毒扫描。
@@ -538,3 +542,25 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py t
 ## 仿真开发命令
 
 仿真 smoke、零起点推进、归档、废弃和后台重置流程集中维护在 [仿真开发命令](./simulation-commands.md)。
+### 报销附件与付款执行
+
+报销附件复用头像系统已经验证的私有 Django Storage/OCI S3 兼容配置，但使用独立的 `business_attachments` alias 和 `<world-id>/runtime/permanent-attachments/` 前缀。默认付款后端为：
+
+```env
+BIG_APPLE_FINANCE_PAYMENT_BACKEND=liveos_manual
+```
+
+当前只实现此内置后端；填写未知名称会使 Django system check 报错并拒绝付款。可用以下命令进行不泄密的存储探针和 dry-run 审计：
+
+```powershell
+python manage.py probe_business_attachment_storage --world-id simulation0001
+python manage.py audit_business_attachment_storage --world-id simulation0001 --verify-hash
+```
+
+真实闭环验收要求指定申请人、审核人、付款人和公开发布人四个不同成员，并由现有 OpenFGA 权限决定是否允许：
+
+```powershell
+python manage.py smoke_expense_reimbursement --world-id simulation0001 --claimant <member-no> --reviewer <member-no> --payer <member-no> --publisher <member-no>
+```
+
+该流程完全由 Live OS 内置实现。未来只允许按能力替换付款执行后端，治理、审核、公开投影和档案不会迁移给外部系统。

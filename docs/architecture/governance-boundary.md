@@ -5,6 +5,10 @@ title: 治理交互模型边界
 
 # 治理交互模型边界
 
+## 执衡者资格门槛
+
+只有当前有效守约者可以开始考试；已有有效执衡者任期、停用账号或停用成员均被拒绝。通过考试只授予执衡者任期，不授予典守者或任何财务职责。执衡者可参与守约者准入表决，但新成员准入完成后仍需通过独立任命取得财务审核职责。
+
 本文用于约束任务、申诉、角色任命、提案、积分流水和统一事件账本之间的关系，避免把所有交互都塞进一个万能模型。
 
 ## 核心原则
@@ -101,6 +105,8 @@ Member -> active RoleAssignment -> RolePermission -> Permission
 ```
 
 运行时授权由 `AuthorizationService` 统一执行。Django 的 `Member`、`RoleAssignment`、`RolePermission` 和 `Permission` 仍是权威事实来源；OpenFGA 是这些事实的授权计算投影。启用 OpenFGA 后，完整成员工作台、维护权限、财务权限和资源级权限都必须通过 OpenFGA check 得出结论，不能在页面、API 或后台任务中重新拼接角色表查询。
+
+财务审核者不是由准入流程派生的身份。提名、表决、执行分别保留角色维护责任人、执衡者投票责任人和执行责任人，最终 `RoleAssignment` 关联来源提案与执行记录。财务审核者只取得 `finance.review` 和审核所需私有材料查看能力，不因此取得付款或公开附件发布能力。
 
 资源级权限需要区分两种问题：`resource=None` 只回答“成员是否在任一范围拥有该权限”；传入具体 `Resource` 时才回答“成员是否能对这个资源执行该权限”。OpenFGA tuple rebuild 会把全局 `RolePermission` 投影为全局资源授权，把 `constraints_json.resource_id` / `resource_ids` 投影为具体资源授权；资源级入口不能用 `resource=None` 的结果替代具体对象判断。
 

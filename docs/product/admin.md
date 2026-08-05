@@ -5,6 +5,10 @@ title: Admin 内部维护后台
 
 # Admin 内部维护后台
 
+## 执衡者题库
+
+题库和考试政策由具备 `governance.manage_deliberator_exam` 的典守者维护。题目先保存为草稿再发布；已发布题目不可原地修改，可复制为下一版本草稿，发布新版本时旧版本停用。考试尝试、作答和结果在 Admin 中只读，禁止后台改分或直接创建任期。
+
 > 当前边界：`bigadmin.local/admin/` 是唯一 control 后台，承载底层、危险、会造成严重后果或需要兜底维护的操作。真实世界和仿真世界 runtime 不暴露 `/admin/`，也不再暴露 `/live-admin/`；成员侧统一使用 `/workspace/`。
 
 ## 定位
@@ -128,6 +132,7 @@ python manage.py seed_demo --world-id realworld
 - `finance.review`
 - `finance.pay`
 - `finance.view_private`
+- `finance.publish_public_attachments`
 
 初始化基础权限、组织和角色：
 
@@ -167,7 +172,7 @@ Admin 中的角色与权限查看入口：
 - OpenFGA model / store / tuple 不是新的事实来源。若授权数据异常，应以 Django 权威数据为准运行 `openfga_rebuild_tuples` 完整重建，而不是手工在 Playground 中长期维护 tuple。
 - `LedgerEntry` 是贡献积分业务流水，余额从 `posted` 流水汇总得到；冲正通过新的 `reversal` 流水表达，流水会关联到对应 `SystemEvent`，排序和审计顺序使用 `SystemEvent.seq`。
 - `Task` 列表会显示来源类型，支持区分直接运营创建、提案执行、计划派生、仿真产生或系统规则产生的任务；由提案执行产生的任务会关联来源提案和执行记录。
-- `ExpenseClaim`、`FinanceReview` 和 `FinanceTransaction` 是公开财务流程的底层记录。Admin 只读查看；提交、审核、付款和撤回必须走 workspace 财务页面或 `core.finance_services`，权限来自 `finance.review` / `finance.pay` 等 RolePermission。
+- `ExpenseClaim`、`FinanceReview` 和 `FinanceTransaction` 是公开财务流程的底层记录。Admin 只读查看；提交、审核、付款和撤回必须走 workspace 财务页面或 `core.finance_services`，权限来自 `finance.review` / `finance.pay` 等 RolePermission；公开副本发布只接受独立的 `finance.publish_public_attachments` 权限。
 - `SystemEvent` 是统一只读事件账本，在 Admin 中只能查看 `seq`、事件类型、聚合对象（含内部 `aggregate_id`）、行为人、行为角色任命、发生时间和短 hash。observer 公开页面使用 `subject_ref`（取自 `payload_json.subject.ref`）作为审计对象标识，不展示内部 `aggregate_id`。
 
 ## P1 强化范围
@@ -228,3 +233,6 @@ live_os.api.tasks
 - `grant_maintainer` 只授予 `Member` 的典守者任命，不会修改 `is_staff` 或 `is_superuser`。真实和仿真 world 不暴露 `/admin/`，所以业务维护账号不需要 `is_staff=True`。
 - `core.access.user_has_governance_permission()` 的主路径是 `User -> Member -> AuthorizationService -> OpenFGA`。典守者应被授予典守者职责或其他绑定了 `governance.*` 权限的职责，并确保目标 world 的 OpenFGA tuple 已重建。财务审核和付款同理只看 `finance.*` 授权，不看 Django staff/superuser。
 - 当前 Django Admin 的模型增删改查权限仍主要依赖 Django model permissions；这意味着普通 staff 不会自动拥有所有模型权限，但精细到 `governance.*` 业务权限的 Admin 对象级控制仍是后续工作。
+### 财务附件与付款执行
+
+`Attachment`、`ExpenseClaimAttachment` 和 `PaymentExecution` 在 Django Admin 中只读展示，用于技术审计和故障排查。Admin 不允许新增、编辑或删除这些权威记录；上传、更正、公开副本发布和付款确认必须通过 workspace 领域服务完成。

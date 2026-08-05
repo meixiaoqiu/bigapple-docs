@@ -5,6 +5,10 @@ title: 数据库表结构
 
 # 数据库表结构
 
+## 执衡者资格考试
+
+执衡者不再通过直接申请服务取得任期。`DeliberatorExamPolicy` 保存版本化抽题数和及格线，`DeliberatorExamQuestion` 保存版本化单选题及仅服务端可见的答案，`DeliberatorExamAttempt` 保存不可变题目快照、作答、评分结果和成功产生的任期。发布新题目版本不会改变历史答卷；考试通过与一年期 `RoleAssignment` 在同一事务中完成。三类记录都属于当前 world 数据库，不写入 control DB。
+
 本文档描述当前 Live OS 数据表。任何 model 或 migration 变化，都必须同步更新本文档。
 
 当前物理数据库由 `DATABASE_URL` 或本地 env 文件配置：
@@ -186,6 +190,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `finance.review` | 允许审核成员提交的报销申请。 |
 | `finance.pay` | 允许将已批准报销标记为已付款并生成财务流水。 |
 | `finance.view_private` | 预留权限：允许查看非公开财务凭证或隐私材料。 |
+| `finance.publish_public_attachments` | 允许从私有财务原件发布独立的公开脱敏副本；不由审核、付款或私有查看权限隐含授予。 |
 
 初始化命令会创建或复用典守者及财务权限所需的目录项，并通过 `core_role_permission` 绑定明确能力。它不会自动批量授权成员；需要维护或财务权限的成员必须通过规范任命或专业资格流程获得相应授权。
 
@@ -970,6 +975,33 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `created_at` | datetime | 是 | 创建时间。 |
 
 付款必须通过 `core.finance_services.mark_expense_claim_paid()`。记录人必须拥有 `finance.pay` 权限，不能给自己的报销标记付款；只有 `approved` 报销可以付款。`FinanceTransaction` 不允许修改历史记录，错误应通过后续 `correction` 流水表达。付款会写普通公开 `Event` 和 `expense_claim_paid` 统一事件。
+
+## core_attachment
+
+正式业务附件的不可变元数据。私有原件、公开脱敏副本和更正版本都是独立记录和独立对象；头像不进入本表。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `attachment_id` | string unique | 是 | 稳定附件 ID。 |
+| `object_key` | string unique | 是 | 私有对象存储中的随机 key，不对页面公开。 |
+| `detected_media_type` | string | 是 | 服务端真实内容识别结果。 |
+| `display_filename` | string | 是 | 仅供授权私有下载使用的安全文件名。 |
+| `byte_size` | integer | 是 | 原件字节数。 |
+| `sha256` | string | 是 | 原件 SHA-256。 |
+| `uploaded_by_id` | fk | 是 | 上传责任人。 |
+| `audience` | enum | 是 | `private` 或 `public`。 |
+| `lifecycle` | enum | 是 | `sealed`、`superseded` 或 `withdrawn`。 |
+| `source_attachment_id` | self fk | 否 | 公开副本对应的私有来源原件。 |
+| `supersedes_id` | self fk | 否 | 更正版本替代的旧附件。 |
+| `created_at` | datetime | 是 | 创建时间。 |
+
+## core_expenseclaimattachment
+
+报销与附件之间的真实外键关联，`purpose` 为 `expense_evidence`、`payment_evidence` 或 `public_material`。付款凭证可进一步关联 `PaymentExecution`。关联记录不可通过 Admin 或普通保存原地修改。
+
+## core_paymentexecution
+
+规范化付款执行结果。记录 `backend_type`、执行状态、付款日期、付款方式、付款确认人、内部备注、外部引用、同步状态、白名单结果快照及关联 `FinanceTransaction`。当前唯一启用后端为 `liveos_manual`；记录不可修改，外部系统不可取代本表及 Live OS 事件账本成为历史权威来源。
 
 ## core_event
 

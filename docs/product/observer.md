@@ -102,7 +102,7 @@ title: 公开首页
 - 报销提交、审核和付款同时写 `core_system_event` 哈希链，便于后续在事件详情中验证顺序和责任人。
 - 撤回报销只写普通公开 `Event`，不写新的 `SystemEvent`。
 - 公开页不展示联系方式、User.id、Member.id、内部 pk 或私密凭证材料；只展示标题、金额、币种、类别、状态、申请人/审核人/付款人的公开名称和公开说明。
-- 财务角色来自 RoleAssignment / RolePermission。`finance.review` 成员负责审核，`finance.pay` 成员负责记录付款；申请人不能自审或自付。
+- 财务角色来自 RoleAssignment / RolePermission。`finance.review` 成员负责审核，`finance.pay` 成员负责记录付款，`finance.publish_public_attachments` 成员负责发布独立脱敏副本；三项能力互不隐含，申请人不能自审或自付。
 
 ## 成员报名事项页
 
@@ -288,3 +288,6 @@ http://127.0.0.1:20101/
 ```bash
 python manage.py test observer --settings=live_os.test_settings
 ```
+### 报销凭证与公开材料
+
+`/finance/` 公开展示报销用途、金额、支出日期、收款方公开名称、申请人、审核结果、付款状态、允许公开的说明和时间线。私有发票、消费记录和付款凭证不进入页面上下文；只有由具备 `finance.publish_public_attachments` 独立权限的成员另行保存并确认发布的脱敏公开副本具有下载入口。公开下载继续经过 Live OS 受控路由，不暴露对象存储地址。

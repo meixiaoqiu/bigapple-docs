@@ -5,6 +5,8 @@ title: 架构说明
 
 # 架构说明
 
+执衡者资格由 world 内部的题库考试产生：有效守约者在成员工作台参加随机组卷的服务端考试，通过后原子获得一年任期。典守者以独立业务权限 `governance.manage_deliberator_exam` 维护题库和政策；Django staff/superuser 标记本身不构成该权限。
+
 ## 目标
 
 Big Apple Live OS 是社区运行的权威系统。
@@ -157,7 +159,7 @@ Task / Resource / Event / CapacityAssessment
 
 对象存储通过 Django Storage 抽象接入。当前生产目标是 OCI Object Storage 的 S3 兼容接口，终极形态可以替换为园区内网兼容后端而不改变成员资料或页面语义。真实 world、仿真 world、临时对象、当前头像和未来永久附件必须使用不可混淆的 bucket/prefix 边界。
 
-头像只表达当前展示状态，成功替换后旧对象可以删除。未来报销凭证、提案资料、任务交付物等进入审计记录的附件不得直接复用头像删除生命周期：它们应增加独立 `AttachmentCollection` / `Attachment` 权威模型、真实业务外键、只追加更正版本、冻结/密封/归档和只读永久对象审计。两类对象只复用内容识别、图片处理、哈希、随机 key 和 Storage 写入原语。
+头像只表达当前展示状态，成功替换后旧对象可以删除。报销凭证等进入审计记录的文件不得直接复用头像删除生命周期：当前使用独立 `Attachment` 权威模型和 `ExpenseClaimAttachment` 真实业务外键，公开副本与更正版本只追加，密封记录在 Admin 中只读。未来提案资料、任务交付物应继续采用同样的真实领域外键，而不是引入缺少完整性约束的万能关联。两类对象只复用内容识别、图片处理、哈希、随机 key 和 Storage 写入原语。
 
 Live OS 对以下数据拥有权威：
 
@@ -306,10 +308,18 @@ Credential    → 公开事实证明（非权限来源）
 - `FinanceReview` 记录财务审核决定。审核人必须拥有 `finance.review` 权限，并且不能审核自己的报销；拒绝必须填写理由。
 - `FinanceTransaction` 是只追加财务流水。标记付款的人必须拥有 `finance.pay` 权限，并且不能给自己的报销标记付款。
 - 财务角色由 `ensure_finance_roles()` 幂等创建，属于 `大苹果财务组`，运行时权限仍通过 `AuthorizationService` / OpenFGA 判断；OpenFGA tuple 来自 `Member -> active RoleAssignment -> RolePermission -> Permission` 权威事实投影。
+- 财务审核职责通过成员工作台的角色任命提案产生：具备 `governance.manage_roles` 的典守者提名当前守约者，合格执衡者按选民规则表决，通过后再由有权典守者执行。守约者准入和执衡者考试都不会自动授予财务权限。
+- OpenFGA 对规范财务角色投影 `assignee -> role -> guarded permission`；`guarded_permission` 要求持有人仍是当前守约者且未被冻结。只有 `大苹果财务组` 中三个基线财务角色会进入投影，其他组织的同名角色失败关闭。
 - 任何带 `finance.*` permission 的角色都属于高信任角色，授予前要求目标成员已经拥有 `ROLE_COVENANTER`。
 - 报销提交、审核和付款会写普通公开 `Event`，进入首页、事件流和 `/finance/` 公开财务页；同时写入 `SystemEvent` 哈希链，便于审计证明。
 - 撤回报销只写普通公开 `Event`，不写新的 `SystemEvent` 哈希链记录。
 - 公开页面只展示业务摘要、金额、状态、申请人/审核人/付款人公开名称和可公开说明，不展示内部 pk、User.id、Member.id、联系方式或私密凭证材料。
+
+报销现已使用正式业务附件，而不是头像生命周期。`Attachment` 保存私有原件或独立公开副本的不可变对象事实，`ExpenseClaimAttachment` 通过真实外键把支出凭证、付款凭证和公开材料关联到报销。已提交原件不能静默覆盖；更正会新增附件并保留来源关系。公开材料必须另存为经过人工确认的脱敏副本，不能通过切换私有原件的公开开关直接发布；发布动作要求独立 `finance.publish_public_attachments` 权限，审核、付款或私有查看权限均不自动获得该能力。对象先于数据库引用写入时，附件服务和报销/付款外层事务都会按本批次对象 key 执行失败补偿，避免数据库回滚后遗留孤儿对象。
+
+付款执行通过窄 `FinancePaymentBackend` 边界完成。当前默认且完整的实现是 `LiveOSManualPaymentBackend`：财务人员在线下实际付款后，在 Live OS 填写付款日期、方式、凭证和备注。将来可以只替换付款执行后端，但报销理由、审核责任、权限、公开投影、统一事件和永久档案始终由 Live OS 掌握；当前没有提供 ERPNext、飞书、钉钉或银行后端的虚假配置项。
+
+当前变更只涉及 Django 页面与内部权威模型，未增加或修改公共 API、schema 或 payload，因此 `static/technical-contracts/` 无需变更。
 
 
 
