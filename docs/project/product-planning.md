@@ -1,9 +1,9 @@
 ---
 sidebar_position: 2
-title: 产品规划
+title: Live OS 产品规划
 ---
 
-# 产品规划
+# Live OS 产品规划
 
 ## 总原则
 

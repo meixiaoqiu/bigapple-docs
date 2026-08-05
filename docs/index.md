@@ -17,7 +17,7 @@ import Link from '@docusaurus/Link';
 
 <div className="margin-top--md margin-bottom--md">
   <Link to="./project/overview" className="button button--primary button-sm">了解大苹果</Link>
-  <Link to="./project/roadmap" className="button button--link margin-left--sm">查看项目路线图 →</Link>
+  <Link to="./plan" className="button button--link margin-left--sm">查看建设计划 →</Link>
 </div>
 
 ---
@@ -100,7 +100,8 @@ import Link from '@docusaurus/Link';
 
 <div className="margin-top--md margin-bottom--md">
   <Link to="./project/overview" className="button button--primary button-sm">了解 Live OS</Link>
-  <Link to="./project/product-planning" className="button button--link margin-left--sm">查看产品规划 →</Link>
+  <Link to="./project/product-planning" className="button button--link margin-left--sm">Live OS 产品规划 →</Link>
+  <Link to="./project/roadmap" className="button button--link margin-left--sm">Live OS 产品路线图 →</Link>
   <Link to="./development/setup" className="button button--link margin-left--sm">开发者文档 →</Link>
 </div>
 
@@ -111,7 +112,7 @@ import Link from '@docusaurus/Link';
 大苹果不会一步跳到现实社区。它按六个阶段渐进推进：从理念与规则整理开始，经过成本与组织模型核算、软件与仿真验证，再到挑选并建设第一个正式据点，最后在验证有效后逐步扩展。
 
 :::tip[📖 了解更多]
-完整的六阶段路径、各阶段当前状态和前置条件见[项目路线图](./project/roadmap.md)。
+完整的建设路径和各阶段说明见[建设计划](./plan/index.md)。
 :::
 
 ## 📊 项目状态
@@ -121,7 +122,7 @@ import Link from '@docusaurus/Link';
 当前工作集中在规则整理、成本与组织模型研究、Live OS 开发、仿真准备和开放文档建设。
 
 <div className="margin-top--sm">
-  <Link to="./project/roadmap" className="button button--link button--sm">查看项目路线图</Link>
+  <Link to="./plan" className="button button--link button--sm">查看建设计划</Link>
   <Link to="/updates" className="button button--link button--sm margin-left--sm">阅读建设动态</Link>
 </div>
 
@@ -138,7 +139,9 @@ import Link from '@docusaurus/Link';
 
 ### 🔬 研究现实可行性
 
-- [产品路线图](./project/roadmap.md)——分阶段建设计划与完成标准
+- [建设计划](./plan/index.md)——社区从方案设计走向现实运行的整体路径
+- [Live OS 产品路线图](./project/roadmap.md)——软件系统分阶段开发计划
+- [Live OS 产品规划](./project/product-planning.md)——软件系统的中远期产品形态与角色
 - [治理文书](./governance-instruments/index.md)——章程、规则和制度草案
 - [技术契约](./technical-contracts/overview.md)——数据模型、接口和校验规则
 - 成本模型——即将上线

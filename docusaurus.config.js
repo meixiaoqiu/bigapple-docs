@@ -83,6 +83,12 @@ const config = {
           },
           {
             type: 'docSidebar',
+            sidebarId: 'planSidebar',
+            position: 'left',
+            label: '建设计划',
+          },
+          {
+            type: 'docSidebar',
             sidebarId: 'liveOsSidebar',
             position: 'left',
             label: 'Live OS',

@@ -23,6 +23,11 @@ const sidebars = {
     },
   ],
 
+  // ── 建设计划专用侧边栏 ──────────────────────────────
+  planSidebar: [
+    'plan/index',
+  ],
+
   // ── Live OS 专用侧边栏 ──────────────────────────────
   liveOsSidebar: [
     'development/page-guide-inventory',
@@ -67,7 +72,11 @@ const sidebars = {
       ],
     },
     'project/overview',
-    'project/roadmap',
+    {
+      type: 'doc',
+      id: 'project/roadmap',
+      label: 'Live OS 产品路线图',
+    },
     {
       type: 'category',
       label: '系统架构',
@@ -82,7 +91,11 @@ const sidebars = {
       type: 'category',
       label: '产品规格',
       items: [
-        'project/product-planning',
+        {
+          type: 'doc',
+          id: 'project/product-planning',
+          label: 'Live OS 产品规划',
+        },
         'product/member-workspace',
         'product/observer',
         'product/admin',
