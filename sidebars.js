@@ -25,7 +25,16 @@ const sidebars = {
 
   // ── 建设计划专用侧边栏 ──────────────────────────────
   planSidebar: [
-    'plan/index',
+    {
+      type: 'doc',
+      id: 'plan/index',
+      label: '建设计划',
+    },
+    {
+      type: 'doc',
+      id: 'plan/company-formation',
+      label: '公司设立计划',
+    },
   ],
 
   // ── Live OS 专用侧边栏 ──────────────────────────────
