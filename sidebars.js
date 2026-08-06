@@ -35,6 +35,11 @@ const sidebars = {
       id: 'plan/company-formation',
       label: '公司设立计划',
     },
+    {
+      type: 'doc',
+      id: 'plan/first-campus',
+      label: '首个园区分期建设方案',
+    },
   ],
 
   // ── Live OS 专用侧边栏 ──────────────────────────────

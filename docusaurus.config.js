@@ -61,7 +61,9 @@ const config = {
             title: '大苹果社区建设动态',
           },
         },
-        theme: {},
+        theme: {
+          customCss: require.resolve('./src/css/custom.css'),
+        },
       }),
     ],
   ],
@@ -103,6 +105,12 @@ const config = {
             to: '/updates',
             position: 'left',
             label: '建设动态',
+          },
+          {
+            href: 'https://github.com/meixiaoqiu/bigapple-liveos',
+            position: 'right',
+            className: 'header-github-link',
+            'aria-label': 'GitHub repository',
           },
           {
             type: 'docsVersionDropdown',
