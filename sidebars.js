@@ -40,6 +40,16 @@ const sidebars = {
       id: 'plan/first-campus',
       label: '首个园区分期建设方案',
     },
+    {
+      type: 'doc',
+      id: 'plan/cost-estimate',
+      label: '建设成本测算报告',
+    },
+    {
+      type: 'doc',
+      id: 'plan/site-due-diligence',
+      label: '候选场地尽调与签约准入标准',
+    },
   ],
 
   // ── Live OS 专用侧边栏 ──────────────────────────────
