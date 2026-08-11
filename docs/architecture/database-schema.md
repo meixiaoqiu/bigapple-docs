@@ -213,6 +213,21 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 
 新增记录会追加一次 `role_assigned` 统一事件；状态从 `active` 变为 `revoked` 时追加一次 `role_revoked` 统一事件。普通字段编辑不会重复追加任命或卸任事件。事件 payload 会包含 `source_type`、`source_proposal_id` 和 `source_proposal_execution_id`，用于区分直接任命、本人申请、提案执行、初始化或系统规则产生的任命。执衡者只能由有效守约者本人申请，任期为一年且不会自动续任；管理员任命不自动创建执衡者任期。
 
+## core_deliberator_exam_policy
+
+执衡者资格考试的版本化抽题与及格政策。每个 world 至多有一项 `active` 政策；该规则通过 MySQL 可执行的唯一槽位实现，不依赖数据库可能忽略的条件唯一索引。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `policy_id` | string unique | 是 | 稳定政策 ID。 |
+| `version` | positive integer unique | 是 | 政策版本。 |
+| `question_count` | positive integer | 是 | 每次考试抽取题数。 |
+| `passing_percent` | positive integer | 是 | 及格百分比，范围为 1–100。 |
+| `status` | enum string | 是 | `draft`、`active`、`retired`。 |
+| `active_slot` | positive integer unique | 否 | 仅 `active` 政策固定为 `1`，其他状态必须为空；数据库据此保证单一当前政策。 |
+| `published_by_id` / `published_at` | fk / datetime | 否 | 发布责任人与时间。 |
+| `created_at` / `updated_at` | datetime | 是 | 创建与更新时间。 |
+
 ## core_professional_domain
 
 专业事务可引用的专业领域目录。领域代码是稳定标识，只有启用状态的领域可以用于新的专业事务提案。
@@ -376,6 +391,8 @@ v2（当前规范，schema = `liveos.system-event.public.v1`）：
 `AuthorizationService` 是当前运行时权限判断入口。Django 的 `Member`、`RoleAssignment`、`RolePermission`、`Permission` 仍是权威事实来源；OpenFGA 是授权计算引擎。正常 runtime 使用 OpenFGA check 回答“某成员能否执行某操作”，不能在 view、API、后台任务或业务 service 中重新拼接角色表查询。
 
 OpenFGA tuple 由 `openfga_rebuild_tuples` 从 Django 权威数据完整重建。投影时只纳入 active 成员、active 角色、active 且仍在任期内的 `RoleAssignment`，并保留 `SUSPENDED` / `EXITED` 成员 veto。`governance.*` 和 `finance.*` 这类高信任权限会投影为 guarded permission，必须同时满足守约者资格、未冻结和具体角色权限。
+
+角色任命增量投影同样遵守任期生命周期：未来任命不会提前写入，撤销在权威事务提交后删除对应 tuple；自然到期或成员/前置资格失效时，`AuthorizationService` 先按 Django 当前事实否决，再惰性删除陈旧 tuple。因此 OpenFGA 中的历史陈旧关系不能恢复已经失效的权限；删除失败时授权仍失败关闭，并可通过 `openfga_rebuild_tuples` 完整修复投影。
 
 `core.access.user_has_governance_permission(user, permission_code, resource=None, at_time=None)` 是治理入口函数。它根据用户关联的 `Member` 调用 `AuthorizationService`；没有绑定 `governance.*` 权限的基础角色不能进入治理入口。财务入口同理通过 `is_finance_reviewer()` / `is_finance_payer()` 进入 `AuthorizationService`，不使用 Django `is_staff` / `is_superuser`。
 
