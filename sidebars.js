@@ -11,8 +11,11 @@ const sidebars = {
       link: {type: 'doc', id: 'terminology/index'},
       items: [
         'terminology/big-apple-community',
+        'terminology/contribution-points',
+        'terminology/contributor',
         'terminology/free-living',
         'terminology/covenant-keeper',
+        'terminology/deliberator',
       ],
     },
     {

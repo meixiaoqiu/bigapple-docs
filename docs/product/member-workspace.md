@@ -105,6 +105,15 @@ GET  /u/<member_no>/avatar/
 
 公开资料页（`/workspace/profile/`）的"我的凭证"区域展示当前成员的 Credential Grant 列表（通过 `credentials_for_member()` 获取），如守约者编号 `#1`。凭证只读显示，用户不能编辑。凭证是公开事实/荣誉/资格证明，不是权限来源。
 
+### 执衡者资格考试
+
+```text
+GET/POST /workspace/deliberator-exam/
+GET/POST /workspace/deliberator-exam/<attempt_id>/
+```
+
+当前有效守约者且没有有效执衡者任期时，可以从工作台开始资格考试。系统按当前政策在服务端随机抽题、保存私有快照并评分；通过后立即创建一年期执衡者任期，未通过不创建任期。页面只展示本次题目、作答、得分、及格线和结果，不返回题库正确答案。
+
 ### 公开反馈
 
 注册用户可以通过 `/feedback/` 和 `/feedback/new/` 提交公开问题、建议、担忧、提案种子或其他反馈。反馈是公众参与层，不是正式治理提案，不直接改变系统权威状态。
@@ -126,6 +135,14 @@ POST /workspace/finance/claims/<claim_id>/withdraw/
 注册成员可以在 workspace 中提交自己的报销申请，并查看自己的报销状态。拥有 `finance.review` 或 `finance.pay` 权限的财务成员可以查看全部报销；普通成员不能查看他人的报销详情。
 
 财务审核和付款不是用户自助资料的一部分，必须由财务角色执行。申请人不能审核或付款自己的报销；拒绝报销必须填写理由。已批准并付款的记录会生成只追加 `FinanceTransaction` 流水，并进入 `/finance/` 公开财务页。
+
+### 财务审核职责任命
+
+```text
+GET/POST /workspace/finance/reviewer-appointments/
+```
+
+该页面展示当前有效财务审核员、合格候选人和开放任命提案。具有 `governance.manage_roles` 的成员可以提名有效守约者并执行已通过提案；符合选民快照且当前仍具有守约者资格和执衡者任期的成员可以投票。执行只授予财务审核及查看审核材料所需权限，不授予付款或公开附件发布能力。
 
 ### 积分功能（守约者 + 管理员）
 

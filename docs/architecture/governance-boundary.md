@@ -86,13 +86,13 @@ title: 治理交互模型边界
 角色任命可以来自：
 
 - 直接任命：管理员通过服务直接创建。
-- 本人申请：有效守约者可立即创建一年期执衡者任命，无需审核。
+- 本人申请：有效守约者参加并通过服务端评分的资格考试后，可立即创建一年期执衡者任命，无需人工审核。
 - 提案执行：`role_appointment` 提案通过后执行，创建 `RoleAssignment`。
 - 初始化：bootstrap 或维护权限初始化命令创建必要任命。
 
 `RoleAssignment.source_type`、`source_proposal` 和 `source_proposal_execution` 用于记录任命来源。直接任命、本人申请、提案执行和初始化最终都会落到同一张 `RoleAssignment` 表，避免保留多套平行任命结构。
 
-**创建约束**：所有 RoleAssignment 必须通过 `core.role_assignment_services.create_role_assignment()` 创建。执衡者和管理员以及带 `governance.*` / `finance.*` permission 的职责都要求有效守约者资格；`SUSPENDED`/`EXITED` 成员拒绝一切新职责。执衡者本人申请使用专用服务，任期一年且不会自动续任。Django Admin 中的 RoleAssignment 已设为只读，禁止手工创建或修改。
+**创建约束**：所有 RoleAssignment 必须通过 `core.role_assignment_services.create_role_assignment()` 创建。执衡者和管理员以及带 `governance.*` / `finance.*` permission 的职责都要求有效守约者资格；`SUSPENDED`/`EXITED` 成员拒绝一切新职责。执衡者任期只能由服务端确认资格考试通过后创建，任期一年且不会自动续任；题目、政策、作答与结果保留可审计快照。Django Admin 中的 RoleAssignment 已设为只读，禁止手工创建或修改。
 
 无论来源是什么，最终权限判断仍走：
 
@@ -173,6 +173,7 @@ ExpenseClaim -> FinanceReview -> FinanceTransaction -> Event/SystemEvent
 - 审核决定由 `FinanceReview` 承载，审核人必须拥有 `finance.review`，不能自审；拒绝必须填写理由。
 - 付款流水由只追加的 `FinanceTransaction` 承载，记录人必须拥有 `finance.pay`，不能自付；历史流水不能修改，只能后续用冲正类流水表达更正。
 - 财务角色由 `ensure_finance_roles()` 初始化，并通过 RoleAssignment 授予。`finance.*` 权限角色和 `governance.*` 权限角色一样，需要目标成员先具备 `ROLE_COVENANTER`。
+- 财务审核职责通过 `role_appointment` 提案完成提名、执衡者表决和执行；守约者准入、执衡者考试和管理员任命都不会隐式授予财务职责。提名和执行要求 `governance.manage_roles`，执行只授予 `finance.review` 及审核所需私有材料查看能力，不附带付款或公开附件发布权限。
 - 报销流程本身不要求 Proposal；只有高影响预算、异常争议、财务规则变更或需要共同授权的情况，才应升级为 Proposal。
 
 ### 统一事件账本

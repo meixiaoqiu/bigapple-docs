@@ -250,13 +250,13 @@ OPENFGA_AUTHORIZATION_MODEL_SHA256=
 创建或复用 realworld store，并写入当前授权模型：
 
 ```powershell
-docker compose -f docker-compose.dev.yml run --rm --no-deps big-apple-admin python manage.py openfga_bootstrap --world-kind real --api-url http://openfga-real:8080
+docker compose -f docker-compose.dev.yml run --interactive=false --rm --no-deps big-apple-admin python manage.py openfga_bootstrap --world-kind real --api-url http://openfga-real:8080
 ```
 
 创建或复用 simulation0001 store，并写入当前授权模型：
 
 ```powershell
-docker compose -f docker-compose.dev.yml run --rm --no-deps big-apple-admin python manage.py openfga_bootstrap --world-kind sim --api-url http://openfga-sim:8082
+docker compose -f docker-compose.dev.yml run --interactive=false --rm --no-deps big-apple-admin python manage.py openfga_bootstrap --world-kind sim --api-url http://openfga-sim:8082
 ```
 
 命令只操作 OpenFGA，不修改宿主机 `.env`。每条命令都会输出可复制的配置，例如：
@@ -446,7 +446,7 @@ http://127.0.0.1:20108/playground/  # simulation OpenFGA Playground
 
 产品边界说明：
 
-- 成员工作台、成员报名、招募方向、公开资料和报销入口见 [成员工作台](../product/member-workspace.md)。
+- 成员工作台、成员报名、执衡者资格考试、财务审核职责任命、招募方向、公开资料和报销入口见 [成员工作台](../product/member-workspace.md)。
 - 公开首页、事件流、公开反馈、公开财务和仿真档案馆见 [公开首页](../product/observer.md)。
 - Control 后台职责见 [Admin 内部维护后台](../product/admin.md)。
 - 仿真推进和实验后台职责见 [仿真与实验后台](../product/simulation.md)。

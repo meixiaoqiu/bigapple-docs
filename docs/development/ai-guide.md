@@ -19,7 +19,7 @@ title: AI 开发指南
 - **任何 Credential / NFT / Badge 相关功能不得绕过 AuthorizationService。** Django 的权限事实路径是 `Member → active RoleAssignment → RolePermission → Permission`，运行时必须通过 `AuthorizationService` / OpenFGA 计算授权。不得出现 `has_credential`、`has_nft`、`has_badge` 等直接授权路径。
 - **CredentialTemplate.metadata.recruitment 只影响报名页展示，不授予 Role 或 Credential。** 通过 `/workspace/apply/` 提交的申请方向来自 recruitment 配置，但申请通过后不会自动发放对应 Credential 或 Role。管理员可以通过 `/workspace/recruitment/` 维护招募配置，包括新增受限模板（certificate / public / active）。不要把这个页面当成完整 CredentialTemplate 管理器——它只能创建 recruitment template，不允许删除、不允许改 credential_type / visibility / status。
 - **注册与报名拆分后**：注册只创建 User 与 Member；已注册但没有当前有效守约者资格的参与状态是贡献者，不创建同名角色。守约者资格、执衡者职责和管理员职责只通过 RoleAssignment 表表达，Member 不保存角色字段。
-- **角色与权限制度**：可直接记录的角色只有守约者、执衡者和管理员；贡献者是派生状态。执衡者由有效守约者本人申请，任期一年且不自动续任；管理员不自动取得投票权，仅参与管理事务表决。提案引用受类型约束的版本化选民规则：社区共议可包含贡献者，守约事务要求守约者和执衡者，专业事务再要求对应专业资格，管理事务只选择管理员。
+- **角色与权限制度**：可直接记录的角色只有守约者、执衡者和管理员；贡献者是派生状态。执衡者由有效守约者参加并通过服务端评分的资格考试后取得，任期一年且不自动续任；管理员不自动取得投票权，仅参与管理事务表决。提案引用受类型约束的版本化选民规则：社区共议可包含贡献者，守约事务要求守约者和执衡者，专业事务再要求对应专业资格，管理事务只选择管理员。
 - **文档语言**：项目文档和 OpenSpec 规划产物的说明性内容必须使用中文。仅代码、命令、文件路径、API、schema、payload、变量名、类名、函数名、协议名、产品名、OpenSpec 结构关键字和无法准确翻译的专业术语可保留原文。
 - **不要用 Member.status 判断守约者权限**：完整 workspace 和 `/workspace/apply/` 的"已是守约者"判断必须基于 active `ROLE_COVENANTER`（`SUSPENDED` / `EXITED` 可 veto）。`Member.status` 只作为生命周发展示字段。
 - **对象级权限必须传入对象上下文**：需要判断某个成员能否操作具体 `Resource` 时，必须通过 `AuthorizationService.member_has_permission(member, code, resource=resource)`。`resource=None` 只表示“是否在任一资源范围拥有该权限”，不能替代具体资源授权判断；OpenFGA rebuild 会根据 `RolePermission.constraints_json.resource_id` / `resource_ids` 投影具体资源授权。
@@ -29,6 +29,7 @@ title: AI 开发指南
 - **注册与报名分离**：`/register/` 只创建 User + Member，不写公开 Event、不创建 MemberApplication。`/workspace/apply/` 是登录后的守约者报名入口，属于 workspace 子功能。
 - **公开反馈不是治理提案**：`CommunityFeedback` 只用于注册用户公开提问、建议、担忧或倡议。它不得直接改变权威状态，不得授予权限，不得替代 Proposal；如需正式行动，必须转入 Proposal 或对应领域服务。Feedback 不写 `SystemEvent` 哈希链，只按规则写普通公开 `Event`；隐藏反馈必须撤下既有公开 Event，避免放大违规内容。
 - **公开财务不是第二套治理权限系统**：报销、审核和付款必须通过 `core.finance_services`，权限只看 `finance.review` / `finance.pay` / `finance.view_private` 这类 RolePermission。财务角色属于高信任角色，授予前同样要求目标成员已经是 `ROLE_COVENANTER`，并禁止申请人自审或自付。
+- **财务职责必须独立任命**：守约者准入、执衡者考试和管理员任命不得隐式授予财务职责。财务审核职责必须经过 `role_appointment` 提名、执衡者表决和执行；提名/执行要求 `governance.manage_roles`，审核、付款和公开附件发布权限不得捆绑授予。
 
 ## 修改代码前
 

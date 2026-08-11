@@ -268,6 +268,7 @@ Credential    → 公开事实证明（非权限来源）
    **当前落地**：`/register/` 只创建 User 与 Member，`/workspace/apply/` 处理登录后的守约者报名。守约者资格、执衡者职责和管理员职责分别由 `ROLE_COVENANTER`、`ROLE_DELIBERATOR` 和 `ROLE_MAINTAINER` 的当前有效 RoleAssignment 表达；贡献者是派生状态。完整成员工作台主授权通过 `AuthorizationService` 查询 OpenFGA 的 `covenanter` 关系；OpenFGA tuple 来自 Django 权威数据投影，并保留 `SUSPENDED`/`EXITED` veto。`Member.status` 不作为权限来源。
    **资源级权限**：`member_has_permission(member, code, resource=None)` 只表示成员是否在任一范围拥有该权限；带具体 `Resource` 时才检查全局资源授权或该资源的 scoped 授权。`RolePermission.constraints_json.resource_id` / `resource_ids` 会在 OpenFGA rebuild 时投影为具体资源 permission object，不能用无资源上下文的结果替代对象级判断。
    **职责前置条件**：执衡者、管理员以及任何带 `governance.*` 或 `finance.*` permission 的职责，都要求目标成员已拥有当前有效的 `ROLE_COVENANTER`。`SUSPENDED` / `EXITED` 成员不能获得新职责。普通授予统一调用 `create_role_assignment()`；首次系统初始化使用 `bootstrap_initial_maintainer()` 在事务内建立守约者资格和管理员职责。管理员不会自动获得执衡者任期或投票权。RoleAssignment Admin 只读，禁止手工创建或修改。
+   **执衡者考试**：有效守约者从 `/workspace/deliberator-exam/` 开始考试。题目由服务端按当前政策随机抽取并形成不可变快照，服务端评分达到及格线后，在同一事务中记录结果并创建一年期执衡者任期。典守者通过明确的题库维护权限管理题目版本和考试政策，Django staff/superuser 标记本身不授予维护权。
 
 ### 注册与报名的拆分展望
 
@@ -307,6 +308,8 @@ Credential    → 公开事实证明（非权限来源）
 - `FinanceTransaction` 是只追加财务流水。标记付款的人必须拥有 `finance.pay` 权限，并且不能给自己的报销标记付款。
 - 财务角色由 `ensure_finance_roles()` 幂等创建，属于 `大苹果财务组`，运行时权限仍通过 `AuthorizationService` / OpenFGA 判断；OpenFGA tuple 来自 `Member -> active RoleAssignment -> RolePermission -> Permission` 权威事实投影。
 - 任何带 `finance.*` permission 的角色都属于高信任角色，授予前要求目标成员已经拥有 `ROLE_COVENANTER`。
+- 财务审核职责从 `/workspace/finance/reviewer-appointments/` 发起提名，复用 `role_appointment Proposal -> ProposalVote -> ProposalExecution -> RoleAssignment`。只有 `governance.manage_roles` 可以提名和执行，只有符合提案选民快照且当前仍有效的执衡者可以投票；任命不会附带 `finance.pay` 或 `finance.publish_public_attachments`。
+- OpenFGA 增量投影只写入当前有效任命；未来任命不提前投影，撤销在事务提交后删除 tuple，到期或前置资格失效时 Django 权威事实先否决授权并惰性清理陈旧 tuple。
 - 报销提交、审核和付款会写普通公开 `Event`，进入首页、事件流和 `/finance/` 公开财务页；同时写入 `SystemEvent` 哈希链，便于审计证明。
 - 撤回报销只写普通公开 `Event`，不写新的 `SystemEvent` 哈希链记录。
 - 公开页面只展示业务摘要、金额、状态、申请人/审核人/付款人公开名称和可公开说明，不展示内部 pk、User.id、Member.id、联系方式或私密凭证材料。

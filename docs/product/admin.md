@@ -61,6 +61,9 @@ python manage.py seed_demo --world-id realworld
 | 成员报名、合作方报名 | 查看公开报名入口提交的成员和合作方申请，兜底排障表单、审核状态和仿真来源。 | 禁止删除；首页隐藏，日常审核入口后续应归属 world-scoped 审核流程。 |
 | 组织、角色 | 维护组织结构和角色；权限作为角色能力在角色详情页维护。 | 禁止删除；提供搜索、筛选和外键自动补全。 |
 | 角色任命 | 查看成员当前和历史角色任命（只读）。 | 禁止新增、修改和删除；普通授予必须通过 `create_role_assignment()`，首次管理员初始化使用 `bootstrap_initial_maintainer()`，不能在 Admin 中手工创建。`grant_maintainer` 命令要求目标成员已拥有当前有效的 `ROLE_COVENANTER`，不会自动授予守约者资格或执衡者任期。 |
+| 执衡者考试题目 | 由具备题库维护权限的典守者创建草稿、发布新版本和停用题目。 | 已发布且被考试使用的内容不能覆盖历史；正确答案和解释属于内部评分资料。 |
+| 执衡者考试政策 | 发布每次抽题数量和及格百分比。 | 每个 world 至多一项生效政策；有效题目不足时拒绝发布或开始考试。 |
+| 执衡者考试尝试 | 查看成员考试快照、作答、评分结果和产生的角色任命。 | 只读审计；不得通过 Admin 修改分数、通过状态或补建任命。 |
 | 凭证模板 | 查看已注册的凭证模板（只读）。 | 禁止新增、修改和删除（`has_add_permission=False`、`has_change_permission(obj)=False`、`has_delete_permission=False`）。模板由 `ensure_builtin_credential_templates()` 幂等创建，不应在 Admin 中手工维护。 |
 | 凭证发放 | 查看已发放的凭证实例（只读）。 | 禁止新增和删除（`has_add_permission=False`、`has_delete_permission=False`）。所有字段只读，包括 `grant_id`、`template`、`member`、`serial_no`、`display_no`、`status` 等。凭证发放由 `issue_covenanter_number()` 或 `issue_credential()` service 完成。 |
 | 报销申请 | 查看成员提交的报销申请，兜底排障状态和公开说明。 | 禁止新增、修改和删除；真实提交、审核、付款和撤回应通过 workspace 财务页面或 `core.finance_services` 完成。 |

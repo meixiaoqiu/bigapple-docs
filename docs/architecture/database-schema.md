@@ -211,7 +211,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `created_at` | datetime | 是 | 创建时间。 |
 | `updated_at` | datetime | 是 | 更新时间。 |
 
-新增记录会追加一次 `role_assigned` 统一事件；状态从 `active` 变为 `revoked` 时追加一次 `role_revoked` 统一事件。普通字段编辑不会重复追加任命或卸任事件。事件 payload 会包含 `source_type`、`source_proposal_id` 和 `source_proposal_execution_id`，用于区分直接任命、本人申请、提案执行、初始化或系统规则产生的任命。执衡者只能由有效守约者本人申请，任期为一年且不会自动续任；管理员任命不自动创建执衡者任期。
+新增记录会追加一次 `role_assigned` 统一事件；状态从 `active` 变为 `revoked` 时追加一次 `role_revoked` 统一事件。普通字段编辑不会重复追加任命或卸任事件。事件 payload 会包含 `source_type`、`source_proposal_id` 和 `source_proposal_execution_id`，用于区分直接任命、本人申请、提案执行、初始化或系统规则产生的任命。执衡者只能由有效守约者本人参加并通过资格考试后取得，任期为一年且不会自动续任；管理员任命不自动创建执衡者任期。
 
 ## core_deliberator_exam_policy
 
@@ -227,6 +227,34 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `active_slot` | positive integer unique | 否 | 仅 `active` 政策固定为 `1`，其他状态必须为空；数据库据此保证单一当前政策。 |
 | `published_by_id` / `published_at` | fk / datetime | 否 | 发布责任人与时间。 |
 | `created_at` / `updated_at` | datetime | 是 | 创建与更新时间。 |
+
+## core_deliberator_exam_question
+
+版本化执衡者单选题库。已发布题目发生内容变化时创建新版本，既有考试继续使用尝试中的不可变快照。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `question_id` / `version` | string / integer | 是 | 稳定题目 ID 与版本，组合唯一。 |
+| `prompt` / `options_json` | text / json | 是 | 题干和至少两个唯一选项。 |
+| `correct_option_id` / `points` | string / integer | 是 | 仅供服务端评分的正确选项与分值。 |
+| `explanation` | text | 否 | 内部审计解释，不向普通考生公开。 |
+| `status` | enum string | 是 | `draft`、`published`、`retired`。 |
+| `created_by_id` / `published_by_id` / `published_at` | fk / fk / datetime | 否 | 维护与发布责任链。 |
+
+## core_deliberator_exam_attempt
+
+成员一次考试的私有、可审计快照与最终结果。正确答案只存在服务端快照中，普通成员视图不得返回评分秘密。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `attempt_id` | string unique | 是 | 稳定考试尝试 ID。 |
+| `member_id` / `policy_id` / `policy_version` | fk / fk / integer | 是 | 考生与开始考试时的政策事实。 |
+| `question_snapshot_json` | json | 是 | 题目、选项、正确答案和分值的不可变评分快照。 |
+| `answers_json` | json | 是 | 成员提交的本次作答。 |
+| `score` / `total_points` / `passing_score` | integer | 否/是/是 | 服务端计算结果与快照及格线。 |
+| `status` | enum string | 是 | `in_progress`、`passed`、`failed`、`invalidated`。 |
+| `role_assignment_id` | one-to-one fk | 否 | 通过考试产生的一年期执衡者任命。 |
+| `started_at` / `submitted_at` | datetime | 是/否 | 开始与最终提交时间。 |
 
 ## core_professional_domain
 
