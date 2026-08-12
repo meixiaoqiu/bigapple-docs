@@ -25,7 +25,7 @@
   "created_by": {
     "actor_id": "member-admin-0001",
     "actor_type": "human_member",
-    "display_name": "rules maintainer"
+    "display_name": "rules administrator"
   },
   "change_summary": "Initial v0.1 simulation ruleset."
 }

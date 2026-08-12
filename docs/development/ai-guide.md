@@ -24,7 +24,7 @@ title: AI 开发指南
 - **不要用 Member.status 判断守约者权限**：完整 workspace 和 `/workspace/apply/` 的"已是守约者"判断必须基于 active `ROLE_COVENANTER`（`SUSPENDED` / `EXITED` 可 veto）。`Member.status` 只作为生命周发展示字段。
 - **对象级权限必须传入对象上下文**：需要判断某个成员能否操作具体 `Resource` 时，必须通过 `AuthorizationService.member_has_permission(member, code, resource=resource)`。`resource=None` 只表示“是否在任一资源范围拥有该权限”，不能替代具体资源授权判断；OpenFGA rebuild 会根据 `RolePermission.constraints_json.resource_id` / `resource_ids` 投影具体资源授权。
 - **OpenFGA 不可用时失败关闭**：`BIG_APPLE_AUTHORIZATION_BACKEND=openfga` 时，store/model 缺失、OpenFGA 请求失败或 check 返回拒绝，都不能回退到直接查 Django 角色表放行。修复路径是恢复 OpenFGA 服务、更新 model、运行 `openfga_rebuild_tuples` 和 `openfga_authorization_probe`，不是在业务入口补临时 `if`。
-- **禁止直接创建 RoleAssignment**：普通角色授予必须通过 `core.role_assignment_services.create_role_assignment()`；首次管理员初始化使用 `bootstrap_initial_maintainer()`。RoleAssignment Admin 已设为只读，不能通过 Django Admin 手工新增或修改角色任命。
+- **禁止直接创建 RoleAssignment**：普通角色授予必须通过 `core.role_assignment_services.create_role_assignment()`；首次管理员初始化使用 `bootstrap_initial_administrator()`。RoleAssignment Admin 已设为只读，不能通过 Django Admin 手工新增或修改角色任命。
 - **职责前置条件**：授予执衡者、管理员或任何带 `governance.*` / `finance.*` permission 的职责前，目标成员必须已经拥有有效守约者资格。`SUSPENDED`/`EXITED` 成员拒绝一切新职责。
 - **注册与报名分离**：`/register/` 只创建 User + Member，不写公开 Event、不创建 MemberApplication。`/workspace/apply/` 是登录后的守约者报名入口，属于 workspace 子功能。
 - **公开反馈不是治理提案**：`CommunityFeedback` 只用于注册用户公开提问、建议、担忧或倡议。它不得直接改变权威状态，不得授予权限，不得替代 Proposal；如需正式行动，必须转入 Proposal 或对应领域服务。Feedback 不写 `SystemEvent` 哈希链，只按规则写普通公开 `Event`；隐藏反馈必须撤下既有公开 Event，避免放大违规内容。

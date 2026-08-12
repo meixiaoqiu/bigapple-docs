@@ -84,7 +84,7 @@ C3 默认要求：
 - `run_zero_start_simulation`：从当前基线推进虚拟小时，创建 `SimulationRun` / `SimulationTurn`，驱动虚拟主体通过真实表单报名。
 - `seed_world --template zero_start`：只写入 zero_start 种子数据，不清空已有数据。
 
-重置后目标 world 写入 zero_start 基线：一个初始发起人 + `ProjectPlan` + 已发布 `PlanRevision` + 完整生命周期 `PlanNode` 骨架（Z0-Z3 / A0-A2 / B0-B6 / C0-C5 / D0-D4，共 25+ 个节点），没有 `SimulationRun`、`SimulationTurn`、报名、提案推进痕迹。只有 Z0 是 `IN_PROGRESS`，其余节点均为 `PLANNED`。这些 `PlanNode` 是主线骨架，不是 `Task`、不是资源、不是真实成员池。启用 `BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_ENABLED=true` 时，初始发起人是配置的真实登录成员，不会额外创建 `founder-0001`。
+重置后目标 world 写入 zero_start 基线：一个初始发起人 + `ProjectPlan` + 已发布 `PlanRevision` + 完整生命周期 `PlanNode` 骨架（Z0-Z3 / A0-A2 / B0-B6 / C0-C5 / D0-D4，共 25+ 个节点），没有 `SimulationRun`、`SimulationTurn`、报名、提案推进痕迹。只有 Z0 是 `IN_PROGRESS`，其余节点均为 `PLANNED`。这些 `PlanNode` 是主线骨架，不是 `Task`、不是资源、不是真实成员池。启用 `BIG_APPLE_SIMULATION_BOOTSTRAP_ADMINISTRATOR_ENABLED=true` 时，初始发起人是配置的真实登录成员，不会额外创建 `founder-0001`。
 
 仿真权限数据和仿真业务数据一样可以被重置。当前本地开发使用独立的 sim OpenFGA 实例，避免反复重置 `simulation0001` 时污染 realworld 授权数据。真实历史复盘依赖 `SimulationSnapshot`、`SimulationSnapshotItem`、`SimulationRunDisposition` 和原始归档包，不依赖永久保留 sim OpenFGA tuple。
 

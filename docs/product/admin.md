@@ -45,7 +45,7 @@ python manage.py bootstrap_world --world-id realworld --control-password "..." -
 
 该命令会创建 control DB 的 `/admin/` 技术 root，并在目标 world DB 中创建一个 `is_staff=False`、`is_superuser=False` 的首个管理员成员，不自动取得执衡者任期。
 
-仿真 world 可以通过 `.env` 中的 `BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_*` 变量配置首个管理员账号。只有显式设置 `BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_ENABLED=true`，并同时提供用户名和密码时，`seed_world` 才会在成功初始化目标仿真 world 后复用 `bootstrap_world --skip-control-admin` 创建或更新该账号；模板占位密码 `CHANGE_ME` 会被拒绝。这样重置后的 `bigsim.local` 仍可用同一个成员账号登录 `/workspace/`。
+仿真 world 可以通过 `.env` 中的 `BIG_APPLE_SIMULATION_BOOTSTRAP_ADMINISTRATOR_*` 变量配置首个管理员账号。只有显式设置 `BIG_APPLE_SIMULATION_BOOTSTRAP_ADMINISTRATOR_ENABLED=true`，并同时提供用户名和密码时，`seed_world` 才会在成功初始化目标仿真 world 后复用 `bootstrap_world --skip-control-admin` 创建或更新该账号；模板占位密码 `CHANGE_ME` 会被拒绝。这样重置后的 `bigsim.local` 仍可用同一个成员账号登录 `/workspace/`。
 
 写入演示数据：
 
@@ -60,8 +60,8 @@ python manage.py seed_demo --world-id realworld
 | 成员 | 查看和维护成员角色、状态、画像、批次和积分下限。 | 禁止删除；已有记录的 `member_no` 只读。 |
 | 成员报名、合作方报名 | 查看公开报名入口提交的成员和合作方申请，兜底排障表单、审核状态和仿真来源。 | 禁止删除；首页隐藏，日常审核入口后续应归属 world-scoped 审核流程。 |
 | 组织、角色 | 维护组织结构和角色；权限作为角色能力在角色详情页维护。 | 禁止删除；提供搜索、筛选和外键自动补全。 |
-| 角色任命 | 查看成员当前和历史角色任命（只读）。 | 禁止新增、修改和删除；普通授予必须通过 `create_role_assignment()`，首次管理员初始化使用 `bootstrap_initial_maintainer()`，不能在 Admin 中手工创建。`grant_maintainer` 命令要求目标成员已拥有当前有效的 `ROLE_COVENANTER`，不会自动授予守约者资格或执衡者任期。 |
-| 执衡者考试题目 | 由具备题库维护权限的典守者创建草稿、发布新版本和停用题目。 | 已发布且被考试使用的内容不能覆盖历史；正确答案和解释属于内部评分资料。 |
+| 角色任命 | 查看成员当前和历史角色任命（只读）。 | 禁止新增、修改和删除；普通授予必须通过 `create_role_assignment()`，首次管理员初始化使用 `bootstrap_initial_administrator()`，不能在 Admin 中手工创建。`grant_administrator` 命令要求目标成员已拥有当前有效的 `ROLE_COVENANTER`，不会自动授予守约者资格或执衡者任期。 |
+| 执衡者考试题目 | 由具备题库维护权限的管理员创建草稿、发布新版本和停用题目。 | 已发布且被考试使用的内容不能覆盖历史；正确答案和解释属于内部评分资料。 |
 | 执衡者考试政策 | 发布每次抽题数量和及格百分比。 | 每个 world 至多一项生效政策；有效题目不足时拒绝发布或开始考试。 |
 | 执衡者考试尝试 | 查看成员考试快照、作答、评分结果和产生的角色任命。 | 只读审计；不得通过 Admin 修改分数、通过状态或补建任命。 |
 | 凭证模板 | 查看已注册的凭证模板（只读）。 | 禁止新增、修改和删除（`has_add_permission=False`、`has_change_permission(obj)=False`、`has_delete_permission=False`）。模板由 `ensure_builtin_credential_templates()` 幂等创建，不应在 Admin 中手工维护。 |
@@ -135,7 +135,7 @@ python manage.py seed_demo --world-id realworld
 初始化基础权限、组织和角色：
 
 ```bash
-python manage.py init_maintainer_permissions --world-id realworld
+python manage.py init_administrator_permissions --world-id realworld
 ```
 
 该命令可重复执行，会在指定 world 中创建或复用维护与财务所需的权限目录，并把明确权限绑定到对应职责；它不会自动批量给成员新增长期维护或财务任命。运行时启用 world 数据库路由后，直接执行必须显式传入 `--world-id`。
@@ -143,17 +143,17 @@ python manage.py init_maintainer_permissions --world-id realworld
 也可以用命令把一个已有且有效的守约者任命为管理员：
 
 ```bash
-python manage.py grant_maintainer --world-id realworld --username alice
-python manage.py grant_maintainer --world-id realworld --member-no mem-0001
+python manage.py grant_administrator --world-id realworld --username alice
+python manage.py grant_administrator --world-id realworld --member-no mem-0001
 ```
 
-`grant_maintainer` 会在指定 world 中自动确保管理员和基础维护权限存在；重复执行不会重复创建 active 任命。新增任命会追加 `role_assigned` 统一事件。
+`grant_administrator` 会在指定 world 中自动确保管理员和基础维护权限存在；重复执行不会重复创建 active 任命。新增任命会追加 `role_assigned` 统一事件。
 
 给一个成员授予维护职责的最小路径：
 
 1. 在 Admin 中创建或确认 `Member`，并按需关联对应 Django `User`。
-2. 运行 `python manage.py init_maintainer_permissions --world-id realworld`。
-3. 通过 `grant_maintainer`、`create_role_assignment()` 或提案执行，把该 `Member` 任命为管理员。
+2. 运行 `python manage.py init_administrator_permissions --world-id realworld`。
+3. 通过 `grant_administrator`、`create_role_assignment()` 或提案执行，把该 `Member` 任命为管理员。
 4. 重建目标 world 的 OpenFGA tuple，或由对应业务流程触发投影更新。
 5. 保持任命状态为 `active`；撤销、暂停、过期任命、缺少守约者资格或成员被冻结都不会授予维护权限。
 
@@ -228,6 +228,6 @@ live_os.api.tasks
 - `superuser` 只作为技术 root、初始化和救急账号使用，不应批量授予日常治理人员。
 - `is_staff=True` 只表示 control 技术账号可以进入 Django Admin 技术入口；它不等同于拥有大苹果业务维护权限。
 - 普通 world 管理员推荐账号状态是 `is_active=True`、`is_staff=False`、`is_superuser=False`，并通过 `AuthorizationService` / OpenFGA 获得具体维护权限；OpenFGA tuple 来自 `Member -> RoleAssignment -> RolePermission -> Permission` 权威事实投影。
-- `grant_maintainer` 只授予 `Member` 的管理员任命，不会修改 `is_staff` 或 `is_superuser`。真实和仿真 world 不暴露 `/admin/`，所以业务维护账号不需要 `is_staff=True`。
+- `grant_administrator` 只授予 `Member` 的管理员任命，不会修改 `is_staff` 或 `is_superuser`。真实和仿真 world 不暴露 `/admin/`，所以业务维护账号不需要 `is_staff=True`。
 - `core.access.user_has_governance_permission()` 的主路径是 `User -> Member -> AuthorizationService -> OpenFGA`。管理员应被授予管理员职责或其他绑定了 `governance.*` 权限的职责，并确保目标 world 的 OpenFGA tuple 已重建。财务审核和付款同理只看 `finance.*` 授权，不看 Django staff/superuser。
 - 当前 Django Admin 的模型增删改查权限仍主要依赖 Django model permissions；这意味着普通 staff 不会自动拥有所有模型权限，但精细到 `governance.*` 业务权限的 Admin 对象级控制仍是后续工作。

@@ -48,7 +48,7 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py r
 | 已注册但未取得守约者资格 | 显示贡献者；没有角色任命，可参与社区共议。 | `core.tests.test_identity_display`、`core.tests.test_electorate_rules` |
 | 守约者 | 显示守约者；可以参加执衡者考试，但不能仅凭守约者资格投票。 | `core.tests.test_deliberator_exam.DeliberatorExamServiceTests` |
 | 执衡者 | 考试通过后显示守约者和执衡者；可投守约事务提案。 | `core.tests.test_deliberator_exam`、`core.tests.test_openfga_role_policy.OpenFGARolePolicyTests`、`core.tests.test_proposals.ProposalVotingPolicyTests` |
-| 管理员 | 显示守约者和管理员；可执行明确维护操作；不可投票。 | `core.tests.test_openfga_role_policy.OpenFGARolePolicyTests`、`core.tests.test_proposals.ProposalVotingPolicyTests.test_covenanter_or_maintainer_without_deliberator_term_cannot_vote` |
+| 管理员 | 显示守约者和管理员；可执行明确维护操作；不可投票。 | `core.tests.test_openfga_role_policy.OpenFGARolePolicyTests`、`core.tests.test_proposals.ProposalVotingPolicyTests.test_covenanter_or_administrator_without_deliberator_term_cannot_vote` |
 | 兼任执衡者和管理员 | 两项职责同时显示；维护权和投票权分别计算。 | `core.tests.test_identity_display` |
 | 具备专业资格的执衡者 | 仅在相同专业领域的专业事务中可投票。 | `core.tests.test_proposals` |
 | 专业资格撤销或到期 | 立即失去相应专业事务投票权。 | `core.tests.test_proposals` |
@@ -58,4 +58,4 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py r
 | 用户停用 | 失去运行时授权。 | `core.tests.test_authorization_services` |
 | 跨 world 成员 | 不能取得另一 world 的权限。 | `worlds.tests.test_world_routes.WorldRouteTests.test_world_session_does_not_cross_to_another_world`、`worlds.tests.test_world_database_isolation.WorldDatabaseIsolationTests` |
 
-界面验收时可打开 `/u/role-baseline-deliberator/` 和 `/u/role-baseline-maintainer/`：前者应显示“守约者、执衡者”，后者应显示“守约者、管理员”，且管理员页面不应显示“执衡者”。
+界面验收时可打开 `/u/role-baseline-deliberator/` 和 `/u/role-baseline-administrator/`：前者应显示“守约者、执衡者”，后者应显示“守约者、管理员”，且管理员页面不应显示“执衡者”。

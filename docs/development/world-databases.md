@@ -140,15 +140,15 @@ world 登录成功后统一进入 `/workspace/`。真实世界和仿真世界 ru
 仿真 world 的首个管理员可以通过 `.env` 配置：
 
 ```env
-BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_ENABLED=true
-BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_USERNAME=your-simulation-maintainer
-BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_PASSWORD=CHANGE_ME
-BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_EMAIL=
-BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_MEMBER_NO=your-simulation-maintainer
-BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_DISPLAY_NAME=Simulation maintainer
+BIG_APPLE_SIMULATION_BOOTSTRAP_ADMINISTRATOR_ENABLED=true
+BIG_APPLE_SIMULATION_BOOTSTRAP_ADMINISTRATOR_USERNAME=your-simulation-administrator
+BIG_APPLE_SIMULATION_BOOTSTRAP_ADMINISTRATOR_PASSWORD=CHANGE_ME
+BIG_APPLE_SIMULATION_BOOTSTRAP_ADMINISTRATOR_EMAIL=
+BIG_APPLE_SIMULATION_BOOTSTRAP_ADMINISTRATOR_MEMBER_NO=your-simulation-administrator
+BIG_APPLE_SIMULATION_BOOTSTRAP_ADMINISTRATOR_DISPLAY_NAME=Simulation administrator
 ```
 
-只有显式启用并同时提供用户名和密码时，`seed_world` 每次成功初始化目标仿真 world 后才会确保该账号存在并拥有管理员职责。`BIG_APPLE_SIMULATION_BOOTSTRAP_MAINTAINER_PASSWORD=CHANGE_ME` 是模板占位符，启用前必须改掉，否则命令会失败。这样重置 `simulation0001` 对应数据库后，再运行 `seed_world simulation0001 --template ...`，即可继续使用该账号登录 `bigsim.local/workspace/`。
+只有显式启用并同时提供用户名和密码时，`seed_world` 每次成功初始化目标仿真 world 后才会确保该账号存在并拥有管理员职责。`BIG_APPLE_SIMULATION_BOOTSTRAP_ADMINISTRATOR_PASSWORD=CHANGE_ME` 是模板占位符，启用前必须改掉，否则命令会失败。这样重置 `simulation0001` 对应数据库后，再运行 `seed_world simulation0001 --template ...`，即可继续使用该账号登录 `bigsim.local/workspace/`。
 
 ## World 生命周期命令
 

@@ -47,7 +47,7 @@ Django `User` 仍只负责技术登录和 Admin 入口控制：`is_active` 控�
 
 大苹果业务权限由 `AuthorizationService` / OpenFGA 计算，权威事实主路径是 `User -> Member -> RoleAssignment -> RolePermission -> Permission`。直接角色事实只有守约者、执衡者和管理员；临时或有期限的职责通过 `end_at` 表达。具体权限必须来自 `RolePermission` 投影出的 OpenFGA 授权，不能以显示标签或 Django 技术账号标记作为放行依据。
 
-普通 world 的管理员账号推荐为 `is_active=True`、`is_staff=False`、`is_superuser=False`，并拥有有效 `Member`、`RoleAssignment` 和对应 `Permission`。`grant_maintainer` 只创建或复用管理员任命，不会修改 `is_staff` 或 `is_superuser`；真实和仿真 world 不暴露 `/admin/`，业务维护账号不需要 Django staff 权限。
+普通 world 的管理员账号推荐为 `is_active=True`、`is_staff=False`、`is_superuser=False`，并拥有有效 `Member`、`RoleAssignment` 和对应 `Permission`。`grant_administrator` 只创建或复用管理员任命，不会修改 `is_staff` 或 `is_superuser`；真实和仿真 world 不暴露 `/admin/`，业务维护账号不需要 Django staff 权限。
 
 成员是否虚拟不再是成员字段，而由当前世界实例类型决定：`WORLD_INSTANCE_TYPE=simulation` 时 actor 输出为 `virtual_member`，`WORLD_INSTANCE_TYPE=real` 时 actor 输出为 `human_member`。当前默认值是 `simulation`。
 
@@ -173,7 +173,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `created_at` | datetime | 是 | 创建时间。 |
 | `updated_at` | datetime | 是 | 更新时间。 |
 
-基础维护和财务权限由 `python manage.py init_maintainer_permissions --world-id realworld` 幂等初始化：
+基础维护和财务权限由 `python manage.py init_administrator_permissions --world-id realworld` 幂等初始化：
 
 | code | 说明 |
 | --- | --- |
@@ -189,7 +189,7 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 
 初始化命令会创建或复用管理员及财务权限所需的目录项，并通过 `core_role_permission` 绑定明确能力。它不会自动批量授权成员；需要维护或财务权限的成员必须通过规范任命或专业资格流程获得相应授权。
 
-可以用 `python manage.py grant_maintainer --world-id realworld --username <username>` 或 `--world-id realworld --member-no <member_no>` 把一个已有且有效的守约者任命为管理员。该命令不会自动授予守约者资格，也不会创建执衡者任期或投票权；重复执行不会重复创建 active `RoleAssignment`。运行时启用 world 数据库路由后，直接执行必须显式传入 `--world-id`。
+可以用 `python manage.py grant_administrator --world-id realworld --username <username>` 或 `--world-id realworld --member-no <member_no>` 把一个已有且有效的守约者任命为管理员。该命令不会自动授予守约者资格，也不会创建执衡者任期或投票权；重复执行不会重复创建 active `RoleAssignment`。运行时启用 world 数据库路由后，直接执行必须显式传入 `--world-id`。
 
 ## core_role_assignment
 
