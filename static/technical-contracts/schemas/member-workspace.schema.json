@@ -12,7 +12,6 @@
     "lifetime_contribution",
     "available_tasks",
     "active_tasks",
-    "task_history",
     "recent_ledger_entries",
     "recent_events",
     "open_disputes",
@@ -46,13 +45,6 @@
     },
     "active_tasks": {
       "type": "array",
-      "items": {
-        "$ref": "task.schema.json"
-      }
-    },
-    "task_history": {
-      "type": "array",
-      "description": "Recent completed, rejected, reversed, or otherwise closed tasks assigned to the member.",
       "items": {
         "$ref": "task.schema.json"
       }

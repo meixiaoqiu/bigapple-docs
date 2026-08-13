@@ -85,33 +85,6 @@
       "due_at": "2026-05-24T10:00:00Z"
     }
   ],
-  "task_history": [
-    {
-      "task_id": "task-0002",
-      "title": "Clean the public kitchen",
-      "task_type": "public_cleaning",
-      "status": "accepted",
-      "standard_minutes": 120,
-      "base_points": 20,
-      "role_coefficient": 1,
-      "physical_load": 55,
-      "dirty_level": 76,
-      "psychological_load": 42,
-      "urgency": 64,
-      "can_be_delayed": false,
-      "requires_review": true,
-      "failure_consequence": "medium",
-      "assignee_member_no": "mem-0001",
-      "rule_version": "ruleset-v0.1.0",
-      "created_at": "2026-05-24T01:30:00Z",
-      "due_at": "2026-05-24T03:30:00Z",
-      "submitted_at": "2026-05-24T02:30:00Z",
-      "reviewed_at": "2026-05-24T03:30:00Z",
-      "metadata": {
-        "labor_note": "Kitchen counters and floors were cleaned."
-      }
-    }
-  ],
   "recent_ledger_entries": [
     {
       "ledger_entry_id": "ledger-0001",
