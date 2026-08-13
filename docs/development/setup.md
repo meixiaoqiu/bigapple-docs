@@ -159,6 +159,7 @@ start.bat
 - 启动已有的 `mysql97` 容器并连接到 `dev-net`。
 - 等待 `mysql97` health check 通过。
 - 构建缺失的 `big-apple-live-os:dev` 镜像并迁移 control、realworld 和 simulation0001 数据库。
+- world 迁移若因检测到未上线旧角色或提案语义而停止，会显示失败数据库、不可恢复警告和精确的 `flush` 命令；脚本只提供处理指引，绝不自动清空数据。
 - 启动并初始化 real/sim OpenFGA，重建权限 tuples，并比较 Django 权威数据与 OpenFGA 权限结果。
 - 通过 `docker compose -f docker-compose.dev.yml up -d --force-recreate big-apple-admin big-apple-real big-apple-sim` 启动三个 Django 站点。
 - 启动已有的 `nginx` 容器并连接到 `dev-net`。

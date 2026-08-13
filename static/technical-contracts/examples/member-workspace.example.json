@@ -211,9 +211,5 @@
     "open": 1,
     "pending_review": 1,
     "accepted": 1
-  },
-  "next_actions": [
-    "wait_for_review",
-    "check_resource_warning"
-  ]
+  }
 }
