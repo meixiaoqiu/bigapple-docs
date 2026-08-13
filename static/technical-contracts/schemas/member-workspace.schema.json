@@ -10,8 +10,6 @@
     "credit_balance",
     "available_credit_balance",
     "lifetime_contribution",
-    "available_tasks",
-    "active_tasks",
     "recent_ledger_entries",
     "recent_events",
     "open_disputes",
@@ -36,18 +34,6 @@
     "lifetime_contribution": {
       "type": "integer",
       "description": "历史累计贡献积分，不因消费或转账减少。"
-    },
-    "available_tasks": {
-      "type": "array",
-      "items": {
-        "$ref": "task.schema.json"
-      }
-    },
-    "active_tasks": {
-      "type": "array",
-      "items": {
-        "$ref": "task.schema.json"
-      }
     },
     "recent_ledger_entries": {
       "type": "array",
