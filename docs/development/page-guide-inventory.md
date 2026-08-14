@@ -82,7 +82,7 @@ Observer 模块下所有视图均为公开，无需登录。
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 积分预算 | `/workspace/credits/budgets/` | 积分 | 管理员 | 仪表盘/表单 | 已实现 | 待创建 | 暂不支持 | 发行积分、锁定/退回任务预算 |
 | 积分转账 | `/workspace/credits/transfer/` | 积分 | 守约者 | 表单 | 已实现 | 待创建 | 暂不支持 | 需登录 + 守约者 |
-| 兑换订单 | `/workspace/credits/redemption/` | 积分 | 守约者 | 列表/表单 | 已实现 | 待创建 | 暂不支持 | 创建、查看、取消、申诉 |
+| 兑换订单 | `/workspace/credits/redemption/` | 积分 | 守约者 | 列表/表单 | 已实现 | 待创建 | 暂不支持 | 创建、查看、取消、报告履约问题 |
 | 兑换履约 | `/workspace/credits/redemption/review/` | 积分 | 管理员 | 列表/表单 | 已实现 | 待创建 | 暂不支持 | 管理员处理兑换订单 |
 | 商户结算 | `/workspace/credits/merchant-settlements/` | 积分 | 管理员/商户 operator | 列表 | 已实现 | 待创建 | 暂不支持 | 只读；管理员看全部，现金结算商户 operator 看自己的 |
 | 创建任务 | `/workspace/tasks/new/` | 任务 | 管理员 | 表单 | 已实现 | 待创建 | 暂不支持 | 创建草稿、发布任务；base_points>0 需预算锁定 |
@@ -170,7 +170,7 @@ Observer 模块下所有视图均为公开，无需登录。
 | `/api/v0.1/tasks` | 任务列表 | 登录 |
 | `/api/v0.1/events` | 事件列表 | 登录 |
 | `/api/v0.1/ledger-entries` | 账本条目 | 登录 |
-| `/api/v0.1/disputes` | 创建争议 | 登录 |
+| `/api/v0.1/event-feedbacks` | 针对可见事件创建反馈 | 登录成员 |
 
 ---
 

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "event-feedback.schema.json",
+  "title": "EventFeedback",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "feedback_id", "related_event_id", "feedback_type", "status",
+    "statement", "requested_outcome",
+    "evidence_refs", "submitter_visibility", "submitted_at"
+  ],
+  "properties": {
+    "feedback_id": { "$ref": "common.schema.json#/$defs/id" },
+    "related_event_id": { "$ref": "common.schema.json#/$defs/id" },
+    "feedback_type": {
+      "type": "string",
+      "enum": ["correction", "opinion", "complaint", "report", "review", "risk"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["submitted", "verifying", "awaiting_response", "concluded", "closed", "withdrawn"]
+    },
+    "submitted_by_member_no": { "$ref": "common.schema.json#/$defs/id" },
+    "subject_member_no": { "$ref": "common.schema.json#/$defs/id" },
+    "statement": { "$ref": "common.schema.json#/$defs/nonEmptyString" },
+    "requested_outcome": { "type": "string" },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/nonEmptyString" }
+    },
+    "submitter_visibility": {
+      "type": "string",
+      "enum": ["public", "parties_and_handlers", "handlers_only"]
+    },
+    "privacy_reason": { "type": "string" },
+    "assigned_handler_member_no": { "$ref": "common.schema.json#/$defs/id" },
+    "response_statement": { "type": "string" },
+    "responded_by_member_no": { "$ref": "common.schema.json#/$defs/id" },
+    "responded_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "conclusion": {
+      "type": "string",
+      "enum": ["confirmed", "partly_confirmed", "not_confirmed", "inconclusive", "not_applicable"]
+    },
+    "conclusion_reason": { "type": "string" },
+    "resolution_event_id": { "$ref": "common.schema.json#/$defs/id" },
+    "concluded_by_member_no": { "$ref": "common.schema.json#/$defs/id" },
+    "submitted_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "verification_started_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "concluded_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "closed_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "metadata": { "$ref": "common.schema.json#/$defs/metadata" }
+  }
+}

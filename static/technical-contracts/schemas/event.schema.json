@@ -27,7 +27,7 @@
         "task",
         "ledger",
         "resource",
-        "dispute",
+        "event_feedback",
         "capacity",
         "governance",
         "random_incident"
@@ -59,7 +59,7 @@
     "related_task_id": {
       "$ref": "common.schema.json#/$defs/id"
     },
-    "related_dispute_id": {
+    "related_feedback_id": {
       "$ref": "common.schema.json#/$defs/id"
     },
     "occurred_at": {

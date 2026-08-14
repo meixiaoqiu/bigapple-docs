@@ -166,7 +166,7 @@ SystemEvent v2 设计原则：
 - `core_task`
 - `core_resource`
 - `core_event`
-- `core_dispute`
+- `core_event_feedback`
 - `core_ledger_entry`
 - `core_capacity_assessment`
 - `core_system_event`
@@ -184,7 +184,7 @@ SystemEvent v2 设计原则：
 
 观察台不直接读取 Simulation Engine 数据，也不绕过 Live OS 业务表。
 
-当前时间线指挥台的指标、公开事件、资源预警、未关闭申诉、容量状态和主线任务来自 Live OS 权威表。没有对应数据时，主题层只显示空状态，不再注入固定演示数字或演示事件。
+当前时间线指挥台的指标、公开事件、资源预警、核实中事件反馈、容量状态和主线任务来自 Live OS 权威表。公开事件详情同时承载反馈入口和公开反馈上下文；匿名访客只读，提交人身份按其选择展示。成员提交的原始陈述、期望结果、证据和回应仅向提交人、明确相关方及处理人展示；公开访客只查看经处理人核实后形成的结论、依据和责任人。
 
 Observer 不再承载仿真控制动作。仿真实验启动和推进在 `/admin/simulation-lab/` 完成；Observer 只读取当前 URL 绑定 world 的运行结果并用于复盘。未绑定 simulation run 的单回合推进不会写入真实世界数据。
 

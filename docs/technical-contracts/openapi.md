@@ -33,7 +33,7 @@ description: Contract draft for the Live OS API used by humans and the Simulatio
 - `/tasks/{task_id}/review`
 - `/ledger-entries`
 - `/resources`
-- `/disputes`
+- `/event-feedbacks`
 - `/events`
 - `/capacity-assessments/latest`
 - `/observer/summary`

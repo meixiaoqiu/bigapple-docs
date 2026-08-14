@@ -5,14 +5,14 @@ title: 治理交互模型边界
 
 # 治理交互模型边界
 
-本文用于约束任务、申诉、角色任命、提案、积分流水和统一事件账本之间的关系，避免把所有交互都塞进一个万能模型。
+本文用于约束任务、事件反馈、角色任命、提案、积分流水和统一事件账本之间的关系，避免把所有交互都塞进一个万能模型。
 
 ## 核心原则
 
 系统分三层：
 
 ```text
-业务对象：Task / Dispute / RoleAssignment / LedgerEntry / Resource ...
+业务对象：Task / EventFeedback / RoleAssignment / LedgerEntry / Resource ...
 决策机制：Proposal / ProposalVote / ProposalExecution
 事实留痕：SystemEvent
 ```
@@ -27,12 +27,12 @@ title: 治理交互模型边界
 
 ## 业务对象不是提案
 
-任务、申诉、角色任命、积分流水都可以和提案有关，但它们本身不是提案。
+任务、事件反馈、角色任命、积分流水都可以和提案有关，但它们本身不是提案。
 
 | 对象 | 它回答的问题 | 是否等同于提案 |
 | --- | --- | --- |
 | `Task` | 谁要做什么工作，当前做到哪一步。 | 否。任务可以由运营人员直接发布，也可以由提案批准后发布。 |
-| `Dispute` | 谁对什么事实或处理结果提出争议，处理进展如何。 | 否。普通申诉不需要提案；重大裁决可以升级为提案。 |
+| `EventFeedback` | 谁针对哪个公开事件提出何种反馈，核实和回应进展如何。 | 否。反馈结论需要权威业务纠正时调用对应领域服务。 |
 | `RoleAssignment` | 某成员在什么时间范围内拥有哪个角色。 | 否。任命可以由上级直接创建，也可以由提案执行产生。 |
 | `LedgerEntry` | 成员积分为什么增加、扣减、调整或冲正。 | 否。积分流水是账务事实；提案只可能是其来源之一。 |
 | `Resource` | 当前资源库存、预警线和补充方式是什么。 | 否。资源调整是业务状态变化；重大资源政策或高影响分配才需要提案。 |
@@ -59,19 +59,20 @@ title: 治理交互模型边界
 
 任务可以由提案批准后产生或发布，但任务本身仍是 `Task`。`Task.source_type`、`source_proposal` 和 `source_proposal_execution` 用于记录任务是直接运营创建、提案执行、计划派生、仿真产生还是系统规则产生；这些字段只表达来源，不替代任务状态机。
 
-### 申诉
+### 事件反馈
 
-`Dispute` 是实名争议流程。它负责申诉人、关联任务、关联积分流水、事实、证据、受理人、复核人、结论和状态。
+`EventFeedback` 是固定关联用户可见 `Event` 的实名反馈流程，覆盖纠错、意见、投诉、举报、复核和风险。提交人默认公开身份，也可说明理由后限制身份展示；这不等于匿名，系统和处理者始终知道真实身份。
 
-申诉状态变化应通过 `core.dispute_services` 完成：
+状态变化应通过 `core.event_feedback_services` 完成：
 
-- `submit_dispute()`
-- `start_dispute_review()`
-- `resolve_dispute()`
+- `submit_event_feedback()`
+- `start_event_feedback_verification()`
+- `request_event_feedback_response()` / `respond_to_event_feedback()`
+- `conclude_event_feedback()` / `close_event_feedback()` / `withdraw_event_feedback()`
 
-这些服务成功后追加 `dispute_*` 类型 `SystemEvent`。运营侧还会生成内部 `Event`，用于观察和业务事件流展示。
+这些服务成功后追加 `event_feedback_*` 类型 `SystemEvent`。反馈结论不能覆盖原事件；正式纠正必须调用对应领域服务，并可关联新产生的 `resolution_event`。
 
-普通申诉不需要提案。只有当申诉结论需要多人共同裁决、影响成员资格、重大积分冲正、资源分配或规则解释时，才应创建相关提案。
+第三方隐私和证据凭据按独立规则脱敏，提交人对自己身份的展示选择不能授权公开他人受保护信息。
 
 ### 资源
 
@@ -183,7 +184,7 @@ ExpenseClaim -> FinanceReview -> FinanceTransaction -> Event/SystemEvent
 它不负责：
 
 - 任务状态机。
-- 申诉状态机。
+- 事件反馈状态机。
 - 提案投票规则。
 - 角色权限判断。
 - 积分余额计算。

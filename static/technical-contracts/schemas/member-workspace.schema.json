@@ -11,8 +11,8 @@
     "available_credit_balance",
     "lifetime_contribution",
     "recent_ledger_entries",
-    "open_disputes",
-    "dispute_history",
+    "open_feedbacks",
+    "feedback_history",
     "task_counts"
   ],
   "properties": {
@@ -39,17 +39,17 @@
         "$ref": "ledger-entry.schema.json"
       }
     },
-    "open_disputes": {
+    "open_feedbacks": {
       "type": "array",
       "items": {
-        "$ref": "dispute.schema.json"
+        "$ref": "event-feedback.schema.json"
       }
     },
-    "dispute_history": {
+    "feedback_history": {
       "type": "array",
-      "description": "Recent disputes where the member is claimant or respondent, including closed disputes.",
+      "description": "当前成员提交、负责或作为相关方参与的最近事件反馈，包括已结束反馈。",
       "items": {
-        "$ref": "dispute.schema.json"
+        "$ref": "event-feedback.schema.json"
       }
     },
     "task_counts": {

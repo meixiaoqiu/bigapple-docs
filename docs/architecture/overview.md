@@ -13,7 +13,7 @@ v0.1 必须保证真实用户和 Simulation Engine 使用同一套 API。Simulat
 
 产品规划按照中远期完全体来描述，当前实现只是完整系统的阶段性切片。完整系统应同时服务匿名访问者、成员、管理员和 Simulation Engine；当前 Django Admin 只是内部维护入口，不代表最终运营后台边界。
 
-治理交互模型遵循 [治理交互模型边界](./governance-boundary.md)：任务、申诉、角色任命、积分流水等具体业务保留自己的结构化模型；提案只作为需要共同决定时的决策机制；统一事件账本只记录已经发生的关键事实和责任链，不替代业务状态机。
+治理交互模型遵循 [治理交互模型边界](./governance-boundary.md)：任务、事件反馈、角色任命、积分流水等具体业务保留自己的结构化模型；提案只作为需要共同决定时的决策机制；统一事件账本只记录已经发生的关键事实和责任链，不替代业务状态机。
 
 ## 文件与头像运行期边界
 
@@ -63,7 +63,7 @@ live_os.api.urls
 live_os.api.* / workspace / observer / simulation_lab
   |
   v
-workspace.context / core.tasks.* / core.dispute_services / core.resource_services / core.ledger_services / observer.* / simulation.engine
+workspace.context / core.tasks.* / core.event_feedback_services / core.resource_services / core.ledger_services / observer.* / simulation.engine
   |
   v
 core.models.*
@@ -104,8 +104,8 @@ MySQL
 - `simulation_lab.views`：仿真实验后台页面入口。
 - `core.admin`、`admin_identity`、`admin_proposals`、`admin_operations`、`admin_events`、`admin_support`：Django 技术后台入口、成员/角色维护配置、提案维护配置、运营对象维护配置、只读事件账本配置和通用 Admin mixin。
 - `core.event_ledger`、`event_payloads`、`governance_setup`、`role_assignment_services`、`core.proposals.*`、`permission_services`、`governance_signals`：统一事件账本、事件快照、基础治理权限初始化、角色任命、提案生命周期/投票/执行、角色权限判断和事件追加 signal。不要重新新增 `core.governance` 或 `core.proposal_services` 门面。
-- `core.tasks.authoring`、`member_workflow`、`review`、`core.dispute_services`、`core.resource_services`、`core.ledger_services`：真实世界业务写操作。不要再新增 `core.services` 或 `core.task_services` 这种大杂烩服务门面。
-- `live_os.demo_seed.*`：幂等演示数据写入逻辑，按项目计划、成员、资源、任务、事件、积分、申诉和容量评估拆分；`seed_demo` 命令只做编排。
+- `core.tasks.authoring`、`member_workflow`、`review`、`core.event_feedback_services`、`core.resource_services`、`core.ledger_services`：真实世界业务写操作。不要再新增 `core.services` 或 `core.task_services` 这种大杂烩服务门面。
+- `live_os.demo_seed.*`：幂等演示数据写入逻辑，按项目计划、成员、资源、任务、事件、积分、事件反馈和容量评估拆分；`seed_demo` 命令只做编排。
 - `simulation.admin`、`admin_planning`、`admin_runs`、`admin_feedback`：Django Admin 自动发现入口、项目计划维护配置、只读仿真运行记录配置和仿真反馈/计划变更配置。
 
 项目执行计划位于任务系统之上：
@@ -137,9 +137,9 @@ Task / Resource / Event / CapacityAssessment
 - 验收任务
 - 调整资源库存
 - 记录资源事件
-- 受理申诉
-- 记录申诉处理结论
-- 记录申诉事件
+- 核实事件反馈
+- 请求并记录相关方回应
+- 公布反馈结论并结束
 - 推进一回合页面式仿真，并将任务、资源和事件变化落回权威表
 - 创建自动模拟运行，按项目执行计划推进到失败或完成
 - 记录计划节点在模拟中的状态、失败原因和修订建议
@@ -166,7 +166,7 @@ Live OS 对以下数据拥有权威：
 - 项目执行计划、计划版本、计划节点、节点依赖、节点需求和容量影响
 - 积分账本流水
 - 资源状态
-- 申诉记录
+- 事件反馈记录
 - 规则版本记录
 - 容量评估记录
 - 事件流记录
@@ -184,7 +184,7 @@ Simulation Engine 不可以：
 - 直接写入 Live OS 数据表
 - 在 Live OS 外部结算最终积分
 - 绕过任务验收
-- 绕过申诉流程
+- 绕过事件反馈核实流程
 - 绕过规则版本
 
 Observer 不再负责仿真控制。仿真实验的启动和推进归属 `bigadmin.local/admin/simulation-lab/`；`bigreal.local/` 和 `bigsim.local/` 只负责观察和复盘各自固定 world，`/simulations/` 负责把已归档仿真快照转成公开可读报告。`simulation` 服务可以读取真实计划和资源作为输入，但写入必须归属于明确的 world 数据库和 simulation run，不能默认修改真实任务、真实库存、真实积分或真实计划。
@@ -225,7 +225,7 @@ Observer 不再负责仿真控制。仿真实验的启动和推进归属 `bigadm
 5. `simulation` 只承载仿真推演逻辑；仿真写入必须绑定明确的 world 数据库和 simulation run，不能默认改写真世界任务、资源、积分、成员或计划。
 6. `/admin/simulation-lab/` 承载仿真实验启动、配置、运行管理和实验结果管理，负责"怎么跑"，不负责手动干预真实业务过程。
 7. 所有真实世界关键状态变化必须通过对应领域服务模块完成，并追加统一事件账本。
-8. 任务、申诉、提案、积分流水等业务对象保留结构化表；统一事件账本记录关键事实、顺序、责任人和哈希链。
+8. 任务、事件反馈、提案、积分流水等业务对象保留结构化表；统一事件账本记录关键事实、顺序、责任人和哈希链。
 9. Django `User` 只作为登录账号；业务责任主体是 `Member`，权限事实来自 `Member -> RoleAssignment -> RolePermission -> Permission`，运行时授权由 `AuthorizationService` / OpenFGA 计算。
 10. `is_staff` / `is_superuser` 只属于 Django 技术后台边界，不能等同于业务治理权限。
 11. Admin、服务、URL、文档和测试必须共同约束边界，避免后续把页面逻辑塞回 `core` 或让仿真误写真实世界。
@@ -245,7 +245,7 @@ Credential    → 公开事实证明（非权限来源）
 
 1. **User 只负责登录认证。** `auth_user` 是 Django 的认证账号，承载 username / password / session。User 本身不表达任何业务权限，不存在"某个 User 天生有治理权"的概念。
 
-2. **Member 是所有注册用户的业务身份。** 任何人通过 `/register/` 注册后，系统立即创建 `Member` 记录。Member 是业务世界的唯一主体：领取任务、提交申诉、持有角色、获得 Credential 都以 Member 为锚点。Member 和 User 是一对一绑定关系。
+2. **Member 是所有注册用户的业务身份。** 任何人通过 `/register/` 注册后，系统立即创建 `Member` 记录。Member 是业务世界的唯一主体：领取任务、提交事件反馈、持有角色、获得 Credential 都以 Member 为锚点。Member 和 User 是一对一绑定关系。
 
 3. **注册状态不创建基础角色。** 新注册用户只创建 User 与 Member。已注册但没有当前有效守约者资格的成员，其参与状态派生显示为“贡献者”；匿名访问公开内容只是观察行为。两者都不创建同名 Role、RoleAssignment 或 OpenFGA tuple。最小 workspace、公开资料维护和守约者报名依据账号与 Member 绑定开放，不依赖虚构的基础角色。
 

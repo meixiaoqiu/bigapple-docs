@@ -28,7 +28,7 @@
         "task",
         "ledger",
         "resource",
-        "dispute",
+        "event_feedback",
         "capacity",
         "governance",
         "random_incident"

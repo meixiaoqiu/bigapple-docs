@@ -57,7 +57,7 @@ title: AI 开发指南
 | 自动模拟、失败反馈、计划修订建议或计划变更集变化 | `docs/product/simulation.md`、`docs/product/project-plan.md` 和 `docs/architecture/database-schema.md` |
 | API 路径或 payload 变化 | `docs/reference/api.md` 和 contracts |
 | 新业务流程 | `docs/architecture/overview.md`、`docs/development/setup.md`，必要时增加对应流程文档 |
-| 任务、申诉、角色任命、提案、积分流水和统一事件账本之间的边界变化 | `docs/architecture/governance-boundary.md`、`docs/architecture/overview.md` |
+| 任务、事件反馈、角色任命、提案、积分流水和统一事件账本之间的边界变化 | `docs/architecture/governance-boundary.md`、`docs/architecture/overview.md` |
 | 产品角色、入口或中远期规划变化 | `docs/project/product-planning.md` |
 | 路线图阶段、优先级或完成标准变化 | `docs/project/roadmap.md` |
 | Django Admin 展示、权限或风险分层变化 | `docs/product/admin.md` |
@@ -70,8 +70,8 @@ title: AI 开发指南
 - 已生成并应用 `core.0001_initial` 迁移。
 - 后台界面已中文化；代码和 contracts 字段值仍保持英文标识。
 - 当前 `/admin/` 是内部维护后台，不等同于中远期最终运营后台。
-- 当前 Django Admin 配置按维护域拆分：`core.admin` 是自动发现入口，成员/角色在 `core.admin_identity`，提案在 `core.admin_proposals`，任务/资源/申诉在 `core.admin_operations`，只读历史和事件账本在 `core.admin_events`。底层、危险和兜底维护操作统一归 control 后台；world runtime 只保留成员工作台、观察台、报名入口和 API。
-- 当前模型定义按领域拆分在 `core.models` 包：身份/角色在 `identity`，提案在 `proposals`，项目计划在 `planning`，仿真记录在 `simulation`，仿真快照归档在 `simulation_archives`，任务/积分/资源在 `operations`，事件账本在 `events`，申诉/容量在 `disputes`。`core.models.__init__` 只用于稳定导出。
+- 当前 Django Admin 配置按维护域拆分：`core.admin` 是自动发现入口，成员/角色在 `core.admin_identity`，提案在 `core.admin_proposals`，任务/资源/事件反馈在 `core.admin_operations`，只读历史和事件账本在 `core.admin_events`。事件反馈 Admin 全字段只读，生命周期动作只能通过 `core.event_feedback_services`。底层、危险和兜底维护操作统一归 control 后台；world runtime 只保留成员工作台、观察台、报名入口和 API。
+- 当前模型定义按领域拆分在 `core.models` 包：身份/角色在 `identity`，提案在 `proposals`，项目计划在 `planning`，仿真记录在 `simulation`，仿真快照归档在 `simulation_archives`，任务/积分/资源在 `operations`，事件账本在 `events`，事件反馈在 `event_feedback`，容量评估单独维护。`core.models.__init__` 只用于稳定导出。
 - 治理内核不再保留 `core.governance` 大门面；统一事件账本、提案、权限和角色任命应分别从对应领域模块导入。
 - 不要在业务代码中直接根据 Credential/NFT/Badge、`Member.status`、`member_no` 或 Django `is_staff` 判断业务权限。所有运行时权限判断必须通过 `AuthorizationService`。详见 `docs/architecture/overview.md` Credential/NFT 章节。
 - 当前本地开发拆为三个站点入口：`bigadmin.local` 使用 `live_os.settings_admin` 和 `live_os.urls_admin`，承载 control plane 的 `/admin/` 与 `/admin/simulation-lab/`；`bigreal.local` 使用 `live_os.settings_real` 和 `live_os.urls_real`，承载真实世界 runtime；`bigsim.local` 使用 `live_os.settings_sim` 和 `live_os.urls_sim`，承载仿真世界 runtime。
@@ -90,7 +90,7 @@ title: AI 开发指南
 - 可以运行 `python manage.py archive_simulation_run --world-id simulation0001 --run-id sim-run-xxx` 把已结束的仿真 run 归档为 control DB 中的 `SimulationSnapshot` / `SimulationSnapshotItem` 和文件系统中的原始归档包。原始归档包默认在 `var/simulation_archives/`，不进入 Git；归档后用 `python manage.py verify_simulation_snapshot snapshot-xxx` 校验 raw 文件哈希、manifest 和标准化索引。
 - 已结束的仿真 run 在同一 world 启动下一轮前必须被人工处置：要么通过 `/admin/simulation-lab/` 或 `archive_simulation_run` 归档为快照，要么通过 `/admin/simulation-lab/` 或 `discard_simulation_run --reason "..."` 明确放弃归档。两种处置都会写入 control DB 的 `SimulationRunDisposition`；Django Admin `LogEntry` 只记录技术后台操作，不能替代仿真处置结论。
 - 仍在 `running` 但已经确认没有继续价值的 run，应先在 `/admin/simulation-lab/` 详情页执行“中止本轮仿真”，状态变为 `aborted` 后再归档或废弃。
-- 修改任务创建、发布、指派、关闭、领取、提交、验收、资源调整、公开财务报销、申诉处理、仿真推进、账本、事件或 world 边界逻辑后，必须运行对应 app 测试；完整本地回归使用 `python manage.py test core live_os observer workspace simulation simulation_lab worlds --settings=live_os.test_settings`。
+- 修改任务创建、发布、指派、关闭、领取、提交、验收、资源调整、公开财务报销、事件反馈处理、仿真推进、账本、事件或 world 边界逻辑后，必须运行对应 app 测试；完整本地回归使用 `python manage.py test core live_os observer workspace simulation simulation_lab worlds --settings=live_os.test_settings`。
 - 新增后台高风险动作（如清空世界数据、直接修改权威状态）必须测试 world 边界：不得对 `realworld` 生效，只允许作用 `world_type=simulation` 的 `active` world，且必须写入 control DB 的审计记录。
 - 已实现最小 session 身份绑定：`User.username == Member.member_no` 代表成员本人，拥有对应维护权限的成员或 staff / superuser 可执行运营写入。不要重新引入由 payload 或表单选择责任人的 actor 绑定。
 - 观察台中的满意度、疲劳值等指标目前是占位值，后续需要每日指标表。

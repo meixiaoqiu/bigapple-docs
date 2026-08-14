@@ -1,0 +1,14 @@
+{
+  "feedback_id": "feedback-0001",
+  "related_event_id": "event-0009",
+  "feedback_type": "correction",
+  "status": "submitted",
+  "submitted_by_member_no": "mem-0002",
+  "subject_member_no": "member-admin-0001",
+  "statement": "该事件中的验收结果与已发布标准不一致。",
+  "requested_outcome": "请核实并通过正式业务流程纠正结果。",
+  "evidence_refs": ["photo-evidence-0001"],
+  "submitter_visibility": "public",
+  "submitted_at": "2026-05-24T08:00:00Z",
+  "metadata": { "seed": true }
+}

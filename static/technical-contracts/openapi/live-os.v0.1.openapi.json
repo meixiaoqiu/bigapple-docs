@@ -52,7 +52,7 @@
       "get": {
         "operationId": "getMemberWorkspace",
         "summary": "Get the member workspace summary",
-        "description": "Returns the member-centered aggregate needed by the P2 member workspace, including current tasks, task history, ledger entries, events, dispute history, and resource warnings. This endpoint does not replace task, ledger, dispute, or event APIs; it is a read model for a member-facing product screen.",
+        "description": "Returns the member-centered aggregate needed by the member workspace, including ledger entries and event feedback history. This endpoint does not replace ledger, event-feedback, or event APIs; it is a read model for a member-facing product screen.",
         "security": [
           {
             "cookieAuth": []
@@ -335,10 +335,10 @@
         }
       }
     },
-    "/disputes": {
+    "/event-feedbacks": {
       "post": {
-        "operationId": "createDispute",
-        "summary": "Submit a real-name dispute",
+        "operationId": "createEventFeedback",
+        "summary": "Submit real-name feedback about a visible event",
         "security": [
           {
             "cookieAuth": []
@@ -349,18 +349,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/createDisputeRequest"
+                "$ref": "#/components/schemas/createEventFeedbackRequest"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Dispute created",
+            "description": "Event feedback created",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../schemas/dispute.schema.json"
+                  "$ref": "../schemas/event-feedback.schema.json"
                 }
               }
             }
@@ -372,7 +372,7 @@
       "get": {
         "operationId": "listEvents",
         "summary": "List event stream entries",
-        "description": "visibility=public returns public-event projections without involved_member_ids, related_dispute_id, or raw payload. internal/private require an authorized governance principal and return full event records.",
+        "description": "visibility=public returns public-event projections without involved_member_ids, related_feedback_id, or raw payload. internal/private require an authorized governance principal and return full event records.",
         "parameters": [
           {
             "name": "simulation_day",
@@ -460,7 +460,7 @@
                     "task_completion_rate",
                     "average_satisfaction",
                     "average_fatigue",
-                    "open_disputes",
+                    "active_feedbacks",
                     "events"
                   ],
                   "properties": {
@@ -490,7 +490,7 @@
                     "average_fatigue": {
                       "$ref": "../schemas/common.schema.json#/$defs/score"
                     },
-                    "open_disputes": {
+                    "active_feedbacks": {
                       "type": "integer",
                       "minimum": 0
                     },
@@ -637,10 +637,10 @@
         }
       }
     },
-    "/redemption-orders/{order_id}/dispute": {
+    "/redemption-orders/{order_id}/issue": {
       "post": {
-        "operationId": "disputeRedemptionOrder",
-        "summary": "Dispute a pending redemption order",
+        "operationId": "reportRedemptionOrderIssue",
+        "summary": "Report a fulfillment issue for a pending redemption order",
         "security": [{ "cookieAuth": [] }],
         "parameters": [{ "$ref": "#/components/parameters/orderId" }],
         "requestBody": {
@@ -652,14 +652,14 @@
         },
         "responses": {
           "200": {
-            "description": "Order disputed",
+            "description": "Fulfillment issue reported",
             "content": {
               "application/json": {
                 "schema": { "$ref": "../schemas/redemption-order.schema.json" }
               }
             }
           },
-          "400": { "description": "Order cannot be disputed" },
+          "400": { "description": "Issue cannot be reported for this order" },
           "403": { "description": "Not the owner" }
         }
       }
@@ -773,48 +773,47 @@
           }
         }
       },
-      "createDisputeRequest": {
+      "createEventFeedbackRequest": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "claimant_member_no",
-          "dispute_type",
-          "facts"
+          "related_event_id",
+          "feedback_type",
+          "statement"
         ],
         "properties": {
-          "claimant_member_no": {
+          "related_event_id": {
             "$ref": "../schemas/common.schema.json#/$defs/id"
           },
-          "dispute_type": {
+          "feedback_type": {
             "type": "string",
             "enum": [
-              "task_review",
-              "points_deduction",
-              "resource_usage",
-              "public_hygiene",
-              "noise",
-              "warehouse_loss",
-              "canteen_quality",
-              "member_conflict",
-              "governance_action",
-              "exit"
+              "correction",
+              "opinion",
+              "complaint",
+              "report",
+              "review",
+              "risk"
             ]
           },
-          "related_task_id": {
+          "subject_member_no": {
             "$ref": "../schemas/common.schema.json#/$defs/id"
           },
-          "related_ledger_entry_id": {
-            "$ref": "../schemas/common.schema.json#/$defs/id"
-          },
-          "facts": {
+          "statement": {
             "$ref": "../schemas/common.schema.json#/$defs/nonEmptyString"
           },
+          "requested_outcome": { "type": "string" },
           "evidence_refs": {
             "type": "array",
             "items": {
               "$ref": "../schemas/common.schema.json#/$defs/nonEmptyString"
             }
           },
+          "submitter_visibility": {
+            "type": "string",
+            "enum": ["public", "parties_and_handlers", "handlers_only"]
+          },
+          "privacy_reason": { "type": "string" },
           "metadata": {
             "$ref": "../schemas/common.schema.json#/$defs/metadata"
           }

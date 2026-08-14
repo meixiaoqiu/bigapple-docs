@@ -45,7 +45,7 @@ User -> Member
    - 守约者报名入口：已注册但尚未成为守约者的用户，可在 workspace 内发起守约者报名申请。
    - 基础身份信息展示：当前角色、Credential 列表、近期活动摘要。
 
-3. **守约者通过资格获得更多功能。** 守约者资格由当前有效的 `ROLE_COVENANTER` 任命表达。workspace 通过 `AuthorizationService` 检查具体权限并展示对应功能模块（任务、申诉、议事与维护入口等）；功能扩展来自有效资格、职责及其权限绑定，不是“切换 workspace 版本”。
+3. **守约者通过资格获得更多功能。** 守约者资格由当前有效的 `ROLE_COVENANTER` 任命表达。workspace 通过 `AuthorizationService` 检查具体权限并展示对应功能模块（任务、事件反馈事务、议事与维护入口等）；功能扩展来自有效资格、职责及其权限绑定，不是“切换 workspace 版本”。
 
    **当前落地**：完整 workspace 主授权看 active `ROLE_COVENANTER`（`member_has_role(member, ROLE_COVENANTER)`）。`SUSPENDED` / `EXITED` 作为生命周期禁用状态行使 veto——即使有 `ROLE_COVENANTER`，禁用状态成员也不能进入完整 workspace。`Member.status` 只作为生命周发展示字段，不作为权限来源。
 
@@ -61,13 +61,13 @@ User -> Member
 - 查看当前成员状态和积分，并从首页进入任务中心。
 - 在任务中心查看本人的当前任务、可领取任务和最近结束任务。
 - 在任务详情领取开放任务，或提交本人已领取任务的劳动记录和证据引用。
-- 提交申诉。
-- 从“我的事务”的最近结束任务进入任务详情，查看劳动、证据和验收记录；同时查看近期事件和申诉状态。
+- 从公开事件详情提交纠错、意见、投诉、举报、复核或风险反馈。
+- 从“我的事务”进入相关任务或事件反馈详情，查看处理状态和结果。
 - 维护公开资料（公开姓名和系统管理的头像），所有注册用户（含报名审核中的申请人）可用。
 
 ### 首页统一事务投影
 
-完整 Workspace 首页优先提供“我的事务”统一工作视图。它把与当前成员有关的现有任务、申诉、审批提案和采购处理投影为一致的页面信息，并区分：
+完整 Workspace 首页优先提供“我的事务”统一工作视图。它把与当前成员有关的现有任务、事件反馈、审批提案和采购处理投影为一致的页面信息，并区分：
 
 - 需要我处理：现有领域规则确认当前成员可以执行下一步；
 - 等待他人：当前成员与事项有关，但下一步属于其他成员或责任角色；
@@ -75,19 +75,19 @@ User -> Member
 
 每项投影尽量展示稳定事项标识、领域类型、原始业务状态、责任归属、当前处理方、下一动作和更新时间。现有模型不能可靠确认具体责任人时，页面显示责任角色或“暂未明确”，不会为了补齐展示而创建新的责任事实。
 
-该视图只是 Workspace 请求期间生成的只读投影，不是新的通用事务模型，不统一各领域状态机，也不参与授权。任务、申诉、提案和采购动作仍由原有领域入口、service 和 `AuthorizationService` 处理；尚未领取的开放任务属于参与机会，不计入个人事务。
+该视图只是 Workspace 请求期间生成的只读投影，不是新的通用事务模型，不统一各领域状态机，也不参与授权。任务、事件反馈、提案和采购动作仍由各自领域入口、service 和 `AuthorizationService` 处理；尚未领取的开放任务属于参与机会，不计入个人事务。
 
-当前处于迁移对照阶段：新的“我的事务”区域位于旧首页模块之前。原有“当前任务”和“可领取任务”已在逐项确认并完成任务中心承接后从首页删除；“下一步动作”、首页“个人任务历史”和“相关事件”也已删除。资源预警已迁入仅管理员可访问的 `/workspace/inventory/`，普通成员无需查看。待处理事项、其余统计、积分流水和申诉状态继续保留，后续仍需逐项确认。公开事件时间线和业务详情中的事件记录不受影响。
+当前处于迁移对照阶段：新的“我的事务”区域位于旧首页模块之前。原有“当前任务”“可领取任务”“下一步动作”“个人任务历史”“相关事件”和旧“申诉状态”均已在逐项确认后删除。资源预警已迁入仅管理员可访问的 `/workspace/inventory/`。事件反馈创建入口位于 `/events/{event_id}/`，Workspace 只保留事务投影。
 
 ## 表单入口
 
 ```text
 POST /workspace/tasks/{task_id}/claim/
 POST /workspace/tasks/{task_id}/submit-labor/
-POST /workspace/disputes/
+POST /events/{event_id}/
 ```
 
-任务列表入口为 `GET /workspace/tasks/`，任务详情入口为 `GET /workspace/tasks/{task_id}/`。任务领取、劳动提交和申诉提交仍通过对应领域服务完成，并写入必要的业务事件和统一事件账本。
+任务列表入口为 `GET /workspace/tasks/`，任务详情入口为 `GET /workspace/tasks/{task_id}/`。事件反馈详情入口为 `GET /event-feedbacks/{feedback_id}/`。任务动作和反馈处理都通过对应领域服务完成，并写入统一事件账本。
 
 ### 公开资料维护
 
@@ -151,7 +151,7 @@ GET  /workspace/credits/budgets/                # 积分预算（管理员：发
 POST /workspace/credits/budgets/
 GET  /workspace/credits/transfer/              # 积分转账（守约者）
 POST /workspace/credits/transfer/
-GET  /workspace/credits/redemption/             # 兑换订单列表、创建、取消、申诉（守约者）
+GET  /workspace/credits/redemption/             # 兑换订单列表、创建、取消、报告履约问题（守约者）
 POST /workspace/credits/redemption/
 GET  /workspace/credits/redemption/review/      # 兑换履约（管理员）
 POST /workspace/credits/redemption/review/
@@ -225,4 +225,4 @@ POST /workspace/applications/<application_id>/create-admission-proposal/
 
 `/workspace/` 是成员本人使用的工作台，不承担底层管理职责。
 
-成员账号创建、角色任命、提案处理、任务兜底维护、资源底层调整、申诉兜底处理、仿真归档等高影响操作，统一通过 control 后台或领域服务完成。
+成员账号创建、角色任命、提案处理、任务兜底维护、资源底层调整、事件反馈处理、仿真归档等高影响操作，统一通过 control 后台或领域服务完成；事件反馈不能在 Admin 中直接编辑。

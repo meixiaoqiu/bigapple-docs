@@ -11,7 +11,7 @@ title: Admin 内部维护后台
 
 `/admin/` 是当前阶段的中文内部维护后台，用于开发、本地演示、排障和少量早期管理操作。
 
-它不是中远期完全体里的最终运营后台。最终运营后台应按成员、任务、资源、申诉和审计流程组织页面；Django Admin 仍保留为底层维护工具。
+它不是中远期完全体里的最终运营后台。最终运营后台应按成员、任务、资源、事件反馈和审计流程组织页面；Django Admin 仍保留为底层维护工具。
 
 当前本地开发已经拆成三个站点，但 Django Admin 只在 control plane 暴露：
 
@@ -82,7 +82,7 @@ python manage.py seed_demo --world-id realworld
 | 计划变更操作 | 查看变更集中每一条声明式计划数据操作。 | 禁止新增、修改和删除。 |
 | 任务 | 查看和维护早期任务数据。 | 禁止删除；已有记录的 `task_id` 只读；提交和验收时间只读。 |
 | 资源 | 查看当前资源库存，早期可做底层维护。 | 禁止删除；已有记录的 `resource_id` 只读；更新时间只读；库存调整应优先走 `core.resource_services`，以便生成资源事件。 |
-| 申诉 | 查看早期申诉记录，必要时做底层维护。 | 禁止删除；已有记录的 `dispute_id` 只读；提交时间只读；申诉受理和处理结论应优先走 API 或 `core.dispute_services`，以便生成申诉事件。 |
+| 事件反馈 | 只读查看反馈、身份展示范围和处理状态。 | 禁止新增、修改和删除；全部字段只读；生命周期动作必须走 `core.event_feedback_services`。 |
 | 规则版本 | 不注册到 `/admin/`；后续应通过专门规则发布流程创建新版本。 | 不通过 Django Admin 维护。 |
 | 积分流水 | 在“技术审计与配置”中查看积分业务流水，并追溯统一事件。 | 禁止新增、修改和删除。 |
 | 业务事件流 | 不注册到 `/admin/`；通过 API 和公开首页 `/` 查看。 | 不通过 Django Admin 维护。 |
@@ -91,7 +91,7 @@ python manage.py seed_demo --world-id realworld
 ## 操作原则
 
 - Control Admin 首页按底层维护域分组：`技术审计与配置` 保留统一事件账本和积分流水，`仿真` 保留仿真快照、快照明细、处置记录和仿真实验后台入口；世界目录由 `worlds.WorldRegistry` 统一管理，不再保留独立的仿真世界模型。
-- 在 control plane 中，成员、成员报名、合作方报名、组织、角色、角色任命、报销申请、财务审核、财务流水、提案、任务、资源、供应商报价、库存流水、申诉、项目计划和仿真运行会作为底层数据管理模型展示。它们用于技术维护和兜底排障，不替代后续专门业务流程页。
+- 在 control plane 中，成员、成员报名、合作方报名、组织、角色、角色任命、报销申请、财务审核、财务流水、提案、任务、资源、供应商报价、库存流水、事件反馈、项目计划和仿真运行会作为底层模型展示。事件反馈只读，其余模型按各自 Admin 规则用于技术维护和兜底排障，不替代后续专门业务流程页。
 - 真实世界和仿真世界不暴露 `/admin/`。所有 Django Admin 级底层管理都收敛到 `bigadmin.local/admin/`，避免 world 用户系统出现 `is_staff` 日常账号和 Django Admin 入口。
 - 当前真实世界和仿真世界 runtime 只提供 `/workspace/`、`/`、报名入口和 API，不暴露独立业务后台。底层维护、仿真实验和高影响操作归属 `bigadmin.local/admin/` 与 `bigadmin.local/admin/simulation-lab/`，其中仿真实验入口仅限 superuser。
 - `Permission` 和 `RolePermission` 是底层能力目录，不作为日常顶层菜单展示；管理员主要从 `Role` 详情页通过角色权限 inline 查看和维护角色能力。
@@ -99,7 +99,7 @@ python manage.py seed_demo --world-id realworld
 - 是否虚拟成员不再是成员字段，而由当前世界实例类型决定：`WORLD_INSTANCE_TYPE=simulation` 时 actor 输出为 `virtual_member`，`WORLD_INSTANCE_TYPE=real` 时 actor 输出为 `human_member`。
 - 积分流水只能追加，不能通过 Admin 修改历史流水；正式创建和冲正应通过 `core.ledger_services.create_ledger_entry()` / `reverse_ledger_entry()`，并写入统一事件账本。
 - 业务 `Event` 是给 API 和 observer 使用的可回放业务事件流，不注册到 Django Admin，也不能通过 Admin 修改历史事件。
-- 统一事件账本是只追加哈希链审计依据，覆盖提案、投票、执行、角色任命、角色撤销、任务生命周期、申诉生命周期和积分变动，不能通过 Admin 新增、修改或删除；如需校验链路，使用 `core.event_ledger.verify_event_chain()`。
+- 统一事件账本是只追加哈希链审计依据，覆盖提案、投票、执行、角色任命、角色撤销、任务生命周期、事件反馈生命周期和积分变动，不能通过 Admin 新增、修改或删除；如需校验链路，使用 `core.event_ledger.verify_event_chain()`。
 - 当前统一事件账本只是玩具版篡改可发现机制，不是绝对不可篡改存证；它没有外部锚定，数据库级写入或 ORM `update()` 仍可绕过 model/admin 保护，但链路校验应能发现不一致。
 - 当前治理权限判断只走 `Member -> RoleAssignment -> RolePermission`，并由 `AuthorizationService` 统一调用 OpenFGA 计算。临时授权不再是独立模型，而是有较短 `end_at` 的角色任命；`resource=None` 表示不限定具体资源，只判断是否在任一资源范围具备该权限。具体资源操作必须传入 `Resource` 做对象级授权，OpenFGA rebuild 会把全局 `RolePermission` 与 `constraints_json.resource_id` / `resource_ids` 分别投影为全局资源授权和具体资源授权。
 - 容量评估属于具体 world 的业务评估数据，不是 control DB 的全局技术配置。真实世界和仿真世界各自拥有自己的 `CapacityAssessment` 记录；observer 可展示摘要。重大容量决策应通过提案或专门流程落账。
@@ -110,8 +110,8 @@ python manage.py seed_demo --world-id realworld
 - 计划修订建议和计划变更集来自模拟失败，只代表“建议”和“数据 patch 草案”。仿真 world 中的变更集应在 `/admin/simulation-lab/` 的 run 详情页审阅和采纳，因为普通 Django Admin 不携带 world 数据库上下文，不能可靠打开 simulation world 的 `PlanChangeSet`。采纳变更集时点击“采纳为下一轮仿真基线”；该动作复制源 `PlanRevision`，在新版本上应用操作，发布新版本，退役同一计划下旧的已发布版本，并把 `PlanChangeSet` 标记为 `applied`。它不等同于归档仿真 run。
 - **重置仿真世界到零起点基线**：`POST /admin/simulation-lab/reset-world/` 是高风险维护操作，只限 superuser。它清空目标仿真 world 的全部业务数据，然后重新运行 `seed_world --template zero_start`，使目标 world 回到只有一个发起人、一个极简 ProjectPlan 和一个已发布 PlanRevision 的基线状态。重置不推进虚拟小时，不创建 SimulationRun / SimulationTurn。操作要求输入当前 world_id 和确认文字 "确认重置" 作为二次确认；如果存在运行中或已结束但未处置的 run，必须勾选 force_reset 才能执行。每次操作写入 control DB 的 `WorldMaintenanceLog` 审计记录（`worlds/models.py`），并在 `worlds/admin.py` 中注册为只读查看。重置只对 `world_type=simulation` 的 active world 生效，realworld 会被硬拒绝。
 - 任务创建、发布、指派、领取、劳动提交、验收和关闭的正式状态变化应优先通过 API 或 `core.tasks.*` 领域服务完成，这些服务会追加 `task_*` 统一事件账本记录。
-- 申诉提交、受理和处理结论应优先通过 API 或 `core.dispute_services` 完成，这些服务会追加 `dispute_*` 统一事件账本记录。
-- 当前 Admin 可以用于早期维护资源、供应商报价、成员和申诉数据，但涉及审计链的操作后续应迁移到运营后台。库存流水是只读查账记录，不能通过 Admin 新增、修改或删除。资源运营页会基于已发布计划需求、当前库存和有效供应商报价展示资源缺口，并展示近期库存流水；这不是完整采购系统，也不会自动创建采购单。
+- 事件反馈提交、核实、回应、结论和结束必须通过 API 或 `core.event_feedback_services` 完成，这些服务会追加 `event_feedback_*` 统一事件账本记录。
+- 当前 Admin 可以用于早期维护资源、供应商报价和成员数据；事件反馈仅供查询，不能在 Admin 中新增、修改或删除，所有生命周期动作必须通过领域服务。库存流水是只读查账记录，不能通过 Admin 新增、修改或删除。资源运营页会基于已发布计划需求、当前库存和有效供应商报价展示资源缺口，并展示近期库存流水；这不是完整采购系统，也不会自动创建采购单。
 - 固定 world 站点的公开入口：`/register/` 用于账号注册，`/workspace/apply/` 用于登录后的成员报名。`/apply/` 和 `/apply/partner/` 已移除。零起点仿真通过 workspace 表单流程提交成员报名，通过 service adapter 提交合作方报名；字段、校验或保存链路失败会让仿真 run 以 system-interaction failure 结束。
 
 ## 治理权限与 OpenFGA
@@ -177,7 +177,7 @@ Admin 中的角色与权限查看入口：
 
 当前 P1 阶段已经强化：
 
-- 列表页增加关键列，便于扫描任务、资源、申诉、事件和容量状态。
+- 列表页增加关键列，便于扫描任务、资源、事件反馈、事件和容量状态。
 - 增加搜索、筛选、排序和日期层级。
 - 外键字段使用自动补全，减少误选。
 - 高风险历史模型设置为只读。
@@ -193,10 +193,10 @@ Admin 中的角色与权限查看入口：
 - 正常任务：已验收并产生贡献积分。
 - 待验收任务：成员已提交劳动，等待管理员处理。
 - 驳回任务：维修任务因证据不足被驳回。
-- 争议任务：仓库盘点任务进入申诉复核。
+- 争议任务：仓库盘点任务进入履约问题复核状态。
 - 冲正任务：重复采购登记产生原始流水和 reversal 冲正流水。
 - 资源预警：药品库存低于预警线。
-- 申诉状态：包含已提交、处理中、已解决三类申诉。
+- 事件反馈：包含已提交、核实中、等待回应、已形成结论和已结束等状态。
 - 容量评估：包含暂停新增接纳的资源压力场景。
 - 项目执行计划：包含 `bigapple001据点执行计划`、计划版本、30 个以上主线节点、节点依赖、预算/人力需求和容量影响。
 - 现金资源和成员中文技能画像：用于自动模拟判断预算和技能缺口。
@@ -218,7 +218,7 @@ live_os.api.tasks
 
 - 任务发布、领取、提交、验收需要在一个流程中完成。
 - 资源变动应优先通过 `core.resource_services` 记录；该流程会更新库存并追加资源事件。后续仍需补独立操作日志。
-- 申诉受理和处理结论应优先通过 API 或 `core.dispute_services` 记录；该流程会更新申诉状态，追加内部业务 `Event`，并追加 `dispute_*` 统一事件账本记录。后续治理后台仍需补高影响裁决和复核链。
+- 事件反馈处理应通过 `core.event_feedback_services` 记录；该流程更新反馈状态并追加 `event_feedback_*` 统一账本记录，结论不会直接修改原事件或其他领域状态。
 - 不同管理员需要不同权限范围。
 - 页面需要隐藏底层字段并展示业务上下文。
 

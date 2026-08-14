@@ -23,7 +23,7 @@ static/technical-contracts/schemas/
 | <a href="/technical-contracts/schemas/credit-transaction.schema.json">credit-transaction.schema.json</a> | `CreditTransaction` |
 | <a href="/technical-contracts/schemas/credit-transfer-request.schema.json">credit-transfer-request.schema.json</a> | `CreditTransferRequest` |
 | <a href="/technical-contracts/schemas/credit-transfer-response.schema.json">credit-transfer-response.schema.json</a> | `CreditTransferResponse` |
-| <a href="/technical-contracts/schemas/dispute.schema.json">dispute.schema.json</a> | `Dispute` |
+| <a href="/technical-contracts/schemas/event-feedback.schema.json">event-feedback.schema.json</a> | `EventFeedback` |
 | <a href="/technical-contracts/schemas/event.schema.json">event.schema.json</a> | `Event` |
 | <a href="/technical-contracts/schemas/ledger-entry.schema.json">ledger-entry.schema.json</a> | `LedgerEntry` |
 | <a href="/technical-contracts/schemas/member.schema.json">member.schema.json</a> | `Member` |

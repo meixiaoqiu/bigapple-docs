@@ -20,7 +20,7 @@ static/technical-contracts/examples/
 - <a href="/technical-contracts/examples/credit-transaction.example.json">credit-transaction.example.json</a>
 - <a href="/technical-contracts/examples/credit-transfer-request.example.json">credit-transfer-request.example.json</a>
 - <a href="/technical-contracts/examples/credit-transfer-response.example.json">credit-transfer-response.example.json</a>
-- <a href="/technical-contracts/examples/dispute.example.json">dispute.example.json</a>
+- <a href="/technical-contracts/examples/event-feedback.example.json">event-feedback.example.json</a>
 - <a href="/technical-contracts/examples/event.example.json">event.example.json</a>
 - <a href="/technical-contracts/examples/ledger-entry.example.json">ledger-entry.example.json</a>
 - <a href="/technical-contracts/examples/member.example.json">member.example.json</a>

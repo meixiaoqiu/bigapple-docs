@@ -25,7 +25,7 @@ static/technical-contracts/openapi/live-os.v0.1.openapi.json
 
 - `GET /tasks`：返回任务的公开属性和状态，不返回 `assignee_member_no`、`submitted_at`、`reviewed_at`、`metadata`。
 - `GET /resources`：返回资源库存和预警信息，不返回原始 `metadata`。
-- `GET /events?visibility=public`：返回公开时间线信息，不返回 `involved_member_ids`、`related_dispute_id`、原始 `payload`；人工生成的公开事件只返回标题级 `summary`；保留 `related_task_id` 以便关联公开任务。
+- `GET /events?visibility=public`：返回公开时间线信息，不返回 `involved_member_ids`、`related_feedback_id`、原始 `payload`；人工生成的公开事件只返回标题级 `summary`；保留 `related_task_id` 以便关联公开任务。
 - `GET /observer/summary`：复用公开事件和公开资源投影，不返回原始事件 `payload` 或资源 `metadata`。
 
 查询 `visibility=internal` 或 `visibility=private` 的事件仍需治理权限，并继续返回内部完整事件结构。`technical-contracts` 已用 `public-task`、`public-resource`、`public-event` schema 表达这些公开投影边界。
@@ -42,7 +42,7 @@ static/technical-contracts/openapi/live-os.v0.1.openapi.json
 | POST | `/tasks/{task_id}/review` | 验收任务，验收通过时创建账本流水。 | `live_os.api.tasks.review_task_view` |
 | GET | `/ledger-entries` | 获取积分流水。 | `live_os.api.ledger.list_ledger_entries` |
 | GET | `/resources` | 获取资源状态。 | `live_os.api.resources.list_resources` |
-| POST | `/disputes` | 创建实名申诉。 | `live_os.api.disputes.create_dispute` |
+| POST | `/event-feedbacks` | 针对可见事件创建实名反馈。 | `live_os.api.event_feedbacks.create_event_feedback` |
 | GET | `/events` | 获取事件流。 | `live_os.api.events.list_events` |
 | GET | `/capacity-assessments/latest` | 获取最新容量评估。 | `live_os.api.capacity.latest_capacity_assessment` |
 | GET | `/observer/summary` | 获取观察台摘要。 | `observer.api_views.observer_summary` |
@@ -81,14 +81,14 @@ GET /members/{member_no}/workspace
 /workspace/
 ```
 
-该接口不替代任务、账本、申诉或事件 API。它只是为成员工作台首屏提供聚合摘要，当前返回：
+该接口不替代账本、事件反馈或事件 API。它只是为成员工作台首屏提供聚合摘要，当前返回：
 
 - 成员身份和画像。
 - 当前模拟日期。
 - 当前积分余额。
 - 近期积分流水。
-- 未关闭申诉。
-- 最近申诉状态详情。
+- 当前成员相关的进行中事件反馈。
+- 最近事件反馈状态详情。
 - 任务状态计数。
 
 对应契约：
@@ -148,34 +148,39 @@ GET /api/v0.1/observer/summary
 
 项目执行计划当前只通过服务端页面和 Admin 展示、编辑，不新增 contract-facing API。后续如果要让外部客户端读取或编辑计划，必须先在 `technical-contracts` 中定义计划相关 schema 和 OpenAPI 路径。
 
-## 申诉处理事件
+## 事件反馈
 
-当前申诉创建有 contract-facing API：
-
-```text
-POST /disputes
-```
-
-成员工作台也提供页面动作：
+当前事件反馈创建有 contract-facing API：
 
 ```text
-POST /api/v0.1/disputes
+POST /event-feedbacks
 ```
 
-申诉处理先通过领域服务完成：
+完整 API 路径为：
 
 ```text
-core.dispute_services.start_dispute_review(...)
-core.dispute_services.resolve_dispute(...)
+POST /api/v0.1/event-feedbacks
 ```
 
-这些调用不是 contract-facing API；它们是服务端领域边界。动作成功后会更新 `core_dispute` 并追加 `event_type = dispute` 的内部事件。外部客户端可以继续通过已实现 API 读取事件：
+反馈提交和处理通过领域服务完成：
+
+```text
+core.event_feedback_services.submit_event_feedback(...)
+core.event_feedback_services.start_event_feedback_verification(...)
+core.event_feedback_services.request_event_feedback_response(...)
+core.event_feedback_services.respond_to_event_feedback(...)
+core.event_feedback_services.conclude_event_feedback(...)
+core.event_feedback_services.close_event_feedback(...)
+core.event_feedback_services.withdraw_event_feedback(...)
+```
+
+这些调用不是 contract-facing API；它们是服务端领域边界。动作成功后会更新 `core_event_feedback` 并追加 `event_feedback_*` 统一账本事件。反馈结论不修改原事件；需要纠正权威状态时调用对应领域服务并关联新的结果事件。
 
 ```text
 GET /events
 ```
 
-申诉状态遵循 `technical-contracts/schemas/dispute.schema.json`，申诉事件遵循 `technical-contracts/schemas/event.schema.json`。
+反馈结构遵循 `technical-contracts/schemas/event-feedback.schema.json`，关联事件遵循 `technical-contracts/schemas/event.schema.json`。旧 `/disputes` 路径和 schema 已删除，不提供兼容别名。
 
 ## 当前安全状态
 
@@ -183,10 +188,10 @@ GET /events
 
 - Django `User.username` 与 `Member.member_no` 相同时，视为该成员本人。
 - staff / superuser 视为内部治理主体。
-- 拥有相应 `governance.*` 权限的成员可访问运营、验收、资源、申诉和内部事件查询。
+- 拥有相应 `governance.*` 权限的成员可访问运营、验收、资源、事件反馈处理和内部事件查询。
 - 成员自助页面 `/workspace/` 要求当前登录账号绑定到目标 world 中的 `Member`；contract-facing 成员 API 仍按接口权限规则校验。
-- 任务验收、运营处理、资源调整和申诉处理中的 actor 由服务端根据当前登录主体生成，不再信任 payload 或表单中的责任人字段。
-- `POST /disputes` 只接受“提交申诉请求”，`dispute_id`、`status`、`handler`、`reviewer`、时间戳和最终结论由服务端管理。
+- 任务验收、运营处理、资源调整和事件反馈处理中的 actor 由服务端根据当前登录主体生成，不再信任 payload 或表单中的责任人字段。
+- `POST /event-feedbacks` 只接受反馈内容和身份展示选择；`feedback_id`、`status`、处理责任人、时间戳和结论由服务端管理。
 - `GET /events` 默认只返回 `visibility=public`；查询 `internal` 或 `private` 事件必须具备治理权限。
 
 当前仍不能直接用于生产。任何非本地部署前必须补齐：

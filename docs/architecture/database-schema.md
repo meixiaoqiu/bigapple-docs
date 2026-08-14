@@ -388,13 +388,13 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 
 统一事件账本。只追加，不作为普通可编辑日志使用；第一版通过 `core.event_ledger.append_event()` 统一分配 `seq`、计算 `payload_hash`、`prev_hash` 和 `event_hash`。
 
-系统不再拆分“治理事件账本”“提案事件账本”“积分事件账本”“任务事件账本”“申诉事件账本”等多套哈希链。提案、投票、执行、角色任命、角色撤销、任务生命周期、申诉生命周期、资源调整、报销提交、财务审核、财务付款、积分获得、积分扣减、积分调整、积分冲正和系统初始化等关键事实都进入同一条可校验链。业务表仍然存在：`Proposal`、`ProposalVote`、`ProposalExecution`、`RoleAssignment`、`Task`、`Dispute`、`Resource`、`ExpenseClaim`、`FinanceReview`、`FinanceTransaction`、`LedgerEntry` 负责结构化状态、查询、校验和后台维护；`SystemEvent` 负责全局顺序、责任追溯、业务快照和篡改可发现。
+系统不再为各领域拆分多套哈希链。提案、投票、执行、角色任命、任务、事件反馈、资源、财务和积分等关键事实都进入同一条可校验链。`Proposal`、`Task`、`EventFeedback`、`Resource`、`ExpenseClaim`、`LedgerEntry` 等业务表负责结构化状态；`SystemEvent` 负责全局顺序、责任追溯、业务快照和篡改可发现。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `id` | integer pk | 是 | 内部主键。 |
 | `seq` | integer unique | 是 | 单调递增系统事件序号。 |
-| `event_type` | enum string | 是 | `member_created`、`member_application_submitted`、`member_application_reviewed`、`partner_application_submitted`、`partner_application_reviewed`、`role_assigned`、`role_revoked`、`proposal_created`、`proposal_vote_cast`、`proposal_vote_changed`、`proposal_passed`、`proposal_failed`、`proposal_cancelled`、`proposal_executed`、`task_created`、`task_published`、`task_assigned`、`task_claimed`、`task_submitted`、`task_reviewed`、`task_closed`、`dispute_created`、`dispute_review_started`、`dispute_resolved`、`resource_adjusted`、`credit_earned`、`credit_deducted`、`credit_adjusted`、`credit_reversed`、`system_initialized`。 |
+| `event_type` | enum string | 是 | `member_created`、`member_application_submitted`、`member_application_reviewed`、`partner_application_submitted`、`partner_application_reviewed`、`role_created`、`role_assigned`、`role_revoked`、`deliberator_exam_question_changed`、`deliberator_exam_policy_changed`、`proposal_created`、`proposal_vote_cast`、`proposal_vote_changed`、`proposal_passed`、`proposal_failed`、`proposal_cancelled`、`proposal_executed`、`credential_granted`、`expense_claim_submitted`、`expense_claim_reviewed`、`expense_claim_paid`、`task_created`、`task_published`、`task_assigned`、`task_claimed`、`task_submitted`、`task_reviewed`、`task_closed`、`event_feedback_submitted`、`event_feedback_verification_started`、`event_feedback_response_requested`、`event_feedback_responded`、`event_feedback_concluded`、`event_feedback_closed`、`event_feedback_withdrawn`、`resource_adjusted`、`supplier_offer_submitted`、`supplier_offer_accepted`、`supplier_offer_rejected`、`supplier_offer_receipt_accepted`、`supplier_offer_receipt_rejected`、`supplier_offer_completed`、`approval_proposal_submitted`、`approval_proposal_approved`、`approval_proposal_rejected`、`approval_proposal_executed`、`approval_proposal_cancelled`、`procurement_challenge_submitted`、`procurement_challenge_reviewed`、`risk_alert_triggered`、`risk_alert_acknowledged`、`risk_alert_resolved`、`risk_alert_dismissed`、`risk_rule_updated`、`credit_earned`、`credit_deducted`、`credit_adjusted`、`credit_reversed`、`system_initialized`。 |
 | `aggregate_type` | string | 是 | 聚合类型，例如 `RoleAssignment`。 |
 | `aggregate_id` | string | 是 | 聚合记录 ID（内部关联查询字段，不进入 v2 公开 event_hash）。 |
 | `actor_member_id` | fk | 否 | 行为人。 |
@@ -825,7 +825,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `in_progress` | 成员正在执行。 |
 | `pending_review` | 成员已提交劳动记录，等待运营或管理员验收。 |
 | `accepted` | 验收通过，通常已经产生贡献积分流水。 |
-| `rejected` | 验收驳回，需要成员重新处理或发起申诉。 |
+| `rejected` | 验收驳回，需要成员重新处理；如需质疑该事实，可针对关联事件提交事件反馈。 |
 | `disputed` | 任务进入争议流程。 |
 | `closed` | 未进入成员履约链路前由运营人员关闭，不应产生积分流水。 |
 | `reversed` | 历史任务被冲正或撤销，通常需要和账本冲正、事件记录配套使用。 |
@@ -1023,7 +1023,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `event_id` | string pk | 是 | 稳定 ID。 |
-| `event_type` | enum string | 是 | `task`、`ledger`、`resource`、`dispute`、`capacity` 等。 |
+| `event_type` | enum string | 是 | `task`、`ledger`、`resource`、`event_feedback`、`capacity` 等。 |
 | `simulation_day` | integer | 是 | 可回放的模拟日期。 |
 | `simulation_run_id` | fk | 否 | 仿真生成事件所属的模拟运行；真实世界事件为空。 |
 | `severity` | enum string | 是 | `info`、`warning`、`critical`。 |
@@ -1031,7 +1031,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `summary` | text | 是 | 公开或内部摘要。 |
 | `involved_member_ids` | json array | 是 | 涉及成员业务编号列表，不强制 FK。 |
 | `related_task_id` | fk | 否 | 关联任务。 |
-| `related_dispute_id` | string | 否 | 关联申诉。 |
+| `related_feedback_id` | string | 否 | 关联事件反馈。 |
 | `occurred_at` | datetime | 是 | 发生时间。 |
 | `generated_by` | enum string | 是 | `live_os`、`simulation_engine`、`human_operator`。 |
 | `visibility` | enum string | 是 | `public`、`internal`、`private`。 |
@@ -1060,52 +1060,35 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 
 SystemEvent(event_type=resource_adjusted) v2 `public_facts` 公开：`name`、`resource_type`、`unit`、`delta`、`is_warning`、`transaction_id`。`old_stock`/`new_stock`/`warning_threshold`/`reason_raw`/`actor` 只记录为 `private_commitments`，不公开原值。
 
-申诉处理会追加 `event_type = dispute` 的内部事件。其 `payload` 当前包含：
+## core_event_feedback
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `action` | string | `start_review` 或 `resolve`。 |
-| `dispute_id` | string | 关联申诉。 |
-| `handler` | ActorRef object | 受理人，受理事件使用。 |
-| `reviewer` | ActorRef object | 复核人，处理结论事件使用。 |
-| `decision` | string | `resolved` 或 `rejected`，处理结论事件使用。 |
-| `resolution` | string | 处理结论说明。 |
-| `note` | string | 受理备注。 |
-
-## core_dispute
-
-实名申诉或复核记录。
+以公开业务事件为固定锚点的实名反馈记录，统一承载纠错、意见、投诉、举报、复核和风险。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `dispute_id` | string pk | 是 | 稳定 ID。 |
-| `dispute_type` | enum string | 是 | `task_review`、`points_deduction` 等。 |
-| `status` | enum string | 是 | `submitted`、`in_review`、`resolved`、`rejected`、`appealed`、`reversed`。 |
-| `claimant_member_id` | fk | 是 | 实名申诉人。 |
-| `respondent_member_id` | fk | 否 | 被申诉人。 |
-| `related_task_id` | fk | 否 | 关联任务。 |
-| `related_ledger_entry_id` | fk | 否 | 关联积分流水。 |
-| `facts` | text | 是 | 事实陈述。 |
+| `feedback_id` | string pk | 是 | 稳定 ID。 |
+| `related_event_id` | fk | 是 | 固定关联的用户可见 `Event`。 |
+| `feedback_type` | enum string | 是 | `correction`、`opinion`、`complaint`、`report`、`review`、`risk`。 |
+| `status` | enum string | 是 | `submitted`、`verifying`、`awaiting_response`、`concluded`、`closed`、`withdrawn`。 |
+| `submitted_by_id` | fk | 是 | 系统内部实名提交人。 |
+| `subject_member_id` | fk | 否 | 需要正式回应的相关方。 |
+| `statement` | text | 是 | 事实陈述。 |
+| `requested_outcome` | text | 否 | 期望结果。 |
 | `evidence_refs` | json array | 是 | 证据引用。 |
-| `handler` | json | 是 | 处理人 ActorRef。 |
-| `reviewer` | json | 是 | 复核人 ActorRef。 |
-| `resolution` | text | 否 | 处理结果。 |
-| `appeal_path` | string | 是 | 申诉路径。 |
+| `submitter_visibility` | enum string | 是 | `public`、`parties_and_handlers`、`handlers_only`。 |
+| `privacy_reason` | text | 否 | 限制身份展示时必填，仅处理者可见。 |
+| `assigned_handler_id` | fk | 否 | 明确核实责任人。 |
+| `response_statement` | text | 否 | 相关方正式回应。 |
+| `responded_by_id` / `responded_at` | fk / datetime | 否 | 回应人和时间。 |
+| `conclusion` | enum string | 否 | `confirmed`、`partly_confirmed`、`not_confirmed`、`inconclusive`、`not_applicable`。 |
+| `conclusion_reason` | text | 否 | 公开结论依据。 |
+| `resolution_event_id` | fk | 否 | 领域纠正动作产生的新结果事件；不覆盖原事件。 |
+| `concluded_by_id` | fk | 否 | 形成结论的责任成员。 |
 | `submitted_at` | datetime | 是 | 提交时间。 |
-| `resolved_at` | datetime | 否 | 解决时间。 |
+| `verification_started_at` / `concluded_at` / `closed_at` | datetime | 否 | 生命周期时间。 |
 | `metadata` | json | 是 | 扩展对象。 |
 
-运营申诉处理会写入以下 `metadata` 字段：
-
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `review_started_at` | datetime string | 申诉受理时间。 |
-| `review_started_note` | string | 受理备注。 |
-| `resolved_by` | ActorRef object | 记录处理结论的管理员。 |
-| `resolved_at` | datetime string | 处理结论记录时间。 |
-| `decision` | string | `resolved` 或 `rejected`。 |
-
-申诉本身不保存独立哈希字段，也不维护自己的哈希链。正式申诉生命周期应通过 `core.dispute_services.submit_dispute()`、`start_dispute_review()`、`resolve_dispute()` 完成，并追加 `dispute_*` 类型 `SystemEvent`；多个 `SystemEvent` 通过 `aggregate_type = "Dispute"` 和 `aggregate_id = dispute_id` 关联同一个申诉。
+事件反馈不保存独立哈希字段。正式生命周期必须通过 `core.event_feedback_services` 完成，并追加 `event_feedback_*` 类型 `SystemEvent`；账本使用 `aggregate_type = "EventFeedback"` 和 `aggregate_id = feedback_id` 聚合。反馈结论只记录判断和可选结果事件，不直接修改任务、积分、资源、财务或资格状态。
 
 ## core_capacity_assessment
 

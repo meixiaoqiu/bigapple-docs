@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "redemption-order-action-request.schema.json",
   "title": "RedemptionOrderActionRequest",
-  "description": "兑换订单操作（取消/申诉/履约）请求。",
+  "description": "兑换订单操作（取消/报告履约问题/确认履约）请求。",
   "type": "object",
   "additionalProperties": false,
   "properties": {

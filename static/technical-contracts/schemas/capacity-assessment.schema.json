@@ -56,7 +56,7 @@
           "training",
           "governance",
           "high_load_roles",
-          "disputes",
+          "event_feedbacks",
           "satisfaction",
           "fatigue",
           "exit_risk"
@@ -72,7 +72,7 @@
         "task_gap",
         "average_satisfaction",
         "average_fatigue",
-        "open_disputes",
+        "active_feedbacks",
         "exit_risk_members"
       ],
       "properties": {
@@ -91,7 +91,7 @@
         "average_fatigue": {
           "$ref": "common.schema.json#/$defs/score"
         },
-        "open_disputes": {
+        "active_feedbacks": {
           "type": "integer",
           "minimum": 0
         },

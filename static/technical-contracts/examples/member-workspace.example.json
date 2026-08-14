@@ -68,33 +68,28 @@
       "system_event_seq": 1
     }
   ],
-  "open_disputes": [],
-  "dispute_history": [
+  "open_feedbacks": [],
+  "feedback_history": [
     {
-      "dispute_id": "dispute-0001",
-      "dispute_type": "task_review",
-      "status": "resolved",
-      "claimant_member_no": "mem-0001",
-      "related_task_id": "task-0002",
-      "facts": "The member requested a review of the kitchen cleaning acceptance rule.",
+      "feedback_id": "feedback-0001",
+      "related_event_id": "event-0001",
+      "feedback_type": "review",
+      "status": "closed",
+      "submitted_by_member_no": "mem-0001",
+      "statement": "The member requested a review of the kitchen cleaning acceptance rule.",
+      "requested_outcome": "Review the acceptance result.",
       "evidence_refs": [
         "event-0001",
         "task-0002"
       ],
-      "handler": {
-        "actor_id": "member-admin-0001",
-        "actor_type": "human_member",
-        "display_name": "reviewer"
-      },
-      "reviewer": {
-        "actor_id": "member-admin-0002",
-        "actor_type": "human_member",
-        "display_name": "appeal reviewer"
-      },
-      "resolution": "The original acceptance result was kept.",
-      "appeal_path": "standard-review-appeal",
+      "submitter_visibility": "public",
+      "assigned_handler_member_no": "member-admin-0001",
+      "concluded_by_member_no": "member-admin-0002",
+      "conclusion": "not_confirmed",
+      "conclusion_reason": "The original acceptance result was kept.",
       "submitted_at": "2026-05-24T04:00:00Z",
-      "resolved_at": "2026-05-24T05:00:00Z",
+      "concluded_at": "2026-05-24T05:00:00Z",
+      "closed_at": "2026-05-24T05:00:00Z",
       "metadata": {
         "seed": true
       }
