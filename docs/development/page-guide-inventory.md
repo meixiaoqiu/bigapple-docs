@@ -121,7 +121,7 @@ Observer 模块下所有视图均为公开，无需登录。
 | 报名处理列表 | `/workspace/applications/` | 维护 | 管理员 | 列表 | 已实现 | 已完成 | 已配置 | 需预先存在的本地维护账号 |
 | 报名处理详情 | `/workspace/applications/<application_id>/` | 维护 | 管理员 | 详情 | 已实现 | 不单独创建 | 暂不支持 | 归属报名处理列表说明书 |
 | 招募方向管理 | `/workspace/recruitment/` | 维护 | 管理员 | 管理 | 已实现 | 待创建 | 暂不支持 | 需维护权限 |
-| 财务审核职责任命 | `/workspace/finance/reviewer-appointments/` | 治理/财务 | 角色维护者与合格执衡者 | 列表/表单 | 已实现 | 待创建 | 暂不支持 | 提名、投票和执行复用角色任命提案 |
+| 财务审核职责任命 | `/workspace/finance/reviewer-appointments/` | 治理/财务 | 管理员 | 列表/关闭提示 | 部分实现 | 待创建 | 暂不支持 | 当前只读展示审核员；提名、投票和执行等待统一提案系统 |
 
 ---
 

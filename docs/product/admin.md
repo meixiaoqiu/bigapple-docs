@@ -64,6 +64,10 @@ python manage.py seed_demo --world-id realworld
 | 执衡者考试题目 | 由具备题库维护权限的管理员创建草稿、发布新版本和停用题目。 | 已发布且被考试使用的内容不能覆盖历史；正确答案和解释属于内部评分资料。 |
 | 执衡者考试政策 | 发布每次抽题数量和及格百分比。 | 每个 world 至多一项生效政策；有效题目不足时拒绝发布或开始考试。 |
 | 执衡者考试尝试 | 查看成员考试快照、作答、评分结果和产生的角色任命。 | 只读审计；不得通过 Admin 修改分数、通过状态或补建任命。 |
+
+考试的首次业务配置不要求进入 Django 技术后台。具有 `governance.manage_deliberator_exam` 明确权限的当前有效成员，可以从成员工作台进入“执衡者考试配置”，创建并立即发布一道单选题，再发布抽题数量和及格百分比政策。该页面只提供这两个最小动作和当前已发布题量、当前政策摘要；不提供统计、批量导入或考试记录编辑。Django `is_staff`、`is_superuser` 或仅有管理员名称都不是访问该页面的充分条件。
+
+当当前 world 没有生效政策或已发布题目少于政策抽题数时，申请页统一显示“执衡者资格考试暂未开放，请稍后再试”并禁用开始按钮。普通成员不会看到正确答案、内部解析或评分快照。
 | 凭证模板 | 查看已注册的凭证模板（只读）。 | 禁止新增、修改和删除（`has_add_permission=False`、`has_change_permission(obj)=False`、`has_delete_permission=False`）。模板由 `ensure_builtin_credential_templates()` 幂等创建，不应在 Admin 中手工维护。 |
 | 凭证发放 | 查看已发放的凭证实例（只读）。 | 禁止新增和删除（`has_add_permission=False`、`has_delete_permission=False`）。所有字段只读，包括 `grant_id`、`template`、`member`、`serial_no`、`display_no`、`status` 等。凭证发放由 `issue_covenanter_number()` 或 `issue_credential()` service 完成。 |
 | 报销申请 | 查看成员提交的报销申请，兜底排障状态和公开说明。 | 禁止新增、修改和删除；真实提交、审核、付款和撤回应通过 workspace 财务页面或 `core.finance_services` 完成。 |
@@ -164,8 +168,8 @@ Admin 中的角色与权限查看入口：
 - MemberPublicProfile 在 Member 详情页通过 inline 展示（public_name、avatar_key、avatar_sha256、avatar_size、avatar_updated_at、bio、is_visible）。头像对象字段只读；成员自行上传头像，管理员通过受权业务服务移除违规头像，不能在 Admin 手填对象 key。这是公开展示资料，不同于 Django User 和 Member 权威身份。职务/权限不能手填，来自角色任命。
 - `Organization` 详情页内联显示组织下的 `Role`。
 - `Role` 列表显示该角色绑定的权限数量，并可配置任命表决角色、通过比例和截止天数；详情页内联显示该角色绑定的 `RolePermission`，并显示当前拥有该角色的 `RoleAssignment`。
-- `Proposal` 是通用治理提案入口；角色任命只是 `proposal_type=role_appointment` 的一种。流程是 `Proposal -> ProposalVote -> ProposalExecution -> SystemEvent`。
-- 角色任命流程是 `role_appointment Proposal -> 表决通过 -> ProposalExecution -> RoleAssignment`。提案通过不等于执行完成，执行结果由 `ProposalExecution` 记录；投票资格以提案创建时的快照为准。
+- 旧通用提案、投票和执行维护入口已经删除。新的统一提案系统完成前，成员准入、共同角色任免和财务审核职责任命显示明确迁移关闭状态。
+- Admin 不提供绕过该关闭状态的直接治理写入口；明确允许的初始化和技术修复仍必须调用对应领域服务或命令。
 - `Permission` 和 `RolePermission` 仍保留为底层模型供角色 inline、自动补全和初始化命令使用，但不作为成员管理的顶层入口。
 - OpenFGA model / store / tuple 不是新的事实来源。若授权数据异常，应以 Django 权威数据为准运行 `openfga_rebuild_tuples` 完整重建，而不是手工在 Playground 中长期维护 tuple。
 - `LedgerEntry` 是贡献积分业务流水，余额从 `posted` 流水汇总得到；冲正通过新的 `reversal` 流水表达，流水会关联到对应 `SystemEvent`，排序和审计顺序使用 `SystemEvent.seq`。

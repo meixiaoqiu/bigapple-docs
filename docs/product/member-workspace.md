@@ -152,7 +152,7 @@ POST /workspace/finance/claims/<claim_id>/withdraw/
 GET/POST /workspace/finance/reviewer-appointments/
 ```
 
-该页面展示当前有效财务审核员、合格候选人和开放任命提案。具有 `governance.manage_roles` 的成员可以提名有效守约者并执行已通过提案；符合选民快照且当前仍具有守约者资格和执衡者任期的成员可以投票。执行只授予财务审核及查看审核材料所需权限，不授予付款或公开附件发布能力。
+该页面当前只展示有效财务审核员和统一提案流程迁移说明。财务审核职责的提名、表决和执行尚未由新系统承接，所有写操作失败关闭；页面不会创建任命提案，也不会直接授予角色或权限。未来恢复该流程时，执行结果仍只能授予财务审核及查看审核材料所需权限，不得捆绑付款或公开附件发布能力。
 
 ### 积分功能（守约者 + 管理员）
 
@@ -213,15 +213,13 @@ POST /workspace/recruitment/  (action=create / action=update)
 
 `/workspace/` 在守约者工作台之外，为具备 `governance.view_admin` 权限的管理员提供成员报名处理入口。普通守约者、待处理报名人、未绑定 `Member` 的 Django staff/superuser 都看不到入口，直接访问处理 URL 返回 403。
 
-`/workspace/apply/` 提交成员报名后，系统自动创建 `MemberApplication` 和 `member_admission` Proposal，提案直接进入 `VOTING` 状态。准入不存在独立的单人审核动作，完全由提案生命周期驱动。
+`/workspace/apply/` 提交后只创建并保存 `MemberApplication`。统一提案流程尚未承接成员准入，因此系统不会创建准入提案，不会进入投票状态，也不会通过管理员单人审核直接接纳或拒绝。报名资料保持 `submitted`，直到后续统一提案系统实现准入制度。
 
-member_admission 是 yes/no 二元表决，使用严格多数决：赞成票超过 eligible voters 半数时立即通过；反对票超过 eligible voters 半数时立即失败，并自动将关联 `MemberApplication` 设为 `REJECTED`。未形成多数前保持表决中；截止仍未通过则失败。分母始终是 `eligible_voters_snapshot_json` 的人数，不是已投票人数。普通 proposal 规则不变。
+管理员页面当前只用于查看报名资料和明确的迁移关闭状态。投票、批准、拒绝和执行操作全部失败关闭；成员准入所需的选民、阈值、截止和审计规则作为后续统一提案系统的制度要求保留，不代表当前已有可运行实现。
 
 ```text
 GET  /workspace/applications/                                          # 报名列表（按准入进度筛选）
-GET  /workspace/applications/<application_id>/                         # 报名详情（申请人资料 + 准入提案 + 投票 + 执行）
-POST /workspace/proposals/<proposal_id>/vote/                          # 成员准入投 yes/no；反对必须填写理由
-POST /workspace/proposals/<proposal_id>/execute/                       # 执行已通过准入提案
+GET  /workspace/applications/<application_id>/                         # 报名详情（只读资料 + 迁移关闭说明）
 ```
 
 不存在以下路由：
@@ -229,6 +227,8 @@ POST /workspace/proposals/<proposal_id>/execute/                       # 执行�
 ```text
 POST /workspace/applications/<application_id>/review/
 POST /workspace/applications/<application_id>/create-admission-proposal/
+POST /workspace/proposals/<proposal_id>/vote/
+POST /workspace/proposals/<proposal_id>/execute/
 ```
 
 ## 与 Control 后台的关系

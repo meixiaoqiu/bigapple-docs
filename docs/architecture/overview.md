@@ -88,7 +88,7 @@ MySQL
 
 当前代码边界：
 
-- `core.models.identity`、`proposals`、`planning`、`simulation_runs`、`simulation_feedback`、`operations`、`events`、`disputes`：权威业务模型按领域拆分，但仍归属 `core` app，避免为了 app 名称重复造平行模型。
+- `core.models.identity`、`applications`、`approval_workflow`、`planning`、`simulation_runs`、`simulation_feedback`、`operations`、`events`、`disputes`：权威业务模型按领域拆分，但仍归属 `core` app，避免为了 app 名称重复造平行模型。旧通用提案模型包已经删除，`approval_workflow` 也不是完整统一提案系统。
 - `core.models`：稳定导出入口；新模型应进入对应领域文件，不要重新写回单个大文件。
 - `core.file_processing.*`：与业务 owner 无关的文件大小限制、Magika 内容识别、Pillow 图片解码/规范化和哈希原语。
 - `core.file_storage.*`：Django Storage gateway、随机对象 key、临时对象和严格的 world/生命周期前缀校验；业务代码不直接依赖 bucket 或供应商 URL。
@@ -102,8 +102,8 @@ MySQL
 - `observer.theme.*`：观察端主题配置、当前主题 session、模板 fallback 和静态资源查找分离。
 - `simulation.boundary`、`world_snapshot`、`run_state`、`run_progress`、`feasibility`、`failure_handling`、`feedback_suggestions`、`feedback_operation_handlers`、`feedback_operations`、`feedback_services`、`engine`、`ids`：仿真边界、真实世界只读快照、run/world 写入、节点推进、可行性判断、失败处理、计划反馈生成、失败类型操作生成、计划变更操作路由、反馈落库服务、推进循环和仿真记录 ID，不依赖 core 业务写服务。
 - `simulation_lab.views`：仿真实验后台页面入口。
-- `core.admin`、`admin_identity`、`admin_proposals`、`admin_operations`、`admin_events`、`admin_support`：Django 技术后台入口、成员/角色维护配置、提案维护配置、运营对象维护配置、只读事件账本配置和通用 Admin mixin。
-- `core.event_ledger`、`event_payloads`、`governance_setup`、`role_assignment_services`、`core.proposals.*`、`permission_services`、`governance_signals`：统一事件账本、事件快照、基础治理权限初始化、角色任命、提案生命周期/投票/执行、角色权限判断和事件追加 signal。不要重新新增 `core.governance` 或 `core.proposal_services` 门面。
+- `core.admin`、`admin_applications`、`admin_identity`、`admin_operations`、`admin_events`、`admin_finance`、`admin_support`：Django 技术后台入口、报名、成员/角色、运营对象、只读事件账本、财务配置和通用 Admin mixin。旧提案 Admin 已经删除。
+- `core.event_ledger`、`event_payloads`、`governance_setup`、`role_assignment_services`、`permission_services`、`governance_signals`：统一事件账本、事件快照、基础治理权限初始化、角色任命、角色权限判断和事件追加 signal。旧提案领域包已经删除，不得恢复为兼容门面。
 - `core.tasks.authoring`、`member_workflow`、`review`、`core.event_feedback_services`、`core.resource_services`、`core.ledger_services`：真实世界业务写操作。不要再新增 `core.services` 或 `core.task_services` 这种大杂烩服务门面。
 - `live_os.demo_seed.*`：幂等演示数据写入逻辑，按项目计划、成员、资源、任务、事件、积分、事件反馈和容量评估拆分；`seed_demo` 命令只做编排。
 - `simulation.admin`、`admin_planning`、`admin_runs`、`admin_feedback`：Django Admin 自动发现入口、项目计划维护配置、只读仿真运行记录配置和仿真反馈/计划变更配置。
@@ -249,7 +249,7 @@ Credential    → 公开事实证明（非权限来源）
 
 3. **注册状态不创建基础角色。** 新注册用户只创建 User 与 Member。已注册但没有当前有效守约者资格的成员，其参与状态派生显示为“贡献者”；匿名访问公开内容只是观察行为。两者都不创建同名 Role、RoleAssignment 或 OpenFGA tuple。最小 workspace、公开资料维护和守约者报名依据账号与 Member 绑定开放，不依赖虚构的基础角色。
 
-4. **守约者是独立的成员资格事实。** "守约者"不是新的 Member 或账号，而是 Member 获得当前有效的 `ROLE_COVENANTER` 任命。该资格通过 `member_admission` 提案执行后写入 RoleAssignment，并同时发放守约者编号 Credential。资格有效性统一考虑任命状态、起止时间、成员生命周期和关联 User 是否启用，不使用 `Member.status` 或 Credential 旁路授权。
+4. **守约者是独立的成员资格事实。** “守约者”不是新的 Member 或账号，而是 Member 获得当前有效的 `ROLE_COVENANTER` 任命。统一提案流程尚未承接报名接纳，因此当前报名只保存资料，接纳操作失败关闭。资格有效性统一考虑任命状态、起止时间、成员生命周期和关联 User 是否启用。
 
 5. **守约者编号是一次性发放、永不复用的 Credential。**
    - 每个正式编号（如 `BA-0001`）全局唯一，只发放一次。
@@ -270,14 +270,14 @@ Credential    → 公开事实证明（非权限来源）
    **职责前置条件**：执衡者、管理员以及任何带 `governance.*` 或 `finance.*` permission 的职责，都要求目标成员已拥有当前有效的 `ROLE_COVENANTER`。`SUSPENDED` / `EXITED` 成员不能获得新职责。普通授予统一调用 `create_role_assignment()`；首次系统初始化使用 `bootstrap_initial_administrator()` 在事务内建立守约者资格和管理员职责。管理员不会自动获得执衡者任期或投票权。RoleAssignment Admin 只读，禁止手工创建或修改。
    **执衡者考试**：有效守约者从 `/workspace/deliberator-exam/` 开始考试。题目由服务端按当前政策随机抽取并形成不可变快照，服务端评分达到及格线后，在同一事务中记录结果并创建一年期执衡者任期。管理员通过明确的题库维护权限管理题目版本和考试政策，Django staff/superuser 标记本身不授予维护权。
 
-### 注册与报名的拆分展望
+### 注册与报名的当前边界
 
 当前实现已拆分为两个独立步骤：1) `/register/` 创建账号和基础 Member；2) `/workspace/apply/` 提交守约者报名。
 
 1. **注册** → 只创建 User + Member，可立即访问最小 workspace；贡献者状态由“没有当前有效守约者资格”派生。
-2. **报名守约者** → 已注册 Member 提交申请，创建 `member_admission` 提案，通过后授予 `ROLE_COVENANTER` 任命并发放守约者编号 Credential。
+2. **报名守约者** → 已注册 Member 提交申请并保存资料；接纳、授予 `ROLE_COVENANTER` 和发放守约者编号等待统一提案流程承接。
 
-这一拆分依赖中远期报名流程重构，当前不做迁移。
+注册与报名的拆分已经落地；尚未迁移的是报名后的共同准入决策、守约者资格授予和编号发放。完成统一提案系统前，这些权威写操作保持失败关闭。
 
 ## Credential / NFT / Badge 与权限边界
 
@@ -293,22 +293,22 @@ Credential    → 公开事实证明（非权限来源）
 
 - 未登录用户可以浏览公开反馈。
 - 注册用户可以提交公开问题、建议、担忧、提案种子或其他反馈。
-- 管理员可以回应、隐藏或把反馈关联到正式 `Proposal`。
-- 反馈提交、维护回应和关联提案只写普通公开 `Event`，用于首页和事件流展示。
+- 管理员可以回应或隐藏反馈；转入正式治理决策的能力等待统一提案系统承接。
+- 反馈提交和维护回应只写普通公开 `Event`，用于首页和事件流展示。
 - 隐藏反馈不写新的公开 Event，并会把该反馈既有公开 Event 转为 internal，避免放大违规内容。
-- Feedback 不写 `SystemEvent` 哈希链，不改变 RoleAssignment、RolePermission、Credential、Proposal 执行结果或其他权威状态。
-- Feedback 不能作为运行时权限来源；如反馈需要变成正式行动，必须由管理员转入 Proposal 或对应领域服务流程。
+- Feedback 不写 `SystemEvent` 哈希链，不改变 RoleAssignment、RolePermission、Credential 或其他权威状态。
+- Feedback 不能作为运行时权限来源；如反馈需要变成正式行动，必须等待统一提案系统承接或调用明确允许的领域服务。
 
 ## Public Finance / 公开财务层
 
-公开财务用于把社区报销、审核和付款记录变成可观察、可追责的业务流程。它不是第二套治理系统，也不替代 Proposal。
+公开财务用于把社区报销、审核和付款记录变成可观察、可追责的业务流程。它不是第二套治理系统，也不替代未来的统一提案系统。
 
 - `ExpenseClaim` 记录成员提交的报销申请。任何非 `SUSPENDED` / `EXITED` 的注册成员都可以提交。
 - `FinanceReview` 记录财务审核决定。审核人必须拥有 `finance.review` 权限，并且不能审核自己的报销；拒绝必须填写理由。
 - `FinanceTransaction` 是只追加财务流水。标记付款的人必须拥有 `finance.pay` 权限，并且不能给自己的报销标记付款。
 - 财务角色由 `ensure_finance_roles()` 幂等创建，属于 `大苹果财务组`，运行时权限仍通过 `AuthorizationService` / OpenFGA 判断；OpenFGA tuple 来自 `Member -> active RoleAssignment -> RolePermission -> Permission` 权威事实投影。
 - 任何带 `finance.*` permission 的角色都属于高信任角色，授予前要求目标成员已经拥有 `ROLE_COVENANTER`。
-- 财务审核职责从 `/workspace/finance/reviewer-appointments/` 发起提名，复用 `role_appointment Proposal -> ProposalVote -> ProposalExecution -> RoleAssignment`。只有 `governance.manage_roles` 可以提名和执行，只有符合提案选民快照且当前仍有效的执衡者可以投票；任命不会附带 `finance.pay` 或 `finance.publish_public_attachments`。
+- 财务审核职责任命需要共同决定；当前 `/workspace/finance/reviewer-appointments/` 明确显示统一提案流程迁移中，不创建任命。后续统一实现仍不得附带 `finance.pay` 或 `finance.publish_public_attachments`。
 - OpenFGA 增量投影只写入当前有效任命；未来任命不提前投影，撤销在事务提交后删除 tuple，到期或前置资格失效时 Django 权威事实先否决授权并惰性清理陈旧 tuple。
 - 报销提交、审核和付款会写普通公开 `Event`，进入首页、事件流和 `/finance/` 公开财务页；同时写入 `SystemEvent` 哈希链，便于审计证明。
 - 撤回报销只写普通公开 `Event`，不写新的 `SystemEvent` 哈希链记录。

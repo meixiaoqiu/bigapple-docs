@@ -108,7 +108,7 @@ title: 公开首页
 
 成员报名公开展示聚合到 `/member-applications/<application_id>/`。submitted/admitted/rejected 阶段 Event 保留为聚合数据源，但 `/events/<stage-event-id>/` 不再作为公开页面，直接 404。
 
-事项详情页是“提案时间线 + 审计证明一体化”：页面使用 daisyUI compact vertical timeline / timeline-snap-icon 样式，左侧窄轨道表示审计链顺序，右侧全宽节点卡片展示业务语义（收到成员报名 / 准入提案已创建 / 执衡者已投票 / 提案结果 / 成员接纳等），内嵌可展开的哈希证明和现场复算按钮。投票人公开姓名和投票选择，报名者继续使用脱敏标签。审计记录 seq 是事实顺序。Hash 复算和 json_script 安全机制与普通事件详情页一致。
+事项详情页当前聚合报名提交和已有结果事件，并提供审计证明。旧准入提案、投票和执行时间线已经删除；统一提案系统迁移完成前，页面不得展示伪造的投票进度或准入结果。页面继续使用脱敏报名者标签，审计记录 seq 表示事实顺序，Hash 复算和 json_script 安全机制与普通事件详情页一致。
 
 底层 `SystemEvent` 审计记录仍逐条保留。
 

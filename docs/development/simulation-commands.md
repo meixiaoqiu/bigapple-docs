@@ -22,7 +22,7 @@ docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py s
 docker compose -f docker-compose.dev.yml exec big-apple-admin python manage.py run_zero_start_simulation --world-id simulation0001 --hours 168 --settings=live_os.settings_admin
 ```
 
-`zero_start` 模板只预置一个初始发起人、一个极简计划和一个已发布计划版本，不预置任务、资源、候选场地或成熟成员池。启用 `BIG_APPLE_SIMULATION_BOOTSTRAP_ADMINISTRATOR_ENABLED=true` 时，这个初始成员就是配置的仿真 bootstrap administrator 登录成员；未启用时才使用非交互 fallback 发起人。
+`zero_start` 模板预置一个初始发起人、一个极简计划、一个已发布计划版本，以及仅供仿真功能验证的一道执衡者考试基线题和一项单题考试政策；不预置任务、资源、候选场地或成熟成员池。考试基线确保过程是幂等的：已有可用配置时不会覆盖题目、政策或考试历史。该自动基线只允许用于 simulation world，real world 必须由有权管理员明确发布题目和政策。启用 `BIG_APPLE_SIMULATION_BOOTSTRAP_ADMINISTRATOR_ENABLED=true` 时，初始成员就是配置的仿真 bootstrap administrator 登录成员；未启用时才使用非交互 fallback 发起人。
 
 `run_zero_start_simulation` 会按整数小时驱动虚拟主体通过真实 world URL 提交成员报名和合作方报名表单，生成自媒体主动报名、初筛、候选、备用、项目拒绝、主动退出、成员能力矩阵和文件签署方矩阵记录，用于下一轮从真正 0 点继续推演。成员报名表单使用 `role_gap`、`availability_slots`、动态问答和提交确认；历史小时字段只作为仿真兼容数据随 POST 一起带入，不再是页面主输入。
 
@@ -87,7 +87,7 @@ http://bigadmin.local/admin/simulation-lab/
    - 输入确认文字"确认重置"。
    - 如果存在运行中或已结束但未处置的 run，勾选"强制重置"。
 3. 点击"重置到零起点基线"。
-4. 成功后目标 world 只有 zero_start 基线数据，不会推进虚拟小时，不会创建 SimulationRun / SimulationTurn。
+4. 成功后目标 world 只有 zero_start 基线数据（包括仿真专用的一题考试基线），不会推进虚拟小时，不会创建 SimulationRun / SimulationTurn。
 
 与 `run_zero_start_simulation` 的区别：重置只清空并 seed 基线；`run_zero_start_simulation` 才创建 `SimulationRun` / `SimulationTurn` 并推进虚拟小时。重置后的审计记录写入 control DB 的 `WorldMaintenanceLog`（在 `/admin/worlds/worldmaintenancelog/` 中只读查看）。
 

@@ -72,7 +72,7 @@ Django `User` 仍只负责技术登录和 Admin 入口控制：`is_active` 控�
 
 ## core_member_application
 
-MemberApplication stores public member applications. Member applications are submitted through `/workspace/apply/` (login required). Registration at `/register/` creates the login account and baseline `Member`; formal admission is decided by governance proposal execution via `/workspace/apply/`.
+`MemberApplication` 保存通过 `/workspace/apply/` 提交的守约者报名资料。注册只创建登录账号和基础 `Member`；统一提案流程尚未承接准入决定，因此当前只保存报名资料，不执行接纳或拒绝。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -86,19 +86,18 @@ MemberApplication stores public member applications. Member applications are sub
 | `capability_scores` | json | 是 | 历史兼容和仿真字段；当前个人报名页不再展示能力自述输入。 |
 | `can_issue_responsibility_documents` | boolean | 是 | 历史兼容字段；当前个人报名页固定为否，责任文件能力由合作方/机构报名承担。 |
 | `document_authority_domains` | json | 是 | 历史兼容字段；当前个人报名页不再采集责任文件领域。 |
-| `status` | enum string | 是 | `submitted`、`admission_voting`、`admitted`、`rejected`、`withdrew`。旧状态 `under_review`/`candidate`/`standby` 已迁移到 `admission_voting`。 |
+| `status` | enum string | 是 | `submitted`、`admitted`、`rejected`、`withdrew`。统一提案迁移期间报名保持 `submitted`，不保存旧表决中间态。 |
 | `requested_member_no` | string | 否 | 期望成员编号；仿真会写入稳定候选编号。 |
 | `account_user_id` | fk | 否 | 成员报名时创建或复用的登录账号；提交后绑定到最小权限成员身份。 |
 | `linked_member_id` | fk | 否 | 提交后创建或复用的最小权限 `Member`。 |
 | `dynamic_answers` | json | 是 | 动态 textarea 问答数组，元素包含 `key`、`label`、`type`、`answer`。 |
 | `frozen_at` | datetime | 否 | 报名提交并二次确认的时间；业务入口不提供提交后的撤回或修改。 |
-| `admission_proposal_id` | fk | 否 | 接纳该申请者为守约者的提案。 |
 | `decided_by_id` | fk | 否 | 决议人（执行准入或提案拒绝的管理员）。 |
 | `submitted_at` | datetime | 是 | 提交时间。 |
 | `decided_at` | datetime | 否 | 决议时间（准入执行或拒绝的时间）。 |
 | `metadata` | json | 是 | 扩展数据；仿真会写入 `simulation_run_id`、`simulation_hour`、`driver_mode` 和 `external_ref`。 |
 
-提交会创建登录账号、创建或复用最小 `Member`、自动创建 `member_admission` 提案，并追加 `member_application_submitted` 统一事件。已注册但尚未取得守约者资格的成员显示为贡献者，不创建同名角色。正式接纳经关联提案投票并执行完成后，才把报名状态改为 `admitted`、把成员状态改为 `admitted` 并授予守约者任命；选民必须同时具有有效守约者资格和执衡者任期。准入执行或提案拒绝会追加 `member_application_reviewed` 统一事件。
+提交会创建或复用最小 `Member`，保存报名资料并追加 `member_application_submitted` 统一事件。已注册但尚未取得守约者资格的成员显示为贡献者，不创建同名角色。准入决策入口当前显示统一迁移关闭状态，不得直接授予守约者任命。
 
 ## core_partner_application
 
@@ -205,13 +204,11 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 | `end_at` | datetime | 是 | 结束时间；所有角色任命必须有结束时间。 |
 | `granted_by_id` | fk | 否 | 任命人。 |
 | `revoked_by_id` | fk | 否 | 卸任处理人。 |
-| `source_type` | enum string | 是 | 来源类型：`direct`、`self_application`、`proposal`、`initialization`、`system`。 |
-| `source_proposal_id` | fk | 否 | 如果该任命由提案执行产生，关联来源提案。 |
-| `source_proposal_execution_id` | fk | 否 | 如果该任命由提案执行产生，关联具体执行记录。 |
+| `source_type` | enum string | 是 | 来源类型，例如 `direct`、`self_application`、`initialization`、`system`。 |
 | `created_at` | datetime | 是 | 创建时间。 |
 | `updated_at` | datetime | 是 | 更新时间。 |
 
-新增记录会追加一次 `role_assigned` 统一事件；状态从 `active` 变为 `revoked` 时追加一次 `role_revoked` 统一事件。普通字段编辑不会重复追加任命或卸任事件。事件 payload 会包含 `source_type`、`source_proposal_id` 和 `source_proposal_execution_id`，用于区分直接任命、本人申请、提案执行、初始化或系统规则产生的任命。执衡者只能由有效守约者本人参加并通过资格考试后取得，任期为一年且不会自动续任；管理员任命不自动创建执衡者任期。
+新增记录会追加一次 `role_assigned` 统一事件；状态从 `active` 变为 `revoked` 时追加一次 `role_revoked` 统一事件。普通字段编辑不会重复追加任命或卸任事件。执衡者只能由有效守约者本人参加并通过资格考试后取得，任期为一年且不会自动续任；管理员任命不自动创建执衡者任期。需要共同决定的任命与卸任在统一提案流程完成前失败关闭。
 
 ## core_deliberator_exam_policy
 
@@ -285,89 +282,10 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 
 运行时只有当前有效的专业资格才能参与对应领域的专业事务投票。
 
-## core_proposal
+## 统一提案数据结构状态
 
-通用治理提案。成员准入和角色任命都不保留平行表决结构，分别使用 `proposal_type=member_admission` 和 `proposal_type=role_appointment`。后续规则、政策、预算、项目、声明等也复用同一套 `Proposal -> ProposalVote -> ProposalExecution -> SystemEvent` 流程。
+旧通用提案、投票、执行和选民规则表已经从干净迁移基线删除。现有 `ApprovalProposal` 尚不是完整统一提案系统，不能作为旧系统兼容层。社区共议、守约事务、专业事务、管理事务、成员准入及共同角色任免所需的数据结构将在后续 OpenSpec 变更中统一设计；完成前对应决策入口失败关闭。
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `id` | integer pk | 是 | 内部主键。 |
-| `proposal_no` | string unique | 是 | 可读提案编号，例如 `0001`。 |
-| `title` | string | 是 | 提案标题。 |
-| `body` | text | 否 | 提案正文。 |
-| `proposal_type` | enum string | 是 | `member_admission`、`role_appointment`、`role_revocation`、`rule`、`policy`、`budget`、`project`、`statement`。 |
-| `status` | enum string | 是 | `draft`、`voting`、`passed`、`failed`、`cancelled`、`executed`。 |
-| `proposer_member_id` | fk | 否 | 提案人。 |
-| `proposer_role_assignment_id` | fk | 否 | 提案时角色身份；后台会按已选择的提案人过滤为该成员拥有的角色任命。 |
-| `organization_id` | fk | 否 | 提案所属组织。 |
-| `electorate_rule_version_id` | fk | 是 | 创建提案时固定的选民规则版本。 |
-| `electorate_rule_snapshot_json` | json | 是 | 规范化后的条件树、模板标识、版本和开放参数。 |
-| `professional_domain_id` | fk | 否 | 专业事务规则指定的启用中专业领域，必须与规则参数一致。 |
-| `eligible_voters_snapshot_json` | json | 是 | 提案开始时冻结的投票资格成员快照。 |
-| `pass_ratio` | integer | 是 | 通过所需赞成比例，1 到 100；`50` 表示严格超过 50%，例如 2 人需 2 票、4 人需 3 票。 |
-| `quorum_count` | integer | 是 | 最低参与人数。 |
-| `allow_vote_change` | boolean | 是 | 截止前是否允许改票。 |
-| `start_at` | datetime | 是 | 投票开始时间。 |
-| `deadline_at` | datetime | 是 | 投票截止时间。 |
-| `passed_at` | datetime | 否 | 通过时间。 |
-| `failed_at` | datetime | 否 | 失败时间。 |
-| `cancelled_at` | datetime | 否 | 取消时间。 |
-| `executed_at` | datetime | 否 | 执行完成时间。 |
-| `payload_json` | json | 是 | 提案业务载荷。 |
-| `result_json` | json | 是 | 投票统计与结果。 |
-| `created_at` | datetime | 是 | 创建时间。 |
-| `updated_at` | datetime | 是 | 更新时间。 |
-
-规则模板由 `core_electorate_rule_template` 和不可变的 `core_electorate_rule_version` 表达，`core_proposal_type_electorate_rule` 限制每种提案类型允许使用的模板和最低条件。社区共议允许贡献者参与；守约事务要求守约者和执衡者；专业事务再要求对应专业资格；管理事务只选择管理员。成员资格、任期、专业资格和用户状态会在投票时重新校验，因此快照不能绕过之后失效的授权。
-
-## core_electorate_rule_template / core_electorate_rule_version
-
-规则模板保存稳定 `code`、中文名称和启用状态；规则版本保存版本号、只含 `ALL`、`ANY`、`NOT` 与封闭选择器的 `condition_json`，以及开放参数约束。已被提案引用的版本不可原地改写，制度变化必须新增版本。
-
-## core_proposal_type_electorate_rule
-
-显式声明提案类型允许使用的规则模板以及不可删除的最低条件。提案发起人只能选择允许模板和模板开放参数，不能提交原始条件树。
-
-`role_appointment` 的 `payload_json` 至少包含内部 `target_member_id`、可读 `target_member_no`、`role_id`、`assignment_type`、`resource_id`、`scope_json`、`reason`、`start_at`、`end_at`。提案通过后不会直接创建任命，必须执行 `ProposalExecution(action_type=create_role_assignment)` 后才创建 `RoleAssignment`。
-
-## core_proposal_vote
-
-提案投票记录。同一 `proposal_id`、`voter_member_id` 只能有一张当前票；如果 `allow_vote_change=True` 且未到 `deadline_at`，允许改票并记录 `proposal_vote_changed` 事件。
-
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `id` | integer pk | 是 | 内部主键。 |
-| `proposal_id` | fk | 是 | 提案。 |
-| `voter_member_id` | fk | 是 | 投票成员。 |
-| `voter_role_assignment_id` | fk | 否 | 投票时使用的角色任命。 |
-| `choice` | enum string | 是 | `yes`、`no`、`abstain`。通用提案支持三种选择；`member_admission` 的 workspace 投票入口只允许 `yes`/`no`，反对票必须填写 `reason`。 |
-| `reason` | text | 否 | 投票理由。 |
-| `voted_at` | datetime | 是 | 投票或改票时间。 |
-| `created_at` | datetime | 是 | 创建时间。 |
-| `updated_at` | datetime | 是 | 更新时间。 |
-
-约束：同一 `proposal_id`、`voter_member_id` 唯一。快照用于记录开票时的选民范围，但投票时仍必须由 `AuthorizationService` 重新验证当前资格，避免已失效成员继续投票。人工 workspace 投票要求成员可登录：成员需绑定 active `User`，或存在 active `User.username == Member.member_no` 的兼容登录账号。
-
-## core_proposal_execution
-
-提案执行记录。提案通过不等于执行完成；执行结果和错误信息由本表记录。
-
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `id` | integer pk | 是 | 内部主键。 |
-| `proposal_id` | fk | 是 | 被执行的提案。 |
-| `executor_member_id` | fk | 否 | 执行人。 |
-| `executor_role_assignment_id` | fk | 否 | 执行人使用的角色任命。 |
-| `action_type` | enum string | 是 | `admit_member_application`、`create_role_assignment`、`revoke_role_assignment`、`create_rule`、`create_policy`、`record_statement`、`manual`。 |
-| `status` | enum string | 是 | `pending`、`succeeded`、`failed`、`skipped`。 |
-| `payload_json` | json | 是 | 执行载荷。 |
-| `result_json` | json | 是 | 执行结果。 |
-| `error_message` | text | 否 | 执行失败原因。 |
-| `executed_at` | datetime | 否 | 执行时间。 |
-| `created_at` | datetime | 是 | 创建时间。 |
-| `updated_at` | datetime | 是 | 更新时间。 |
-
-第一版重点支持 `member_admission` 提案通过后的 `admit_member_application` 执行，以及 `role_appointment` 提案通过后的 `create_role_assignment` 执行，并保持幂等：同一个已执行提案不会重复创建 active `RoleAssignment`。
 ## core_role_permission
 
 角色和领域权限的绑定。日常后台中，管理员主要从角色详情页理解“角色拥有哪些能力”；`Permission` 是系统判断所需的能力明细。
@@ -388,13 +306,13 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 
 统一事件账本。只追加，不作为普通可编辑日志使用；第一版通过 `core.event_ledger.append_event()` 统一分配 `seq`、计算 `payload_hash`、`prev_hash` 和 `event_hash`。
 
-系统不再为各领域拆分多套哈希链。提案、投票、执行、角色任命、任务、事件反馈、资源、财务和积分等关键事实都进入同一条可校验链。`Proposal`、`Task`、`EventFeedback`、`Resource`、`ExpenseClaim`、`LedgerEntry` 等业务表负责结构化状态；`SystemEvent` 负责全局顺序、责任追溯、业务快照和篡改可发现。
+系统不再为各领域拆分多套哈希链。当前角色任命、任务、事件反馈、资源、财务、积分和审批工作流等关键事实进入同一条可校验链。`ApprovalProposal`、`Task`、`EventFeedback`、`Resource`、`ExpenseClaim`、`LedgerEntry` 等现有业务表负责结构化状态；`SystemEvent` 负责全局顺序、责任追溯、业务快照和篡改可发现。旧通用提案、投票和执行表已删除。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `id` | integer pk | 是 | 内部主键。 |
 | `seq` | integer unique | 是 | 单调递增系统事件序号。 |
-| `event_type` | enum string | 是 | `member_created`、`member_application_submitted`、`member_application_reviewed`、`partner_application_submitted`、`partner_application_reviewed`、`role_created`、`role_assigned`、`role_revoked`、`deliberator_exam_question_changed`、`deliberator_exam_policy_changed`、`proposal_created`、`proposal_vote_cast`、`proposal_vote_changed`、`proposal_passed`、`proposal_failed`、`proposal_cancelled`、`proposal_executed`、`credential_granted`、`expense_claim_submitted`、`expense_claim_reviewed`、`expense_claim_paid`、`task_created`、`task_published`、`task_assigned`、`task_claimed`、`task_submitted`、`task_reviewed`、`task_closed`、`event_feedback_submitted`、`event_feedback_verification_started`、`event_feedback_response_requested`、`event_feedback_responded`、`event_feedback_concluded`、`event_feedback_closed`、`event_feedback_withdrawn`、`resource_adjusted`、`supplier_offer_submitted`、`supplier_offer_accepted`、`supplier_offer_rejected`、`supplier_offer_receipt_accepted`、`supplier_offer_receipt_rejected`、`supplier_offer_completed`、`approval_proposal_submitted`、`approval_proposal_approved`、`approval_proposal_rejected`、`approval_proposal_executed`、`approval_proposal_cancelled`、`procurement_challenge_submitted`、`procurement_challenge_reviewed`、`risk_alert_triggered`、`risk_alert_acknowledged`、`risk_alert_resolved`、`risk_alert_dismissed`、`risk_rule_updated`、`credit_earned`、`credit_deducted`、`credit_adjusted`、`credit_reversed`、`system_initialized`。 |
+| `event_type` | enum string | 是 | `member_created`、`member_application_submitted`、`member_application_reviewed`、`partner_application_submitted`、`partner_application_reviewed`、`role_created`、`role_assigned`、`role_revoked`、`deliberator_exam_question_changed`、`deliberator_exam_policy_changed`、`credential_granted`、`expense_claim_submitted`、`expense_claim_reviewed`、`expense_claim_paid`、`task_created`、`task_published`、`task_assigned`、`task_claimed`、`task_submitted`、`task_reviewed`、`task_closed`、`event_feedback_submitted`、`event_feedback_verification_started`、`event_feedback_response_requested`、`event_feedback_responded`、`event_feedback_concluded`、`event_feedback_closed`、`event_feedback_withdrawn`、`resource_adjusted`、`supplier_offer_submitted`、`supplier_offer_accepted`、`supplier_offer_rejected`、`supplier_offer_receipt_accepted`、`supplier_offer_receipt_rejected`、`supplier_offer_completed`、`approval_proposal_submitted`、`approval_proposal_approved`、`approval_proposal_rejected`、`approval_proposal_executed`、`approval_proposal_cancelled`、`procurement_challenge_submitted`、`procurement_challenge_reviewed`、`risk_alert_triggered`、`risk_alert_acknowledged`、`risk_alert_resolved`、`risk_alert_dismissed`、`risk_rule_updated`、`credit_earned`、`credit_deducted`、`credit_adjusted`、`credit_reversed`、`system_initialized`。 |
 | `aggregate_type` | string | 是 | 聚合类型，例如 `RoleAssignment`。 |
 | `aggregate_id` | string | 是 | 聚合记录 ID（内部关联查询字段，不进入 v2 公开 event_hash）。 |
 | `actor_member_id` | fk | 否 | 行为人。 |
@@ -428,7 +346,7 @@ OpenFGA tuple 由 `openfga_rebuild_tuples` 从 Django 权威数据完整重建�
 
 `core.permission_services.legacy_member_has_permission()` 和 `members_with_permission()` 只作为 legacy 对照、probe 和兼容层保留。业务入口不应直接调用它们。
 
-Django Admin 当前只在 control plane 暴露，并提供关系化底层维护入口：`Member` 详情页内联显示和新增 `RoleAssignment`，`Organization` 详情页内联显示 `Role`，`Role` 详情页内联显示 `RolePermission` 和拥有该角色的成员。`Proposal` 用于查看和维护通用治理提案，详情页内联显示 `ProposalVote` 和 `ProposalExecution`。固定 world 站点不暴露 `/admin/`；真实世界和仿真世界的日常用户系统不需要 `is_staff` 账号。`SystemEvent` 和 `LedgerEntry` 集中在“技术审计与配置”分组；其中 `SystemEvent` 在 Admin 中仍然只读，只用于查看事件快照和哈希链信息。
+Django Admin 当前只在 control plane 暴露，并提供关系化底层维护入口：`Member` 详情页内联显示 `RoleAssignment`，`Organization` 详情页内联显示 `Role`，`Role` 详情页内联显示 `RolePermission` 和拥有该角色的成员。旧提案维护入口已经删除，不能通过 Admin 绕过统一提案迁移关闭状态。固定 world 站点不暴露 `/admin/`；真实世界和仿真世界的日常用户系统不需要 `is_staff` 账号。`SystemEvent` 和 `LedgerEntry` 集中在“技术审计与配置”分组；其中 `SystemEvent` 在 Admin 中仍然只读。
 
 `SimulationSnapshot`、`SimulationSnapshotItem`、`SimulationRunDisposition` 和仿真实验后台入口位于 control plane `/admin/` 的“仿真”分组。实验后台只保留启动、推进、run 审阅、中止、归档和废弃这类独有动作。业务 `Event` 不注册到 Django Admin；固定 world API 和 `/` 负责展示它。`Ruleset` 变更应通过提案或专门规则发布流程完成，`CapacityAssessment` 归属观察台摘要，`Permission` / `RolePermission` 主要通过角色详情页维护。
 
@@ -805,9 +723,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `failure_consequence` | enum string | 否 | `low`、`medium`、`high`、`critical`。 |
 | `assignee_member_id` | fk | 否 | 当前领取任务的成员。 |
 | `plan_node_id` | fk | 否 | 该任务服务于哪个主线计划节点；为空表示临时运营任务。 |
-| `source_type` | enum string | 是 | 来源类型：`direct`、`proposal`、`plan`、`simulation`、`system`。 |
-| `source_proposal_id` | fk | 否 | 如果该任务由提案执行产生，关联来源提案。 |
-| `source_proposal_execution_id` | fk | 否 | 如果该任务由提案执行产生，关联具体执行记录。 |
+| `source_type` | enum string | 是 | 来源类型：`direct`、`plan`、`simulation`、`system`。 |
 | `rule_version` | string | 是 | 创建或验收任务时使用的规则版本。 |
 | `created_at` | datetime | 是 | 创建时间。 |
 | `due_at` | datetime | 否 | 截止时间。 |
@@ -830,7 +746,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `closed` | 未进入成员履约链路前由运营人员关闭，不应产生积分流水。 |
 | `reversed` | 历史任务被冲正或撤销，通常需要和账本冲正、事件记录配套使用。 |
 
-任务本身不保存独立哈希字段，也不维护自己的哈希链。正式任务生命周期应通过 `core.tasks.authoring.create_task_draft()`、`publish_task()`、`assign_task()`、`close_task()`，`core.tasks.member_workflow.claim_task()`、`submit_labor()`，以及 `core.tasks.review.review_task()` 完成，并追加 `task_*` 类型 `SystemEvent`；多个 `SystemEvent` 通过 `aggregate_type = "Task"` 和 `aggregate_id = task_id` 关联同一个任务。任务来源字段（`source_type`、`source_proposal_id`、`source_proposal_execution_id`）保存在 `Task` 结构化字段中。当前 v2 SystemEvent `public_facts` 公开 `title`、`task_type`、`status`、可选 `assignee_label`、`plan_node_id`，以及 allowlist extra（`action_type`/`accepted`）。内部来源提案/执行 ID 不作为公开 payload 保证字段。
+任务本身不保存独立哈希字段，也不维护自己的哈希链。正式任务生命周期应通过 `core.tasks.authoring.create_task_draft()`、`publish_task()`、`assign_task()`、`close_task()`，`core.tasks.member_workflow.claim_task()`、`submit_labor()`，以及 `core.tasks.review.review_task()` 完成，并追加 `task_*` 类型 `SystemEvent`；多个 `SystemEvent` 通过 `aggregate_type = "Task"` 和 `aggregate_id = task_id` 关联同一个任务。当前 v2 SystemEvent `public_facts` 公开 `title`、`task_type`、`status`、可选 `assignee_label`、`plan_node_id`，以及允许的扩展字段。
 
 ## core_ledger_entry
 
@@ -940,7 +856,7 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 
 ## core_communityfeedback
 
-公开反馈 / 公众参与层记录。它不是提案，不直接改变权威状态；管理员可以回应、隐藏或关联到正式提案。反馈生命周期只写普通公开 `core_event`，不写 `core_system_event` 哈希链。
+公开反馈 / 公众参与层记录。它不是提案，不直接改变权威状态；管理员可以回应或隐藏。转入正式治理流程的能力等待统一提案系统承接。反馈生命周期只写普通公开 `core_event`，不写 `core_system_event` 哈希链。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -953,15 +869,14 @@ Django Admin 当前只在 control plane 暴露，并提供关系化底层维护�
 | `official_response` | text | 否 | 管理员公开回应。 |
 | `responded_by_id` | fk | 否 | 最近一次回应或处理反馈的管理员。 |
 | `responded_at` | datetime | 否 | 最近一次回应或处理时间。 |
-| `linked_proposal_id` | fk | 否 | 由该反馈转入的正式治理提案。 |
 | `created_at` | datetime | 是 | 创建时间。 |
 | `updated_at` | datetime | 是 | 更新时间。 |
 
-公开规则：`hidden` 不进入公开列表和首页；提交、回应、关联提案会写普通公开 `Event`。隐藏不会写新的公开 Event，并会把该反馈既有公开 Event 转为 internal，避免放大违规内容。运行时权限仍由 `RoleAssignment` / `RolePermission` 判断，Feedback 不授予权限。
+公开规则：`hidden` 不进入公开列表和首页；提交和回应会写普通公开 `Event`。隐藏不会写新的公开 Event，并会把该反馈既有公开 Event 转为 internal，避免放大违规内容。运行时权限仍由 `RoleAssignment` / `RolePermission` 判断，Feedback 不授予权限。
 
 ## core_expenseclaim
 
-成员报销申请。它记录“谁为项目花了多少钱、用途是什么、当前处理状态如何”。报销本身不是提案；只有高影响预算、异常争议或财务规则变更才需要升级为 Proposal。
+成员报销申请。它记录“谁为项目花了多少钱、用途是什么、当前处理状态如何”。报销本身不是提案；高影响预算、异常争议或财务规则变更如需共同决定，必须等待统一提案系统承接，当前不得直接升级到已删除的旧提案实现。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -1162,9 +1077,7 @@ SystemEvent(event_type=resource_adjusted) v2 `public_facts` 公开：`name`、`r
 | `status` | enum string | 是 | `active` / `revoked` / `archived`。 |
 | `issued_at` | datetime | 是 | 发放时间。 |
 | `issued_by_id` | fk → Member | 否 | 发放人。 |
-| `source_type` | enum string | 是 | `system` / `proposal_execution` / `manual` / `earned`。 |
-| `source_proposal_id` | fk → Proposal | 否 | 来源提案。 |
-| `source_proposal_execution_id` | fk → ProposalExecution | 否 | 来源提案执行。 |
+| `source_type` | enum string | 是 | `system` / `manual` / `earned`。 |
 | `metadata` | json | 否 | 扩展数据。 |
 | `created_at` | datetime | 是 | 创建时间。 |
 | `updated_at` | datetime | 是 | 更新时间。 |

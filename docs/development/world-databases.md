@@ -64,31 +64,17 @@ BIG_APPLE_DEFAULT_WORLD_DATABASE_ALIAS=realworld
 
 World routing 必须 fail closed。`WORLD_DATABASE_ROUTING_ENABLED=true` 时，active `WorldRegistry.database_alias` 必须存在于 `settings.DATABASES`，必须列入 `WORLD_DATABASE_ALIASES`，且不能是 `default`。如果 alias 缺失或指向 control 数据库，请求和 ORM routing 应失败，而不是静默读写 control 数据。
 
-## 修复缺失的准入提案
+## 旧提案结构与干净迁移基线
 
-历史数据从单人审核状态机迁移到 proposal-driven admission 后，如果存在历史 `MemberApplication` 有 `linked_member` 但没有 `admission_proposal`，可以对指定 world 运行修复命令。命令一次只修复一个 world 数据库。
+项目尚未上线，旧提案表、字段和迁移历史不保留。`start.bat` 会在迁移前运行 `check_legacy_proposal_schema`；检测到旧结构时立即停止并显示对应数据库的准确重置命令。重置不可恢复，必须人工确认并显式提供 `--confirm-reset`，启动脚本绝不会自动删除数据。
 
-```powershell
-.\.venv\Scripts\python.exe manage.py repair_member_admission_proposals --world-id realworld --dry-run
-.\.venv\Scripts\python.exe manage.py repair_member_admission_proposals --world-id realworld
-.\.venv\Scripts\python.exe manage.py repair_member_admission_proposals --world-id simulation0001 --dry-run
-```
-
-Docker 开发环境：
+例如重置可丢弃的仿真数据库：
 
 ```powershell
-docker compose -f docker-compose.dev.yml exec -T big-apple-admin python manage.py repair_member_admission_proposals --world-id realworld --dry-run --settings=live_os.settings_admin
-docker compose -f docker-compose.dev.yml exec -T big-apple-admin python manage.py repair_member_admission_proposals --world-id realworld --settings=live_os.settings_admin
+docker compose -f docker-compose.dev.yml run --interactive=false --rm --no-deps big-apple-admin python manage.py reset_world_database --database=simulation0001 --settings=live_os.settings_admin --confirm-reset
 ```
 
-该命令：
-
-- 必须指定 `--world-id`，不能隐式依赖默认 world。
-- 只处理 `linked_member` 存在且 `admission_proposal` 为空的 `MemberApplication`。
-- 已有 `admission_proposal` 的记录不会被重复创建。
-- 没有 `linked_member` 的记录不会被处理。
-- `--dry-run` 只输出将修复的记录，不实际写入。
-- 查询和提案创建均在指定 world 数据库内完成，不会跨库。
+完成后重新运行 `start.bat`，由干净的 `core.0001_initial` 创建当前结构。真实世界或 control 数据库也只能在明确确认其本地开发数据可丢弃后使用脚本输出的对应命令。
 
 ## 修复守约者编号凭证
 

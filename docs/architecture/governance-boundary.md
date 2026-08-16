@@ -5,206 +5,73 @@ title: 治理交互模型边界
 
 # 治理交互模型边界
 
-本文用于约束任务、事件反馈、角色任命、提案、积分流水和统一事件账本之间的关系，避免把所有交互都塞进一个万能模型。
+本文约束业务对象、统一决策机制、权限与事件账本之间的边界。
 
-## 核心原则
+## 当前实现状态
 
-系统分三层：
+旧通用提案、投票、执行和选民规则实现已经完整删除。新的 `ApprovalProposal` 尚未承接社区共议、守约事务、专业事务和管理事务所需的完整选民规则、投票、截止、阈值与执行能力，因此下列流程暂时失败关闭：
+
+- 守约者报名的接纳决定；
+- 需要共同决定的角色任命与卸任；
+- 财务审核职责的共同任命；
+- 社区共议、守约事务、专业事务和管理事务。
+
+系统必须显示“统一提案流程正在迁移，当前决策操作暂不可用”，不得回退到旧实现，也不得绕过共同决定直接修改最终权威状态。迁移缺口记录在 Live OS OpenSpec 变更 `remove-legacy-proposal-system/unified-proposal-migration-gaps.md`。
+
+## 三层边界
 
 ```text
-业务对象：Task / EventFeedback / RoleAssignment / LedgerEntry / Resource ...
-决策机制：Proposal / ProposalVote / ProposalExecution
+业务对象：Task / MemberApplication / RoleAssignment / LedgerEntry / Resource ...
+决策机制：未来统一提案系统（当前尚未完整实现）
 事实留痕：SystemEvent
 ```
 
-规则：
+1. 具体业务保留具体模型，提案不是所有业务对象的父类。
+2. 多人共同授权、重大裁决、规则变化、预算或高影响资源分配必须进入统一提案系统。
+3. 统一提案系统未覆盖的写操作必须失败关闭。
+4. 已发生的关键状态变化追加 `SystemEvent`；事件账本不替代业务状态机。
+5. 历史错误只能通过撤销、冲正、更正或后续业务动作处理。
 
-1. 具体业务保留具体模型。
-2. 需要共同决定、投票或授权时，才使用提案。
-3. 已经发生的关键状态变化写入统一事件账本。
-4. 事件账本不替代业务表，提案也不替代业务表。
-5. 错误不能通过修改历史事件解决，只能通过新的撤销、冲正、更正或后续业务动作解决。
+## 业务对象
 
-## 业务对象不是提案
-
-任务、事件反馈、角色任命、积分流水都可以和提案有关，但它们本身不是提案。
-
-| 对象 | 它回答的问题 | 是否等同于提案 |
+| 对象 | 职责 | 与统一提案的关系 |
 | --- | --- | --- |
-| `Task` | 谁要做什么工作，当前做到哪一步。 | 否。任务可以由运营人员直接发布，也可以由提案批准后发布。 |
-| `EventFeedback` | 谁针对哪个公开事件提出何种反馈，核实和回应进展如何。 | 否。反馈结论需要权威业务纠正时调用对应领域服务。 |
-| `RoleAssignment` | 某成员在什么时间范围内拥有哪个角色。 | 否。任命可以由上级直接创建，也可以由提案执行产生。 |
-| `LedgerEntry` | 成员积分为什么增加、扣减、调整或冲正。 | 否。积分流水是账务事实；提案只可能是其来源之一。 |
-| `Resource` | 当前资源库存、预警线和补充方式是什么。 | 否。资源调整是业务状态变化；重大资源政策或高影响分配才需要提案。 |
-| `Proposal` | 是否批准某个待决事项。 | 是决策机制，不是所有业务对象的父类。 |
-| `SystemEvent` | 谁在什么时候以什么身份对什么对象做了什么。 | 是事实账本，不承载业务状态机。 |
+| `MemberApplication` | 保存报名资料和处理状态 | 接纳决定尚未迁入，当前不可执行 |
+| `RoleAssignment` | 保存成员在时间范围内拥有的角色 | 共同任免尚未迁入；初始化和明确允许的直接服务仍独立存在 |
+| `Task` | 工作内容、领取、提交和验收 | 将来可由统一提案决议触发，但不保存旧提案来源字段 |
+| `LedgerEntry` | 积分增加、扣减、调整和冲正 | 是账务事实，不是表决记录 |
+| `Resource` | 库存、预警线和补充方式 | 日常调整走领域服务，重大政策进入未来统一提案 |
+| `CommunityFeedback` | 注册用户公开提问、建议和倡议 | 只能形成提案种子，不得直接改变权威状态 |
+| `SystemEvent` | 关键事实、顺序、责任人和哈希链 | 不承载选民规则或业务状态机 |
 
-## 现有对象边界
+## 权限边界
 
-### 任务
-
-`Task` 是可领取、可提交、可验收的工作订单。它负责任务标题、类型、状态、负责人、提交说明、验收时间、计划节点和规则版本。
-
-任务状态变化应通过 `core.tasks.*` 服务完成：
-
-- `core.tasks.authoring.create_task_draft()`
-- `core.tasks.authoring.publish_task()`
-- `core.tasks.authoring.assign_task()`
-- `core.tasks.authoring.close_task()`
-- `core.tasks.member_workflow.claim_task()`
-- `core.tasks.member_workflow.submit_labor()`
-- `core.tasks.review.review_task()`
-
-这些服务成功后追加 `task_*` 类型 `SystemEvent`。验收通过还会创建 `LedgerEntry`，积分流水再追加自己的 `credit_*` 类型 `SystemEvent`。
-
-任务可以由提案批准后产生或发布，但任务本身仍是 `Task`。`Task.source_type`、`source_proposal` 和 `source_proposal_execution` 用于记录任务是直接运营创建、提案执行、计划派生、仿真产生还是系统规则产生；这些字段只表达来源，不替代任务状态机。
-
-### 事件反馈
-
-`EventFeedback` 是固定关联用户可见 `Event` 的实名反馈流程，覆盖纠错、意见、投诉、举报、复核和风险。提交人默认公开身份，也可说明理由后限制身份展示；这不等于匿名，系统和处理者始终知道真实身份。
-
-状态变化应通过 `core.event_feedback_services` 完成：
-
-- `submit_event_feedback()`
-- `start_event_feedback_verification()`
-- `request_event_feedback_response()` / `respond_to_event_feedback()`
-- `conclude_event_feedback()` / `close_event_feedback()` / `withdraw_event_feedback()`
-
-这些服务成功后追加 `event_feedback_*` 类型 `SystemEvent`。反馈结论不能覆盖原事件；正式纠正必须调用对应领域服务，并可关联新产生的 `resolution_event`。
-
-第三方隐私和证据凭据按独立规则脱敏，提交人对自己身份的展示选择不能授权公开他人受保护信息。
-
-### 资源
-
-`Resource` 是当前资源状态。日常库存调整、预警处置和补充方式变更仍落在 `Resource` 上，不创建新的提案对象。
-
-资源状态变化应通过 `core.resource_services.record_resource_adjustment()` 完成。服务成功后会追加 `resource_adjusted` 类型 `SystemEvent`，同时追加面向观察流的 `resource` 类型 `Event`。
-
-### 角色任命
-
-`RoleAssignment` 是成员权限来源。它负责成员、角色、状态、开始时间、结束时间、任命人和卸任处理人。
-
-角色任命可以来自：
-
-- 直接任命：管理员通过服务直接创建。
-- 本人申请：有效守约者参加并通过服务端评分的资格考试后，可立即创建一年期执衡者任命，无需人工审核。
-- 提案执行：`role_appointment` 提案通过后执行，创建 `RoleAssignment`。
-- 初始化：bootstrap 或维护权限初始化命令创建必要任命。
-
-`RoleAssignment.source_type`、`source_proposal` 和 `source_proposal_execution` 用于记录任命来源。直接任命、本人申请、提案执行和初始化最终都会落到同一张 `RoleAssignment` 表，避免保留多套平行任命结构。
-
-**创建约束**：所有 RoleAssignment 必须通过 `core.role_assignment_services.create_role_assignment()` 创建。执衡者和管理员以及带 `governance.*` / `finance.*` permission 的职责都要求有效守约者资格；`SUSPENDED`/`EXITED` 成员拒绝一切新职责。执衡者任期只能由服务端确认资格考试通过后创建，任期一年且不会自动续任；题目、政策、作答与结果保留可审计快照。Django Admin 中的 RoleAssignment 已设为只读，禁止手工创建或修改。
-
-无论来源是什么，最终权限判断仍走：
+权限事实链保持为：
 
 ```text
 Member -> active RoleAssignment -> RolePermission -> Permission
 ```
 
-运行时授权由 `AuthorizationService` 统一执行。Django 的 `Member`、`RoleAssignment`、`RolePermission` 和 `Permission` 仍是权威事实来源；OpenFGA 是这些事实的授权计算投影。启用 OpenFGA 后，完整成员工作台、维护权限、财务权限和资源级权限都必须通过 OpenFGA check 得出结论，不能在页面、API 或后台任务中重新拼接角色表查询。
+运行时授权统一走 `AuthorizationService` / OpenFGA。Credential、NFT、Badge、`Member.status`、Django `is_staff` 和 `is_superuser` 都不能成为业务权限旁路。管理员不会自动获得执衡者任期或投票权。
 
-资源级权限需要区分两种问题：`resource=None` 只回答“成员是否在任一范围拥有该权限”；传入具体 `Resource` 时才回答“成员是否能对这个资源执行该权限”。OpenFGA tuple rebuild 会把全局 `RolePermission` 投影为全局资源授权，把 `constraints_json.resource_id` / `resource_ids` 投影为具体资源授权；资源级入口不能用 `resource=None` 的结果替代具体对象判断。
+所有 `RoleAssignment` 必须由 `core.role_assignment_services.create_role_assignment()` 或明确的初始化服务创建。执衡者、管理员以及带 `governance.*` / `finance.*` 权限的职责要求有效守约者资格；暂停或退出成员不能获得新职责。
 
-Proposal 可以决定授予/撤销角色，也可以决定授予 Credential。但运行时权限检查仍只能走 `AuthorizationService`；OpenFGA tuple 来自上述 RoleAssignment 链的投影，Credential 不能成为第二套权限系统。
+## 当前仍可执行的领域服务
 
-### Credential / NFT / Badge
+- 任务：`core.tasks.authoring`、`core.tasks.member_workflow`、`core.tasks.review`；
+- 资源：`core.resource_services`；
+- 事件反馈：`core.event_feedback_services`；
+- 积分：`core.ledger_services`；
+- 角色权威事实：`core.role_assignment_services`；
+- 运行时授权：`core.authorization_services`。
 
-**Credential / NFT / Badge 不是权限。** 它们是公开事实证明，表达"谁拥有什么"的陈述，但不表达"谁可以做什么"的授权。
-
-#### 设计边界
-
-| 概念 | 是什么 | 不是什么 |
-| --- | --- | --- |
-| `Credential Template` | 治理流程创建的可发放凭证模板（如"年度贡献者""导师"）；内置模板（如守约者编号）由 `ensure_builtin_credential_templates()` 幂等创建 | 不是权限模板，不能自动派生 RolePermission |
-| `Credential Grant` | 按模板发放给某个 Member 的具体凭证实例 | 不是 RoleAssignment，不参与运行时权限判断 |
-| `NFT / Badge` | 链上或系统内不可篡改的所有权标记 | 不是授权 token，不能绕过 RoleAssignment 放行 |
-| `Formal Member Number` | 守约者编号 Credential Grant，一次性发放、永不复用 | 不是登录账号，不是 member_no 的替代品 |
-
-#### Credential 生命周期
-
-1. **模板创建**：内置模板由 `ensure_builtin_credential_templates()` 幂等创建（如守约者编号模板 `covenanter_number`）。社区成员可通过 `credential_template` 提案创建更多模板。
-2. **实例发放**：满足条件的 Member 获得 Credential Grant。守约者编号在授予 `ROLE_COVENANTER` 时自动发放（`create_role_assignment` → `issue_covenanter_number`）。其他凭证可由提案执行触发，或由业务规则自动触发。
-3. **公开展示**：Credential 在 Observer 公开主页（`templates/themes/default_game/member_profile.html`）和 workspace 个人资料（`templates/workspace/profile.html`）中展示，只展示业务字段（`template_name`、`display_no`、`source_type`、`issued_at`），不暴露内部 pk。
-4. **权限转换（唯一入口）**：如果某个 Credential 需要影响权限（如"持有导师 Credential 的成员可以审核任务"），**必须**通过一份独立提案授予 RoleAssignment：
-
-   ```text
-   Credential Instance → 治理提案决议 → RoleAssignment → RolePermission → Permission
-   ```
-
-   运行时权限判断只看最后的 RoleAssignment 链，不回溯查 Credential。
-
-#### 禁止模式
-
-- **禁止** `if member.has_credential("mentor"): allow_review()` —— 必须走 `if member.has_permission("tasks.review_task"):`。
-- **禁止** `if member.has_nft("governance_nft"): allow_vote()` —— 必须走 RoleAssignment。
-- **禁止** 在 view 或 service 中直接查询 Credential 表来判断操作权限。
-- **禁止** 将守约者编号（或其他 Credential ID）直接用作权限白名单的 key。
-
-### 提案
-
-`Proposal` 只处理“是否批准某件事”。它引用一个不可变的 `ElectorateRuleVersion`，保存本提案规范化后的规则快照、投票资格快照、通过比例、最低参与人数、截止时间和执行结果。
-
-选民规则只允许使用 `ALL`、`ANY`、`NOT` 和已注册选择器，提案发起人不能提交任意表达式或原始查询。提案类型限制可选模板：社区共议允许贡献者参与；守约事务要求有效守约者与执衡者；专业事务再要求对应专业资格；管理事务只选择管理员。开始表决时固定选民快照，投票时仍重新计算当前资格。
-
-通过比例按严格超过阈值计算。`pass_ratio=50` 表示赞成票必须超过半数，而不是达到一半；因此 1 人需 1 票、2 人需 2 票、3 人需 2 票、4 人需 3 票。
-
-当前重点支持：
-
-```text
-member_admission Proposal -> ProposalVote -> ProposalExecution -> MemberApplication + Member + RoleAssignment
-role_appointment Proposal -> ProposalVote -> ProposalExecution -> RoleAssignment
-```
-
-成员报名提交自动创建最小 `Member`、`MemberApplication` 和 `member_admission` 提案，提案直接进入 VOTING 状态。准入提案使用“守约事务”规则，选民必须同时具有有效守约者资格和执衡者任期；成员准入是 `yes`/`no` 二元表决。正式接纳只能由 `execute_proposal` 经 `admit_member_application_from_proposal` 完成。
-
-管理员可在 `/workspace/applications/` 进入成员报名处理模块，查看报名资料、准入提案、投票和执行已通过提案。该模块只复用上述既有服务与表，不引入平行审核表或投票表。维护入口要求 `governance.view_admin` 且必须绑定 `Member` 身份；未绑定 `Member` 的 Django staff/superuser 不能绕过成员身份要求。成员准入投票只允许 `yes`/`no`，不提供弃权；反对票必须填写理由。
-
-
-未来规则、政策、预算、项目计划、重大申诉裁决和重大任务发布可以使用同一套提案流程，但执行后仍应落到具体业务对象。
-
-### 公开财务
-
-公开财务是具体业务对象，不是提案父类。它回答“谁申请了哪笔支出、谁审核、谁付款、状态如何”，而不是“是否批准某项治理规则”。
-
-```text
-ExpenseClaim -> FinanceReview -> FinanceTransaction -> Event/SystemEvent
-```
-
-- 报销申请由 `ExpenseClaim` 承载，提交后写公开 `Event` 和 `expense_claim_submitted` 统一事件。
-- 审核决定由 `FinanceReview` 承载，审核人必须拥有 `finance.review`，不能自审；拒绝必须填写理由。
-- 付款流水由只追加的 `FinanceTransaction` 承载，记录人必须拥有 `finance.pay`，不能自付；历史流水不能修改，只能后续用冲正类流水表达更正。
-- 财务角色由 `ensure_finance_roles()` 初始化，并通过 RoleAssignment 授予。`finance.*` 权限角色和 `governance.*` 权限角色一样，需要目标成员先具备 `ROLE_COVENANTER`。
-- 财务审核职责通过 `role_appointment` 提案完成提名、执衡者表决和执行；守约者准入、执衡者考试和管理员任命都不会隐式授予财务职责。提名和执行要求 `governance.manage_roles`，执行只授予 `finance.review` 及审核所需私有材料查看能力，不附带付款或公开附件发布权限。
-- 报销流程本身不要求 Proposal；只有高影响预算、异常争议、财务规则变更或需要共同授权的情况，才应升级为 Proposal。
-
-### 统一事件账本
-
-`SystemEvent` 是全系统统一的只追加事件账本。它负责全局顺序、行为人、行为角色身份、聚合对象、业务快照和哈希链。
-
-它不负责：
-
-- 任务状态机。
-- 事件反馈状态机。
-- 提案投票规则。
-- 角色权限判断。
-- 积分余额计算。
-
-这些逻辑仍在各自业务模型和领域服务中。
+这些服务成功改变权威状态后应追加相应 `SystemEvent`。需要共同决定的调用方不得因为统一提案尚未完成而直接调用底层服务绕过治理。
 
 ## 新功能开发规则
 
-新增会改变权威状态的功能时，按下面顺序设计：
-
-1. 先确认具体业务对象是什么。
-2. 再判断是否需要提案批准。
-3. 状态变化必须放进领域服务，不要让 view、admin 或 command 直接改关键字段。
-4. 服务成功后追加 `SystemEvent`。
-5. 失败校验必须发生在业务写入和事件写入之前。
-6. 测试至少覆盖成功动作写事件、失败动作不写事件。
-
-常见判断：
-
-- 只是成员提交事实：通常是业务对象，不是提案。
-- 只是运营人员处理日常流程：通常是业务服务，不是提案。
-- 涉及多人共同授权、重大裁决、规则变化、预算或高影响资源分配：使用提案。
-- 涉及追责、权益、资源数量、权限关系或账务变化：写入统一事件账本。
+1. 先确定具体业务对象和权威状态。
+2. 判断动作是否需要共同决定；需要时只接入未来统一提案系统。
+3. 统一系统尚未覆盖时，提供明确关闭状态，不建立临时审批表或兼容旧模型。
+4. view、Admin 和 command 不直接修改关键状态，写操作进入领域服务。
+5. 成功动作追加 `SystemEvent`，失败校验必须发生在任何写入之前。
+6. 测试至少覆盖成功证据、失败不写入、权限失败关闭和 world 隔离。
