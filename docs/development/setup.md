@@ -452,6 +452,12 @@ http://127.0.0.1:20108/playground/  # simulation OpenFGA Playground
 - Control 后台职责见 [Admin 内部维护后台](../product/admin.md)。
 - 仿真推进和实验后台职责见 [仿真与实验后台](../product/simulation.md)。
 
+### 守约者准入提案本地验证
+
+登录固定 world 的管理员工作台后，先访问 `/workspace/proposals/member-admission-policy/` 发布明确的准入政策。政策必须指定参与角色、通过与拒绝票数、最低参与人数、表决期限和到期未决处理；管理员身份本身不会自动获得投票权。贡献者提交 `/workspace/apply/` 后，可在 `/workspace/proposals/` 由冻结快照内且当前仍合格的成员实名投票、改票、截止判定和执行。
+
+本次 OpenFGA 模型版本为 `2026-08-20`。拉取变更后必须分别对 real 和 sim 执行本页 `openfga_bootstrap` 命令，把两条输出中的 model ID 和新 SHA-256 手工写入 `.env`，再运行 `start.bat` 重建 tuple；脚本不会自动修改 `.env`。
+
 常用局部测试：
 
 ```powershell

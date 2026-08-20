@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "unified-proposal.schema.json",
+  "title": "UnifiedProposal",
+  "description": "统一提案的公开安全投影。规则内部配置、报名私密字段和 OpenFGA 标识不进入该 payload。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "proposal_id",
+    "proposal_type",
+    "strategy_type",
+    "title",
+    "status",
+    "submitted_by_member_no",
+    "submitted_at",
+    "can_execute"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {"strategy_type": {"const": "electorate"}},
+        "required": ["strategy_type"]
+      },
+      "then": {
+        "required": ["can_vote", "vote_eligibility", "tally"]
+      }
+    },
+    {
+      "if": {
+        "properties": {"strategy_type": {"const": "approval_slots"}},
+        "required": ["strategy_type"]
+      },
+      "then": {
+        "required": ["required_roles", "approved_roles", "missing_roles"]
+      }
+    }
+  ],
+  "properties": {
+    "proposal_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "proposal_type": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "strategy_type": {
+      "type": "string",
+      "enum": ["electorate", "approval_slots"]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "summary": {
+      "type": "string"
+    },
+    "public_reason": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "awaiting_policy", "submitted", "voting", "approved", "rejected", "expired", "executed", "execution_failed", "cancelled"]
+    },
+    "source": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "id"],
+          "properties": {
+            "type": {"type": "string", "maxLength": 64},
+            "id": {"type": "string", "maxLength": 128}
+          }
+        }
+      ]
+    },
+    "electorate_rule": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rule_code", "version", "published_at"],
+          "properties": {
+            "rule_code": {"type": "string", "minLength": 1, "maxLength": 64},
+            "version": {"type": "integer", "minimum": 1},
+            "published_at": {"type": "string", "format": "date-time"}
+          }
+        }
+      ]
+    },
+    "voting_parameters": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["approve_threshold", "reject_threshold", "minimum_participation", "unresolved_outcome"],
+          "properties": {
+            "approve_threshold": {"type": "integer", "minimum": 1},
+            "reject_threshold": {"type": "integer", "minimum": 1},
+            "minimum_participation": {"type": "integer", "minimum": 0},
+            "unresolved_outcome": {"type": "string", "enum": ["rejected", "expired"]}
+          }
+        }
+      ]
+    },
+    "voting_started_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "voting_deadline": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "submitted_by_member_no": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolved_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "executed_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "can_vote": {
+      "type": "boolean"
+    },
+    "can_execute": {
+      "type": "boolean"
+    },
+    "required_roles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 64}
+    },
+    "approved_roles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 64}
+    },
+    "missing_roles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 64}
+    },
+    "vote_eligibility": {
+      "$ref": "#/$defs/eligibility"
+    },
+    "current_vote": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/vote"}
+      ]
+    },
+    "tally": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eligible_count", "participation_count", "approve_count", "reject_count", "abstain_count"],
+      "properties": {
+        "eligible_count": {"type": "integer", "minimum": 0},
+        "participation_count": {"type": "integer", "minimum": 0},
+        "approve_count": {"type": "integer", "minimum": 0},
+        "reject_count": {"type": "integer", "minimum": 0},
+        "abstain_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "result": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["outcome", "reason_code", "decided_by_member_no", "decided_at"],
+          "properties": {
+            "outcome": {"type": "string", "enum": ["approved", "rejected", "expired"]},
+            "reason_code": {"type": "string", "minLength": 1, "maxLength": 64},
+            "decided_by_member_no": {
+              "type": ["string", "null"],
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "触发确定性判定的公开成员编号；字段建立前的本地历史记录可以为空。"
+            },
+            "decided_at": {"type": "string", "format": "date-time"}
+          }
+        }
+      ]
+    },
+    "execution": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "executed_by_member_no", "started_at"],
+          "properties": {
+            "status": {"type": "string", "enum": ["running", "succeeded", "failed"]},
+            "executed_by_member_no": {"type": "string", "minLength": 1, "maxLength": 64},
+            "started_at": {"type": "string", "format": "date-time"},
+            "completed_at": {"type": ["string", "null"], "format": "date-time"},
+            "public_error_code": {"type": "string", "maxLength": 64}
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "eligibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "reason_code", "message"],
+      "properties": {
+        "allowed": {"type": "boolean"},
+        "reason_code": {"type": "string", "maxLength": 64},
+        "message": {"type": "string"}
+      }
+    },
+    "vote": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["choice", "revision", "submitted_at"],
+      "properties": {
+        "choice": {"type": "string", "enum": ["approve", "reject", "abstain"]},
+        "revision": {"type": "integer", "minimum": 1},
+        "submitted_at": {"type": "string", "format": "date-time"}
+      }
+    }
+  }
+}

@@ -36,6 +36,7 @@ static/technical-contracts/examples/
 - <a href="/technical-contracts/examples/resource.example.json">resource.example.json</a>
 - <a href="/technical-contracts/examples/ruleset.example.json">ruleset.example.json</a>
 - <a href="/technical-contracts/examples/task.example.json">task.example.json</a>
+- <a href="/technical-contracts/examples/unified-proposal.example.json">unified-proposal.example.json</a>
 
 校验脚本：
 
@@ -57,7 +58,7 @@ python scripts/validate_contracts.py
 
 ```text
 Contract validation passed.
-Checked 26 JSON files.
+Checked 40 JSON files.
 ```
 
 后续迁移或改动技术契约时，应先保持该校验通过，再同步 Live OS、Simulation Engine 和文档站中的说明。

@@ -66,7 +66,7 @@ World routing 必须 fail closed。`WORLD_DATABASE_ROUTING_ENABLED=true` 时，a
 
 ## 旧提案结构与干净迁移基线
 
-项目尚未上线，旧提案表、字段和迁移历史不保留。`start.bat` 会在迁移前运行 `check_legacy_proposal_schema`；检测到旧结构时立即停止并显示对应数据库的准确重置命令。重置不可恢复，必须人工确认并显式提供 `--confirm-reset`，启动脚本绝不会自动删除数据。
+项目尚未上线，旧提案表、字段和迁移历史不保留。`start.bat` 会在迁移前依次运行 `check_legacy_proposal_schema` 和 `check_migration_history`：检测到旧结构，或数据库记录的迁移顺序与当前代码依赖图不一致时，立即停止并显示对应数据库的准确重置命令。只有专用检测标记会触发重置建议；连接失败、凭据错误和 Django 导入失败只会原样报告，避免误导用户清库。重置不可恢复，必须人工确认并显式提供 `--confirm-reset`，启动脚本绝不会自动删除数据。
 
 例如重置可丢弃的仿真数据库：
 

@@ -213,13 +213,18 @@ POST /workspace/recruitment/  (action=create / action=update)
 
 `/workspace/` 在守约者工作台之外，为具备 `governance.view_admin` 权限的管理员提供成员报名处理入口。普通守约者、待处理报名人、未绑定 `Member` 的 Django staff/superuser 都看不到入口，直接访问处理 URL 返回 403。
 
-`/workspace/apply/` 提交后只创建并保存 `MemberApplication`。统一提案流程尚未承接成员准入，因此系统不会创建准入提案，不会进入投票状态，也不会通过管理员单人审核直接接纳或拒绝。报名资料保持 `submitted`，直到后续统一提案系统实现准入制度。
+`/workspace/apply/` 提交后保存 `MemberApplication` 并关联唯一准入提案。当前 world 没有已发布准入政策时，提案显示“等待政策配置”；发布政策后，等待提案会冻结该版本、生成选民快照并进入表决。管理员身份不自动产生投票权。
 
-管理员页面当前只用于查看报名资料和明确的迁移关闭状态。投票、批准、拒绝和执行操作全部失败关闭；成员准入所需的选民、阈值、截止和审计规则作为后续统一提案系统的制度要求保留，不代表当前已有可运行实现。
+管理员可以在 `/workspace/proposals/member-admission-policy/` 发布选民角色集合、通过与拒绝阈值、最低参与人数、期限和到期未决处理。登录且绑定 Member 的快照选民均可进入统一提案页，贡献者无需先取得守约者资格；服务层仍会在每次投票和计票时按冻结规则复核当前资格，资格失效后的旧票不再计入结果。达到冻结条件时系统自动判定；截止后的人工触发判定需要独立的 `governance.resolve_proposals` 权限，并记录实名触发人。有 `governance.manage_people` 权限的成员执行已通过提案，系统通过角色任命服务授予一年期守约者资格。
 
 ```text
 GET  /workspace/applications/                                          # 报名列表（按准入进度筛选）
-GET  /workspace/applications/<application_id>/                         # 报名详情（只读资料 + 迁移关闭说明）
+GET  /workspace/applications/<application_id>/                         # 报名详情与关联准入提案状态
+GET|POST /workspace/proposals/member-admission-policy/                 # 准入政策查看与发布
+GET  /workspace/proposals/                                             # 统一提案、资格解释与当前票数
+POST /workspace/proposals/<proposal_id>/vote/                          # 实名投票或追加改票修订
+POST /workspace/proposals/<proposal_id>/finalize/                      # 截止后按冻结规则判定
+POST /workspace/proposals/<proposal_id>/execute/                       # 有权人员幂等执行
 ```
 
 不存在以下路由：
@@ -227,8 +232,6 @@ GET  /workspace/applications/<application_id>/                         # 报名�
 ```text
 POST /workspace/applications/<application_id>/review/
 POST /workspace/applications/<application_id>/create-admission-proposal/
-POST /workspace/proposals/<proposal_id>/vote/
-POST /workspace/proposals/<proposal_id>/execute/
 ```
 
 ## 与 Control 后台的关系

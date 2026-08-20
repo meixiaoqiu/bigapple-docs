@@ -88,7 +88,7 @@ MySQL
 
 当前代码边界：
 
-- `core.models.identity`、`applications`、`approval_workflow`、`planning`、`simulation_runs`、`simulation_feedback`、`operations`、`events`、`disputes`：权威业务模型按领域拆分，但仍归属 `core` app，避免为了 app 名称重复造平行模型。旧通用提案模型包已经删除，`approval_workflow` 也不是完整统一提案系统。
+- `core.models.identity`、`applications`、`approval_workflow`、`planning`、`simulation_runs`、`simulation_feedback`、`operations`、`events`、`disputes`：权威业务模型按领域拆分，但仍归属 `core` app。旧通用提案模型包已经删除；`approval_workflow` 现承载唯一统一提案聚合、版本化选民规则、快照、票据、判定和执行记录，当前只有成员准入完成业务接入。
 - `core.models`：稳定导出入口；新模型应进入对应领域文件，不要重新写回单个大文件。
 - `core.file_processing.*`：与业务 owner 无关的文件大小限制、Magika 内容识别、Pillow 图片解码/规范化和哈希原语。
 - `core.file_storage.*`：Django Storage gateway、随机对象 key、临时对象和严格的 world/生命周期前缀校验；业务代码不直接依赖 bucket 或供应商 URL。
@@ -249,7 +249,7 @@ Credential    → 公开事实证明（非权限来源）
 
 3. **注册状态不创建基础角色。** 新注册用户只创建 User 与 Member。已注册但没有当前有效守约者资格的成员，其参与状态派生显示为“贡献者”；匿名访问公开内容只是观察行为。两者都不创建同名 Role、RoleAssignment 或 OpenFGA tuple。最小 workspace、公开资料维护和守约者报名依据账号与 Member 绑定开放，不依赖虚构的基础角色。
 
-4. **守约者是独立的成员资格事实。** “守约者”不是新的 Member 或账号，而是 Member 获得当前有效的 `ROLE_COVENANTER` 任命。统一提案流程尚未承接报名接纳，因此当前报名只保存资料，接纳操作失败关闭。资格有效性统一考虑任命状态、起止时间、成员生命周期和关联 User 是否启用。
+4. **守约者是独立的成员资格事实。** “守约者”不是新的 Member 或账号，而是 Member 获得当前有效的 `ROLE_COVENANTER` 任命。准入提案通过并由有权人员执行后，角色任命服务创建一年期资格；资格有效性统一考虑任命状态、起止时间、成员生命周期和关联 User 是否启用。
 
 5. **守约者编号是一次性发放、永不复用的 Credential。**
    - 每个正式编号（如 `BA-0001`）全局唯一，只发放一次。
@@ -275,9 +275,9 @@ Credential    → 公开事实证明（非权限来源）
 当前实现已拆分为两个独立步骤：1) `/register/` 创建账号和基础 Member；2) `/workspace/apply/` 提交守约者报名。
 
 1. **注册** → 只创建 User + Member，可立即访问最小 workspace；贡献者状态由“没有当前有效守约者资格”派生。
-2. **报名守约者** → 已注册 Member 提交申请并保存资料；接纳、授予 `ROLE_COVENANTER` 和发放守约者编号等待统一提案流程承接。
+2. **报名守约者** → 已注册 Member 提交申请并关联唯一准入提案；表决通过并执行后授予一年期 `ROLE_COVENANTER`，守约者编号由既有角色任命服务签发。
 
-注册与报名的拆分已经落地；尚未迁移的是报名后的共同准入决策、守约者资格授予和编号发放。完成统一提案系统前，这些权威写操作保持失败关闭。
+注册、报名和成员准入统一提案已经落地。角色共同任免、财务职责任命以及其他治理提案尚未迁移，相关权威写操作继续失败关闭。
 
 ## Credential / NFT / Badge 与权限边界
 

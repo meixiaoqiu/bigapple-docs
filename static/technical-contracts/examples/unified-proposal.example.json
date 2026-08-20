@@ -1,0 +1,47 @@
+{
+  "proposal_id": "proposal-admission-0001",
+  "proposal_type": "member_application",
+  "strategy_type": "electorate",
+  "title": "守约者准入提案",
+  "summary": "一项等待社区按已发布准入政策决定的守约者报名。",
+  "public_reason": "申请人希望承担守约者义务。",
+  "status": "voting",
+  "source": {
+    "type": "member_application",
+    "id": "member-application-0001"
+  },
+  "electorate_rule": {
+    "rule_code": "member-admission",
+    "version": 1,
+    "published_at": "2026-08-20T01:00:00Z"
+  },
+  "voting_parameters": {
+    "approve_threshold": 3,
+    "reject_threshold": 3,
+    "minimum_participation": 3,
+    "unresolved_outcome": "expired"
+  },
+  "voting_started_at": "2026-08-20T02:00:00Z",
+  "voting_deadline": "2026-08-27T02:00:00Z",
+  "submitted_by_member_no": "member-applicant-0001",
+  "submitted_at": "2026-08-20T02:00:00Z",
+  "resolved_at": null,
+  "executed_at": null,
+  "can_vote": true,
+  "can_execute": false,
+  "vote_eligibility": {
+    "allowed": true,
+    "reason_code": "eligible",
+    "message": "你属于本提案冻结的选民范围，并且当前资格有效。"
+  },
+  "current_vote": null,
+  "tally": {
+    "eligible_count": 7,
+    "participation_count": 2,
+    "approve_count": 2,
+    "reject_count": 0,
+    "abstain_count": 0
+  },
+  "result": null,
+  "execution": null
+}

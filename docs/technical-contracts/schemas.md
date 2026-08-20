@@ -39,6 +39,7 @@ static/technical-contracts/schemas/
 | <a href="/technical-contracts/schemas/resource.schema.json">resource.schema.json</a> | `Resource` |
 | <a href="/technical-contracts/schemas/ruleset.schema.json">ruleset.schema.json</a> | `Ruleset` |
 | <a href="/technical-contracts/schemas/task.schema.json">task.schema.json</a> | `Task` |
+| <a href="/technical-contracts/schemas/unified-proposal.schema.json">unified-proposal.schema.json</a> | `UnifiedProposal` |
 
 ## 公开投影
 

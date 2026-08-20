@@ -72,7 +72,7 @@ Django `User` 仍只负责技术登录和 Admin 入口控制：`is_active` 控�
 
 ## core_member_application
 
-`MemberApplication` 保存通过 `/workspace/apply/` 提交的守约者报名资料。注册只创建登录账号和基础 `Member`；统一提案流程尚未承接准入决定，因此当前只保存报名资料，不执行接纳或拒绝。
+`MemberApplication` 保存通过 `/workspace/apply/` 提交的守约者报名资料。注册只创建登录账号和基础 `Member`；报名提交后关联唯一的统一准入提案，报名本身不复制选民、票据或判定状态。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -90,6 +90,7 @@ Django `User` 仍只负责技术登录和 Admin 入口控制：`is_active` 控�
 | `requested_member_no` | string | 否 | 期望成员编号；仿真会写入稳定候选编号。 |
 | `account_user_id` | fk | 否 | 成员报名时创建或复用的登录账号；提交后绑定到最小权限成员身份。 |
 | `linked_member_id` | fk | 否 | 提交后创建或复用的最小权限 `Member`。 |
+| `admission_proposal_id` | one-to-one fk | 否 | 唯一准入提案；无政策时提案保持 `awaiting_policy`。 |
 | `dynamic_answers` | json | 是 | 动态 textarea 问答数组，元素包含 `key`、`label`、`type`、`answer`。 |
 | `frozen_at` | datetime | 否 | 报名提交并二次确认的时间；业务入口不提供提交后的撤回或修改。 |
 | `decided_by_id` | fk | 否 | 决议人（执行准入或提案拒绝的管理员）。 |
@@ -97,7 +98,7 @@ Django `User` 仍只负责技术登录和 Admin 入口控制：`is_active` 控�
 | `decided_at` | datetime | 否 | 决议时间（准入执行或拒绝的时间）。 |
 | `metadata` | json | 是 | 扩展数据；仿真会写入 `simulation_run_id`、`simulation_hour`、`driver_mode` 和 `external_ref`。 |
 
-提交会创建或复用最小 `Member`，保存报名资料并追加 `member_application_submitted` 统一事件。已注册但尚未取得守约者资格的成员显示为贡献者，不创建同名角色。准入决策入口当前显示统一迁移关闭状态，不得直接授予守约者任命。
+提交会创建或复用最小 `Member`，保存报名资料、追加 `member_application_submitted` 统一事件并幂等建立准入提案。已注册但尚未取得守约者资格的成员显示为贡献者，不创建同名角色。提案通过后仍需有权执行者调用适配器，适配器只通过角色任命服务授予一年期守约者资格。
 
 ## core_partner_application
 
@@ -284,7 +285,9 @@ PartnerApplication stores partner applications from suppliers, institutions, pro
 
 ## 统一提案数据结构状态
 
-旧通用提案、投票、执行和选民规则表已经从干净迁移基线删除。现有 `ApprovalProposal` 尚不是完整统一提案系统，不能作为旧系统兼容层。社区共议、守约事务、专业事务、管理事务、成员准入及共同角色任免所需的数据结构将在后续 OpenSpec 变更中统一设计；完成前对应决策入口失败关闭。
+旧通用提案、投票、执行和选民规则表已经从干净迁移基线删除。当前统一提案以 `ApprovalProposal` 为唯一聚合，并新增 `ElectorateRuleTemplate`、`ElectorateRuleVersion`、`ProposalElectorSnapshot`、`ProposalBallot`、`ProposalResolution` 和 `ProposalExecutionRecord`。成员准入已登记版本化选民策略适配器；采购暂时保留既有固定审批槽策略。社区共议、守约事务、专业事务、管理事务和共同角色任免尚未登记适配器，必须失败关闭。
+
+统一提案开始表决时冻结规则版本、通过与拒绝阈值、最低参与数、截止时间和未决处理方式。选民快照不可变；每次改票追加新的实名 `ProposalBallot.revision`，结果只计算快照内且当前仍满足冻结规则的成员最后一份票据，资格失效后的旧票不再进入当前结果。`ProposalResolution.decided_by` 记录触发确定性判定的实名成员；在该字段建立前已经存在的本地开发判定记录允许显示为“责任人未知”，不得用提交人等其他身份伪造回填。所有新判定都必须由服务层写入实名成员。判定权限与执行权限彼此独立。判定证据和执行记录分别一对一关联提案，执行失败记录公开错误代码并回滚目标业务写入。
 
 ## core_role_permission
 
@@ -346,7 +349,7 @@ OpenFGA tuple 由 `openfga_rebuild_tuples` 从 Django 权威数据完整重建�
 
 `core.permission_services.legacy_member_has_permission()` 和 `members_with_permission()` 只作为 legacy 对照、probe 和兼容层保留。业务入口不应直接调用它们。
 
-Django Admin 当前只在 control plane 暴露，并提供关系化底层维护入口：`Member` 详情页内联显示 `RoleAssignment`，`Organization` 详情页内联显示 `Role`，`Role` 详情页内联显示 `RolePermission` 和拥有该角色的成员。旧提案维护入口已经删除，不能通过 Admin 绕过统一提案迁移关闭状态。固定 world 站点不暴露 `/admin/`；真实世界和仿真世界的日常用户系统不需要 `is_staff` 账号。`SystemEvent` 和 `LedgerEntry` 集中在“技术审计与配置”分组；其中 `SystemEvent` 在 Admin 中仍然只读。
+Django Admin 当前只在 control plane 暴露，并提供关系化底层维护入口：`Member` 详情页内联显示 `RoleAssignment`，`Organization` 详情页内联显示 `Role`，`Role` 详情页内联显示 `RolePermission` 和拥有该角色的成员。统一提案、选民规则版本、选民快照、实名票据、判定证据和执行记录只提供只读审计，不允许通过 Admin 发布政策、改状态、投票或执行。固定 world 站点不暴露 `/admin/`；真实世界和仿真世界的日常用户系统不需要 `is_staff` 账号。`SystemEvent` 和 `LedgerEntry` 集中在“技术审计与配置”分组；其中 `SystemEvent` 在 Admin 中仍然只读。
 
 `SimulationSnapshot`、`SimulationSnapshotItem`、`SimulationRunDisposition` 和仿真实验后台入口位于 control plane `/admin/` 的“仿真”分组。实验后台只保留启动、推进、run 审阅、中止、归档和废弃这类独有动作。业务 `Event` 不注册到 Django Admin；固定 world API 和 `/` 负责展示它。`Ruleset` 变更应通过提案或专门规则发布流程完成，`CapacityAssessment` 归属观察台摘要，`Permission` / `RolePermission` 主要通过角色详情页维护。
 

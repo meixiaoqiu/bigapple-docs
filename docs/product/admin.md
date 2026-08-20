@@ -168,7 +168,7 @@ Admin 中的角色与权限查看入口：
 - MemberPublicProfile 在 Member 详情页通过 inline 展示（public_name、avatar_key、avatar_sha256、avatar_size、avatar_updated_at、bio、is_visible）。头像对象字段只读；成员自行上传头像，管理员通过受权业务服务移除违规头像，不能在 Admin 手填对象 key。这是公开展示资料，不同于 Django User 和 Member 权威身份。职务/权限不能手填，来自角色任命。
 - `Organization` 详情页内联显示组织下的 `Role`。
 - `Role` 列表显示该角色绑定的权限数量，并可配置任命表决角色、通过比例和截止天数；详情页内联显示该角色绑定的 `RolePermission`，并显示当前拥有该角色的 `RoleAssignment`。
-- 旧通用提案、投票和执行维护入口已经删除。新的统一提案系统完成前，成员准入、共同角色任免和财务审核职责任命显示明确迁移关闭状态。
+- 旧通用提案、投票和执行维护入口已经删除。统一提案、选民规则版本、快照、实名票据、判定和执行记录只在 Admin 提供只读审计与诊断；发布政策、投票、判定和执行必须走 workspace 与领域服务。当前成员准入已恢复，共同角色任免和财务审核职责任命仍显示明确关闭状态。
 - Admin 不提供绕过该关闭状态的直接治理写入口；明确允许的初始化和技术修复仍必须调用对应领域服务或命令。
 - `Permission` 和 `RolePermission` 仍保留为底层模型供角色 inline、自动补全和初始化命令使用，但不作为成员管理的顶层入口。
 - OpenFGA model / store / tuple 不是新的事实来源。若授权数据异常，应以 Django 权威数据为准运行 `openfga_rebuild_tuples` 完整重建，而不是手工在 Playground 中长期维护 tuple。
