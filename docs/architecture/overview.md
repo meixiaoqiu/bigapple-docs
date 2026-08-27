@@ -104,7 +104,7 @@ MySQL
 - `simulation_lab.views`：仿真实验后台页面入口。
 - `core.admin`、`admin_applications`、`admin_identity`、`admin_operations`、`admin_events`、`admin_finance`、`admin_support`：Django 技术后台入口、报名、成员/角色、运营对象、只读事件账本、财务配置和通用 Admin mixin。旧提案 Admin 已经删除。
 - `core.event_ledger`、`event_payloads`、`governance_setup`、`role_assignment_services`、`permission_services`、`governance_signals`：统一事件账本、事件快照、基础治理权限初始化、角色任命、角色权限判断和事件追加 signal。旧提案领域包已经删除，不得恢复为兼容门面。
-- `core.tasks.authoring`、`member_workflow`、`review`、`core.event_feedback_services`、`core.resource_services`、`core.ledger_services`：真实世界业务写操作。不要再新增 `core.services` 或 `core.task_services` 这种大杂烩服务门面。
+- `core.tasks.authoring`、`funding`、`member_workflow`、`review`、`core.event_feedback_services`、`core.resource_services`、`core.ledger_services`：真实世界业务写操作。任务预计奖励、预算缺口和“补锁并发布”由 `core.tasks.funding` 统一编排。不要再新增 `core.services` 或 `core.task_services` 这种大杂烩服务门面。
 - `live_os.demo_seed.*`：幂等演示数据写入逻辑，按项目计划、成员、资源、任务、事件、积分、事件反馈和容量评估拆分；`seed_demo` 命令只做编排。
 - `simulation.admin`、`admin_planning`、`admin_runs`、`admin_feedback`：Django Admin 自动发现入口、项目计划维护配置、只读仿真运行记录配置和仿真反馈/计划变更配置。
 
@@ -132,6 +132,7 @@ Task / Resource / Event / CapacityAssessment
 - 提交劳动
 - 创建任务草稿
 - 发布任务
+- 补足任务预算并原子发布
 - 指派任务
 - 关闭未开始任务
 - 验收任务
@@ -145,6 +146,8 @@ Task / Resource / Event / CapacityAssessment
 - 记录计划节点在模拟中的状态、失败原因和修订建议
 - 把计划修订建议转化为结构化计划变更集和变更操作
 - 创建积分流水
+
+任务发行资金与发布保持职责分离：积分发行只增加公共发行池；发布有积分奖励的草稿时，领域服务在同一 world、同一事务中重新计算预计奖励和现有锁定预算，只从发行池锁定缺口，然后追加发布事件。余额不足是结构化的非成功结果，不触发自动发行或部分锁定，创建路径会保留草稿供后续处理。
 - 创建事件
 
 `core.models.*` 负责持久化权威状态；`core.models` 包入口保留稳定导入面。

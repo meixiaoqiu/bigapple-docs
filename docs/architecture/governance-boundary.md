@@ -57,12 +57,14 @@ Member -> active RoleAssignment -> RolePermission -> Permission
 
 ## 当前仍可执行的领域服务
 
-- 任务：`core.tasks.authoring`、`core.tasks.member_workflow`、`core.tasks.review`；
+- 任务：`core.tasks.authoring`、`core.tasks.funding`、`core.tasks.member_workflow`、`core.tasks.review`；
 - 资源：`core.resource_services`；
 - 事件反馈：`core.event_feedback_services`；
 - 积分：`core.ledger_services`；
 - 角色权威事实：`core.role_assignment_services`；
 - 运行时授权：`core.authorization_services`。
+
+任务发布需要积分预算时，`core.tasks.funding` 只编排既有任务和积分领域能力：根据预计奖励补锁现有缺口，并与发布状态变化置于同一 world 数据库事务中。它不会代替积分发行决策；发行池不足时必须保留草稿且不产生自动发行、部分锁定或发布事件。责任人始终来自当前 session 绑定的实名成员，不能由表单 payload 覆盖。
 
 这些服务成功改变权威状态后应追加相应 `SystemEvent`。需要共同决定的调用方不得因为统一提案尚未完成而直接调用底层服务绕过治理。
 
